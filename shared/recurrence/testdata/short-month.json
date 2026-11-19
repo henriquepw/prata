@@ -1,0 +1,9 @@
+{
+  "name": "monthly on day 31 across february",
+  "rule": "MONTHLY:31",
+  "start_at": "2026-01-31",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2026-01-01", "to": "2026-04-30" },
+  "expected": ["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30"]
+}

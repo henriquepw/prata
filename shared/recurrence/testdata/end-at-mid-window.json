@@ -1,0 +1,9 @@
+{
+  "name": "end_at in the middle of the window",
+  "rule": "MONTHLY:10",
+  "start_at": "2026-01-10",
+  "end_at": "2026-03-20",
+  "deleted_at": null,
+  "window": { "from": "2026-02-01", "to": "2026-06-30" },
+  "expected": ["2026-02-10", "2026-03-10"]
+}

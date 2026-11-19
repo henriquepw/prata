@@ -1,0 +1,9 @@
+{
+  "name": "window without any occurrence",
+  "rule": "MONTHLY:25",
+  "start_at": "2026-01-25",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2026-03-01", "to": "2026-03-24" },
+  "expected": []
+}

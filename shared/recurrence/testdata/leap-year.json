@@ -1,0 +1,9 @@
+{
+  "name": "monthly on day 30 across a leap february",
+  "rule": "MONTHLY:30",
+  "start_at": "2028-01-30",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2028-01-01", "to": "2028-03-31" },
+  "expected": ["2028-01-30", "2028-02-29", "2028-03-30"]
+}
