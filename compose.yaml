@@ -1,0 +1,14 @@
+services:
+  prata:
+    image: ghcr.io/henriquepw/prata:latest
+    container_name: prata
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - prata-data:/data
+    # environment:
+    #   PRATA_ALLOW_SIGNUP: "true"
+
+volumes:
+  prata-data:
