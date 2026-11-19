@@ -45,6 +45,14 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("GET /{$}", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, http.StatusOK, homePage(newShell(r, "Visão geral")))
 	}))
+	mux.Handle("GET /categories", h.requireSession(h.categories))
+	mux.Handle("GET /categories/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
+	}))
+	mux.Handle("GET /categories/{id}", h.requireSession(h.editCategory))
+	mux.Handle("POST /categories", h.requireSession(h.saveCategory))
+	mux.Handle("POST /categories/{id}", h.requireSession(h.saveCategory))
+	mux.Handle("DELETE /categories/{id}", h.requireSession(h.deleteCategory))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }

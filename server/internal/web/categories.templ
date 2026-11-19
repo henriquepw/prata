@@ -1,0 +1,88 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// categoryColor is a schema color with its label and dot class, spelled out here for Tailwind.
+type categoryColor struct{ Value, Label, Class string }
+
+var categoryColors = []categoryColor{
+	{"GRAY", "Cinza", "bg-cat-gray"},
+	{"RED", "Vermelho", "bg-cat-red"},
+	{"YELLOW", "Amarelo", "bg-cat-yellow"},
+	{"BLUE", "Azul", "bg-cat-blue"},
+	{"GREEN", "Verde", "bg-cat-green"},
+}
+
+// categoryForm is the category sheet: what the user typed and an error message per field name,
+// "form" holding a rejected commit.
+type categoryForm struct {
+	ID           string
+	Name         string
+	Color        string
+	MonthlyLimit string
+	Errors       map[string]string
+}
+
+templ categoriesPage(s shell, categories []store.Category) {
+	@layout(s) {
+		<div class="mb-6 flex items-center justify-between">
+			<h1 class="text-2xl font-semibold tracking-tight">Categorias</h1>
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/categories/new", "hx-target": "#sheet"}}) {
+				Nova categoria
+			}
+		</div>
+		if len(categories) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhuma categoria ainda.</p>
+		} else {
+			<ul class="divide-y border">
+				for _, category := range categories {
+					<li>
+						<button type="button" hx-get={ "/categories/" + category.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
+							<span class={ "inline-block size-2.5 shrink-0 rounded-full", colorClass(category.Color) }></span>
+							<span class="flex-1">{ category.Name }</span>
+							<span class="tabular-nums text-muted-foreground">
+								if category.MonthlyLimit == 0 {
+									sem limite
+								} else {
+									R$ { formatCents(category.MonthlyLimit) }
+								}
+							</span>
+						</button>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ categorySheet(form categoryForm) {
+	@sheet(sheetProps{
+		Title:     utils.IfElse(form.ID == "", "Nova categoria", "Editar categoria"),
+		Action:    utils.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
+		DeleteURL: utils.IfElse(form.ID == "", "", "/categories/"+form.ID),
+		Confirm:   "Excluir esta categoria? As transações dela passam a aparecer como Sem categoria.",
+		Error:     form.Errors["form"],
+	}) {
+		@formField("name", "Nome", form.Errors["name"]) {
+			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
+		}
+		@formField("color", "Cor", form.Errors["color"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "color", Name: "color", Class: "w-full", Attributes: ariaInvalid(form.Errors["color"])}) {
+				for _, color := range categoryColors {
+					@nativeselect.Option(nativeselect.OptionProps{Value: color.Value, Selected: color.Value == form.Color}) {
+						{ color.Label }
+					}
+				}
+			}
+		}
+		@formField("monthly_limit", "Limite mensal (0 = sem limite)", form.Errors["monthly_limit"]) {
+			@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: "0,00", Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+		}
+	}
+}

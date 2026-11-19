@@ -104,3 +104,24 @@ func TestPull_RecordsRequestedCursorAndLastSeen(t *testing.T) {
 		t.Errorf("device = %+v after pull to %d, want cursor 0 (only the next request confirms) and last_seen_at set", device, page.NextCursor)
 	}
 }
+
+func TestCommitChanges_IsAllOrNothing(t *testing.T) {
+	db, actor := newActor(t)
+	session := store.Session{UserID: actor.UserID, AccountID: actor.AccountID}
+
+	reason, err := db.CommitChanges(context.Background(), session,
+		store.Change{Entity: "CATEGORY", EntityID: "01JXQ8Z7000000000000000000", Kind: "CREATE", Fields: map[string]any{"name": "Mercado", "color": "GREEN"}},
+		store.Change{Entity: "CATEGORY", EntityID: "01JXQ8Z8000000000000000000", Kind: "DELETE"})
+	if err != nil || reason != store.ReasonInvalidOperation {
+		t.Fatalf("CommitChanges = %q, %v; want the missing row's DELETE rejected", reason, err)
+	}
+
+	page, err := db.Pull(context.Background(), actor, 0, 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(page.Ops) != 0 {
+		t.Errorf("ops after rejection = %+v, want the CREATE rolled back too", page.Ops)
+	}
+}

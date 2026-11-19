@@ -2,6 +2,8 @@ package web
 
 import (
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/field"
+	"github.com/henriquepw/prata/server/internal/web/components/icon"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -28,14 +30,21 @@ var themes = []struct{ Value, Label string }{
 	{"dark", "Tema escuro"},
 }
 
-// headScript applies the theme cookie before the first paint and stores the browser time zone in the tz cookie.
+// headScript applies the theme cookie before the first paint, stores the browser time zone in the tz cookie
+// and opens the #sheet dialog once htmx swaps a form into it.
 const headScript = `(() => {
   const theme = document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
   document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+  addEventListener('htmx:after:swap', () => {
+    const sheet = document.getElementById('sheet')
+    if (sheet?.childElementCount && !sheet.open) sheet.showModal()
+  })
 })()`
+
+const closeSheet = "this.closest('dialog').close()"
 
 const setTheme = "document.cookie = 'theme=' + this.value + '; path=/; max-age=31536000; samesite=lax'; location.reload()"
 
@@ -93,5 +102,67 @@ templ layout(s shell) {
 				{ children... }
 			</main>
 		</div>
+		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full border-l bg-background p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-md"></dialog>
+	}
+}
+
+// sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir" asking Confirm first;
+// Error is a form-level message, such as a rejected commit.
+type sheetProps struct {
+	Title     string
+	Action    string
+	DeleteURL string
+	Confirm   string
+	Error     string
+}
+
+// sheet is the form swapped into the #sheet dialog: fields as children, "Excluir" on the left and
+// "Cancelar"/"Salvar" on the right. Every response, a 422 included, swaps into #sheet.
+templ sheet(p sheetProps) {
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="flex h-full flex-col gap-5 p-6">
+		<div class="flex items-center justify-between">
+			<h2 class="text-lg font-semibold">{ p.Title }</h2>
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantGhost, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Fechar", "onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+				@icon.X()
+			}
+		</div>
+		{ children... }
+		if p.Error != "" {
+			@field.Error() {
+				{ p.Error }
+			}
+		}
+		<div class="mt-auto flex justify-between gap-2">
+			<div>
+				if p.DeleteURL != "" {
+					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet", "hx-confirm": p.Confirm}}) {
+						Excluir
+					}
+				}
+			</div>
+			<div class="flex gap-2">
+				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+					Cancelar
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit}) {
+					Salvar
+				}
+			</div>
+		</div>
+	</form>
+}
+
+// formField is one sheet field: label, the control as children and its error message.
+templ formField(id, label, message string) {
+	@field.Field() {
+		@field.Label(field.LabelProps{For: id}) {
+			{ label }
+		}
+		{ children... }
+		if message != "" {
+			@field.Error() {
+				{ message }
+			}
+		}
 	}
 }

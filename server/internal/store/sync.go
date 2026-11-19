@@ -360,3 +360,89 @@ func selectRows(ctx context.Context, tx *sqlx.Tx, query string, args ...any) ([]
 
 	return result, rows.Err()
 }
+
+// Change is one web edit of a domain row. Fields hold the form's values as SQLite returns them (string, int64
+// or nil); DELETE takes none.
+type Change struct {
+	Entity   string
+	EntityID string
+	Kind     string
+	Fields   map[string]any
+}
+
+// CommitChanges turns a web action into ops from the account's web device and commits them all or none in
+// one transaction, with the server clock and protocol version. An UPDATE carries only the fields that differ
+// from the current row, and none at all means no op. A rejection is returned and nothing is written.
+func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...Change) (Reason, error) {
+	tx, err := s.BeginTxx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("starting web commit: %w", err)
+	}
+	defer tx.Rollback()
+
+	// The web device is created first at signup, so rowid tells it from a revoked client device named "web".
+	actor := Actor{AccountID: session.AccountID, UserID: session.UserID}
+	err = tx.GetContext(ctx, &actor.DeviceID, "SELECT id FROM devices WHERE account_id = ? AND name = 'web' AND api_key_hash IS NULL ORDER BY rowid LIMIT 1", actor.AccountID)
+	if err != nil {
+		return "", fmt.Errorf("finding web device: %w", err)
+	}
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	for _, change := range changes {
+		op, err := changeOp(ctx, tx, actor, change, now)
+		if err != nil {
+			return "", err
+		}
+
+		if op == nil {
+			continue
+		}
+
+		result, err := commitOp(ctx, tx, actor, *op)
+		if err != nil {
+			return "", err
+		}
+
+		if result.Reason != "" {
+			return result.Reason, nil
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("committing web changes: %w", err)
+	}
+
+	return "", nil
+}
+
+// changeOp builds the op for a change, or nil for an UPDATE that changes nothing.
+func changeOp(ctx context.Context, tx *sqlx.Tx, actor Actor, change Change, now string) (*Op, error) {
+	fields := maps.Clone(change.Fields)
+	switch change.Kind {
+	case "CREATE":
+		fields["created_at"], fields["updated_at"] = now, now
+	case "UPDATE":
+		rows, err := selectRows(ctx, tx, "SELECT * FROM "+tables[change.Entity].name+" WHERE id = ?", change.EntityID)
+		if err != nil {
+			return nil, fmt.Errorf("reading %s %s: %w", change.Entity, change.EntityID, err)
+		}
+
+		if len(rows) == 1 {
+			maps.DeleteFunc(fields, func(field string, value any) bool { return rows[0][field] == value })
+		}
+
+		if len(fields) == 0 {
+			return nil, nil
+		}
+
+		fields["updated_at"] = now
+	}
+
+	payload, err := json.Marshal(fields)
+	if err != nil {
+		return nil, fmt.Errorf("encoding %s payload: %w", change.Entity, err)
+	}
+
+	return &Op{ID: ulid.Make().String(), Entity: change.Entity, EntityID: change.EntityID, Kind: change.Kind, Payload: payload,
+		ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: actor.UserID, CreatedAt: now}, nil
+}
