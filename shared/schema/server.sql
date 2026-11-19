@@ -56,16 +56,16 @@ CREATE TABLE sync_operations (
   payload TEXT NOT NULL,
   protocol_version INTEGER NOT NULL,
   created_at TEXT NOT NULL,
-  received_at TEXT NOT NULL,
-  UNIQUE (device_id, id)
+  received_at TEXT NOT NULL
 );
 
+CREATE UNIQUE INDEX server_ops_idempotency ON sync_operations (device_id, id);
 CREATE INDEX server_ops_pull ON sync_operations (account_id, seq);
 
-ALTER TABLE categories ADD COLUMN account_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE tags ADD COLUMN account_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE transactions ADD COLUMN account_id TEXT NOT NULL DEFAULT '';
-ALTER TABLE recurrences ADD COLUMN account_id TEXT NOT NULL DEFAULT '';
+ALTER TABLE categories ADD COLUMN account_id TEXT NOT NULL DEFAULT '' CHECK (account_id <> '');
+ALTER TABLE tags ADD COLUMN account_id TEXT NOT NULL DEFAULT '' CHECK (account_id <> '');
+ALTER TABLE transactions ADD COLUMN account_id TEXT NOT NULL DEFAULT '' CHECK (account_id <> '');
+ALTER TABLE recurrences ADD COLUMN account_id TEXT NOT NULL DEFAULT '' CHECK (account_id <> '');
 
 CREATE INDEX categories_account_id ON categories (account_id);
 CREATE INDEX tags_account_id ON tags (account_id);

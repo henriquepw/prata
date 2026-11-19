@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
-	"errors"
-	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -15,13 +15,20 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func TestNewHandler_Healthz(t *testing.T) {
+func openStore(t *testing.T) *store.Store {
+	t.Helper()
 	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "prata.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
 
+func TestNewHandler_Healthz(t *testing.T) {
+	db := openStore(t)
 	handler := newHandler(db, config{})
+
 	health := httptest.NewRecorder()
 	handler.ServeHTTP(health, httptest.NewRequest(http.MethodGet, "/healthz", nil))
 	if health.Code != http.StatusOK {
@@ -39,63 +46,54 @@ func TestNewHandler_Healthz(t *testing.T) {
 	}
 }
 
-func TestRun(t *testing.T) {
-	t.Run("healthcheck", func(t *testing.T) {
-		transport := http.DefaultTransport
-		http.DefaultTransport = roundTripper(func(request *http.Request) (*http.Response, error) {
-			if request.URL.String() != "http://127.0.0.1:8080/healthz" {
-				t.Errorf("healthcheck URL = %q", request.URL)
+func TestRun_Healthcheck(t *testing.T) {
+	tests := []struct {
+		name    string
+		closeDB bool
+		want    int
+	}{
+		{name: "healthy", want: 0},
+		{name: "unhealthy", closeDB: true, want: 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db := openStore(t)
+			server := httptest.NewServer(newHandler(db, config{}))
+			t.Cleanup(server.Close)
+			if tt.closeDB {
+				db.Close()
 			}
-			return &http.Response{
-				StatusCode: http.StatusOK,
-				Body:       io.NopCloser(strings.NewReader("")),
-				Header:     make(http.Header),
-			}, nil
+
+			addr := strings.TrimPrefix(server.URL, "http://127.0.0.1")
+			if got := run([]string{"healthcheck"}, []string{"PRATA_ADDR=" + addr}); got != tt.want {
+				t.Errorf("healthcheck exit code = %d, want %d", got, tt.want)
+			}
 		})
-		t.Cleanup(func() {
-			http.DefaultTransport = transport
-		})
-
-		if got := run([]string{"healthcheck"}, []string{"PRATA_ADDR=:8080"}); got != 0 {
-			t.Errorf("healthy healthcheck exit code = %d, want 0", got)
-		}
-	})
-
-	t.Run("unreachable healthcheck", func(t *testing.T) {
-		transport := http.DefaultTransport
-		http.DefaultTransport = roundTripper(func(*http.Request) (*http.Response, error) {
-			return nil, errors.New("unreachable")
-		})
-		t.Cleanup(func() {
-			http.DefaultTransport = transport
-		})
-
-		if got := run([]string{"healthcheck"}, []string{"PRATA_ADDR=:8080"}); got != 1 {
-			t.Errorf("unhealthy healthcheck exit code = %d, want 1", got)
-		}
-	})
-
-	t.Run("newer database", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "prata.db")
-		db, err := sql.Open("sqlite", path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := db.Exec("PRAGMA user_version = 2"); err != nil {
-			t.Fatal(err)
-		}
-		if err := db.Close(); err != nil {
-			t.Fatal(err)
-		}
-
-		if got := run(nil, []string{"PRATA_DB_PATH=" + path}); got != 1 {
-			t.Errorf("newer database exit code = %d, want 1", got)
-		}
-	})
+	}
 }
 
-type roundTripper func(*http.Request) (*http.Response, error)
+func TestRun_NewerDatabase(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "prata.db")
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec("PRAGMA user_version = 2"); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatal(err)
+	}
 
-func (f roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
-	return f(request)
+	var logs bytes.Buffer
+	logger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(logger) })
+
+	if got := run(nil, []string{"PRATA_DB_PATH=" + path}); got != 1 {
+		t.Errorf("newer database exit code = %d, want 1", got)
+	}
+	if !strings.Contains(logs.String(), "database schema version 2 is newer than this binary (1)") {
+		t.Errorf("logs = %q, want schema version error", logs.String())
+	}
 }

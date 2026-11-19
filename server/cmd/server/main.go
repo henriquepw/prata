@@ -1,8 +1,8 @@
 package main
 
 import (
+	"cmp"
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -61,44 +61,36 @@ func run(args, env []string) int {
 	}()
 
 	server := &http.Server{Addr: cfg.addr, Handler: newHandler(db, cfg)}
-	go func() {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			slog.Error("shutting down server", "error", err)
-		}
-	}()
-
+	serveErr := make(chan error, 1)
+	go func() { serveErr <- server.ListenAndServe() }()
 	slog.Info("serving", "addr", cfg.addr)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+
+	select {
+	case err := <-serveErr:
 		slog.Error("serving", "error", err)
+		return 1
+	case <-ctx.Done():
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		slog.Error("shutting down server", "error", err)
 		return 1
 	}
 	return 0
 }
 
 func configFromEnv(env []string) config {
-	cfg := config{dbPath: defaultDBPath, addr: defaultAddr}
+	vars := map[string]string{}
 	for _, pair := range env {
-		key, value, found := strings.Cut(pair, "=")
-		if !found {
-			continue
-		}
-		switch key {
-		case "PRATA_DB_PATH":
-			if value != "" {
-				cfg.dbPath = value
-			}
-		case "PRATA_ADDR":
-			if value != "" {
-				cfg.addr = value
-			}
-		case "PRATA_ALLOW_SIGNUP":
-			cfg.isSignupAllowed = strings.EqualFold(value, "true")
-		}
+		key, value, _ := strings.Cut(pair, "=")
+		vars[key] = value
 	}
-	return cfg
+	return config{
+		dbPath:          cmp.Or(vars["PRATA_DB_PATH"], defaultDBPath),
+		addr:            cmp.Or(vars["PRATA_ADDR"], defaultAddr),
+		isSignupAllowed: strings.EqualFold(vars["PRATA_ALLOW_SIGNUP"], "true"),
+	}
 }
 
 func newHandler(db *store.Store, _ config) http.Handler {
