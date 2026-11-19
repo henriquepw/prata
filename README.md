@@ -7,6 +7,8 @@ go run ./server/cmd/server
 go run ./tui/cmd/tui
 ```
 
+No dev, rode `make setup` uma vez (instala `air` e o Tailwind standalone em `.bin/`) e depois `make start/server` ou `make start/tui` para hot reload. `make help` lista os comandos (`build`, `test` e variantes por módulo).
+
 ## Web
 
 Os arquivos gerados da web (`server/internal/web/**/*_templ.go` e `server/internal/web/static/app.css`) são commitados, então `go build` sozinho gera o binário. Depois de mudar um `.templ` ou classes Tailwind, regenere com o [Tailwind v4 standalone](https://github.com/tailwindlabs/tailwindcss/releases) no `PATH`:
