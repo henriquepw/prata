@@ -150,6 +150,43 @@ func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
 	return err
 }
 
+// Device is a device of the account with a live API key; times are RFC3339 UTC, LastSeenAt empty before
+// its first sync.
+type Device struct {
+	ID         string `db:"id"`
+	Name       string `db:"name"`
+	LastSeenAt string `db:"last_seen_at"`
+	CreatedAt  string `db:"created_at"`
+}
+
+// Devices returns the account's devices with a live API key, newest first; the hidden web device has none.
+func (s *Store) Devices(ctx context.Context, accountID string) ([]Device, error) {
+	devices := []Device{}
+	err := s.SelectContext(ctx, &devices, `SELECT id, COALESCE(name, '') AS name, COALESCE(last_seen_at, '') AS last_seen_at, created_at
+		FROM devices WHERE account_id = ? AND api_key_hash IS NOT NULL ORDER BY created_at DESC, id`, accountID)
+
+	return devices, err
+}
+
+// RevokeDevice deletes the API key hash of the account's device, or returns ErrNotFound when it has no live key.
+func (s *Store) RevokeDevice(ctx context.Context, accountID, deviceID string) error {
+	result, err := s.ExecContext(ctx, "UPDATE devices SET api_key_hash = NULL WHERE account_id = ? AND id = ? AND api_key_hash IS NOT NULL", accountID, deviceID)
+	if err != nil {
+		return fmt.Errorf("revoking device: %w", err)
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("counting revoked devices: %w", err)
+	}
+
+	if n == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
 // newToken returns 256 random bits for an API key or session token; crypto/rand.Read never fails.
 func newToken() string {
 	raw := make([]byte, 32)
