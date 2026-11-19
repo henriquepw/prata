@@ -1,0 +1,155 @@
+package web
+
+import (
+	"strconv"
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/icon"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// transactionForm is the transaction sheet: what the user typed, the date as YYYY-MM-DD, the live categories
+// and tags to pick from and an error message per field name, "form" holding a rejected commit.
+type transactionForm struct {
+	ID          string
+	Description string
+	Kind        string
+	Amount      string
+	OccurredAt  string
+	CategoryID  string
+	TagID       string
+	Categories  []store.Category
+	Tags        []store.Tag
+	Errors      map[string]string
+}
+
+// rightAligned aligns the amount column inline, since app.css has no text-right utility.
+var rightAligned = templ.Attributes{"style": "text-align: right"}
+
+// monthURL is the transactions page of the month offset months away from month.
+func monthURL(month time.Time, offset int) string {
+	return "/transactions?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
+}
+
+templ transactionsPage(s shell, month time.Time, transactions []store.Transaction, loc *time.Location) {
+	@layout(s) {
+		<div class="mb-6 flex items-center justify-between">
+			<h1 class="text-2xl font-semibold tracking-tight">Transações</h1>
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/transactions/new", "hx-target": "#sheet"}}) {
+				Nova transação
+			}
+		</div>
+		<div class="mb-6 flex items-center gap-2">
+			@button.Button(button.Props{Href: monthURL(month, -1), Variant: button.VariantOutline, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Mês anterior"}}) {
+				@icon.ChevronLeft()
+			}
+			<span class="font-medium">{ monthNames[month.Month()-1] } de { strconv.Itoa(month.Year()) }</span>
+			@button.Button(button.Props{Href: monthURL(month, 1), Variant: button.VariantOutline, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Próximo mês"}}) {
+				@icon.ChevronRight()
+			}
+		</div>
+		if len(transactions) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
+		} else {
+			<div class="border">
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head() {
+								Data
+							}
+							@table.Head() {
+								Descrição
+							}
+							@table.Head() {
+								Categoria
+							}
+							@table.Head(table.HeadProps{Attributes: rightAligned}) {
+								Valor
+							}
+						}
+					}
+					@table.Body() {
+						for _, transaction := range transactions {
+							@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet"}}) {
+								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+									{ formatDate(transaction.OccurredAt, loc, "02/01/2006") }
+								}
+								@table.Cell() {
+									{ orEmpty(transaction.Description) }
+								}
+								@table.Cell() {
+									<span class="flex items-center gap-2">
+										<span class={ "inline-block size-2.5 shrink-0 rounded-full", colorClass(transaction.CategoryColor) }></span>
+										{ transaction.CategoryName }
+									</span>
+								}
+								@table.Cell(table.CellProps{Class: "tabular-nums", Attributes: rightAligned}) {
+									{ utils.IfElse(transaction.Kind == "INCOME", "+", "−") }R$ { formatCents(transaction.Amount) }
+								}
+							}
+						}
+					}
+				}
+			</div>
+		}
+	}
+}
+
+templ transactionSheet(form transactionForm) {
+	@sheet(sheetProps{
+		Title:     utils.IfElse(form.ID == "", "Nova transação", "Editar transação"),
+		Action:    utils.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
+		DeleteURL: utils.IfElse(form.ID == "", "", "/transactions/"+form.ID),
+		Confirm:   "Excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
+		Error:     form.Errors["form"],
+	}) {
+		@formField("kind", "Tipo", form.Errors["kind"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "kind", Name: "kind", Class: "w-full", Attributes: ariaInvalid(form.Errors["kind"])}) {
+				for _, kind := range kinds {
+					@nativeselect.Option(nativeselect.OptionProps{Value: kind.Value, Selected: kind.Value == form.Kind}) {
+						{ kind.Label }
+					}
+				}
+			}
+		}
+		@formField("amount", "Valor", form.Errors["amount"]) {
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
+		}
+		@formField("occurred_at", "Data", form.Errors["occurred_at"]) {
+			@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
+		}
+		@formField("description", "Descrição", form.Errors["description"]) {
+			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
+		}
+		@formField("category_id", "Categoria", form.Errors["category_id"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
+				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
+					Sem categoria
+				}
+				for _, category := range form.Categories {
+					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
+						{ category.Name }
+					}
+				}
+			}
+		}
+		@formField("tag_id", "Tag", form.Errors["tag_id"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}) {
+				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {
+					Sem tag
+				}
+				for _, tag := range form.Tags {
+					@nativeselect.Option(nativeselect.OptionProps{Value: tag.ID, Selected: tag.ID == form.TagID}) {
+						{ tag.Name }
+					}
+				}
+			}
+		}
+	}
+}

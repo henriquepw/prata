@@ -45,6 +45,12 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("GET /{$}", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, http.StatusOK, homePage(newShell(r, "Visão geral")))
 	}))
+	mux.Handle("GET /transactions", h.requireSession(h.transactions))
+	mux.Handle("GET /transactions/new", h.requireSession(h.newTransaction))
+	mux.Handle("GET /transactions/{id}", h.requireSession(h.editTransaction))
+	mux.Handle("POST /transactions", h.requireSession(h.saveTransaction))
+	mux.Handle("POST /transactions/{id}", h.requireSession(h.saveTransaction))
+	mux.Handle("DELETE /transactions/{id}", h.requireSession(h.deleteTransaction))
 	mux.Handle("GET /categories", h.requireSession(h.categories))
 	mux.Handle("GET /categories/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
