@@ -28,13 +28,14 @@ setup:
 ## start/server: hot reload the server, regenerating templ and css
 .PHONY: start/server
 start/server:
-	cd server && air \
-	--tmp_dir "../.tmp" \
-	--build.cmd "go generate ./internal/web && go build -o ../.tmp/server ./cmd/server" \
-	--build.entrypoint "../.tmp/server" \
+	air \
+	--tmp_dir ".tmp" \
+	--build.cmd "go generate ./server/internal/web && go build -o .tmp/server ./server/cmd/server" \
+	--build.entrypoint ".tmp/server" \
+	--build.include_dir "server,shared" \
 	--build.include_ext "go,templ,css" \
 	--build.exclude_regex "_templ.go,_test.go" \
-	--build.exclude_file "internal/web/static/app.css" \
+	--build.exclude_file "server/internal/web/static/app.css" \
 	--build.send_interrupt "true" \
 	--build.kill_delay "1s" \
 	--build.stop_on_error "false" \
@@ -44,10 +45,11 @@ start/server:
 ## start/tui: hot reload the tui
 .PHONY: start/tui
 start/tui:
-	cd tui && air \
-	--tmp_dir "../.tmp" \
-	--build.cmd "go build -o ../.tmp/tui ./cmd/tui" \
-	--build.entrypoint "../.tmp/tui" \
+	air \
+	--tmp_dir ".tmp" \
+	--build.cmd "go build -o .tmp/tui ./tui/cmd/tui" \
+	--build.entrypoint ".tmp/tui" \
+	--build.include_dir "tui,shared" \
 	--build.include_ext "go" \
 	--build.exclude_regex "_test.go" \
 	--build.send_interrupt "true" \
