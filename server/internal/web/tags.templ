@@ -1,0 +1,71 @@
+package web
+
+import (
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// tagForm is the tag sheet: what the user typed, dates as YYYY-MM-DD, and an error message per field name,
+// "form" holding a rejected commit.
+type tagForm struct {
+	ID      string
+	Name    string
+	StartAt string
+	EndAt   string
+	Errors  map[string]string
+}
+
+templ tagsPage(s shell, tags []store.Tag, loc *time.Location) {
+	@layout(s) {
+		<div class="mb-6 flex items-center justify-between">
+			<h1 class="text-2xl font-semibold tracking-tight">Tags</h1>
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/tags/new", "hx-target": "#sheet"}}) {
+				Nova tag
+			}
+		</div>
+		if len(tags) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhuma tag ainda.</p>
+		} else {
+			<ul class="divide-y border">
+				for _, tag := range tags {
+					<li>
+						<button type="button" hx-get={ "/tags/" + tag.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
+							<span class="flex-1">{ tag.Name }</span>
+							<span class="tabular-nums text-muted-foreground">
+								if tag.EndAt == nil {
+									desde { formatDate(tag.StartAt, loc, "02/01/2006") }
+								} else {
+									{ formatDate(tag.StartAt, loc, "02/01/2006") } a { formatDate(*tag.EndAt, loc, "02/01/2006") }
+								}
+							</span>
+						</button>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ tagSheet(form tagForm) {
+	@sheet(sheetProps{
+		Title:     utils.IfElse(form.ID == "", "Nova tag", "Editar tag"),
+		Action:    utils.IfElse(form.ID == "", "/tags", "/tags/"+form.ID),
+		DeleteURL: utils.IfElse(form.ID == "", "", "/tags/"+form.ID),
+		Confirm:   "Excluir esta tag? As transações dela passam a aparecer sem tag.",
+		Error:     form.Errors["form"],
+	}) {
+		@formField("name", "Nome", form.Errors["name"]) {
+			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
+		}
+		@formField("start_at", "Início", form.Errors["start_at"]) {
+			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
+		}
+		@formField("end_at", "Fim (opcional)", form.Errors["end_at"]) {
+			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
+		}
+	}
+}

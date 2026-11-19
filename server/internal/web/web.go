@@ -53,6 +53,14 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /categories", h.requireSession(h.saveCategory))
 	mux.Handle("POST /categories/{id}", h.requireSession(h.saveCategory))
 	mux.Handle("DELETE /categories/{id}", h.requireSession(h.deleteCategory))
+	mux.Handle("GET /tags", h.requireSession(h.tags))
+	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, http.StatusOK, tagSheet(tagForm{}))
+	}))
+	mux.Handle("GET /tags/{id}", h.requireSession(h.editTag))
+	mux.Handle("POST /tags", h.requireSession(h.saveTag))
+	mux.Handle("POST /tags/{id}", h.requireSession(h.saveTag))
+	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }
