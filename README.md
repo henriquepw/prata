@@ -36,4 +36,4 @@ docker compose pull && docker compose up -d
 - **TLS**: termine o HTTPS num reverse proxy e repasse o header `X-Forwarded-Proto`; sem ele o cookie de sessão não recebe `Secure`.
 - **Backup**: pare o container (`docker compose stop`) e copie o volume `/data` inteiro (`prata.db`, `-wal` e `-shm`). Para restaurar, devolva os arquivos com o container parado.
 - **Bind mount**: o container roda como UID 65532; se trocar o volume nomeado por um diretório do host, dê a posse a ele (`sudo chown -R 65532:65532 ./data`).
-- **Senha esquecida**: `docker exec -it prata prata reset-password <email>` pede a nova senha (ou lê do stdin), encerra as sessões web e revoga as API keys do usuário.
+- **Senha esquecida**: `docker exec -it prata prata reset-password <email>` pede a nova senha (digitada ou via pipe no stdin), encerra as sessões web e revoga as API keys do usuário.
