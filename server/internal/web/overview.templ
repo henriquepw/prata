@@ -1,0 +1,108 @@
+package web
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/badge"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/card"
+)
+
+// money writes signed cents as a pt-BR amount such as "−R$ 1.234,56".
+func money(cents int64) string {
+	if cents < 0 {
+		return "−R$ " + formatCents(-cents)
+	}
+
+	return "R$ " + formatCents(cents)
+}
+
+// usageWidth is the bar width of a category's usage against its limit, capped at 100%.
+func usageWidth(usage store.CategoryUsage) string {
+	return fmt.Sprintf("width: %d%%", min(100, usage.Used*100/max(usage.MonthlyLimit, 1)))
+}
+
+// shortDate writes a pure "YYYY-MM-DD" date as "DD/MM/YYYY".
+func shortDate(date string) string {
+	t, _ := time.Parse(time.DateOnly, date)
+
+	return t.Format("02/01/2006")
+}
+
+templ homePage(s shell, page overview) {
+	@layout(s) {
+		<h1 class="mb-6 text-2xl font-semibold tracking-tight">Visão geral</h1>
+		if page.Error != "" {
+			<p role="alert" class="mb-6 border border-destructive px-3 py-2 text-sm text-destructive">{ page.Error }</p>
+		}
+		<div class="mb-8 grid gap-4 sm:grid-cols-2">
+			@balanceCard("Saldo realizado", page.Realized)
+			@balanceCard("Saldo projetado", page.Projected)
+		</div>
+		<h2 class="mb-3 font-semibold">Uso por categoria</h2>
+		if len(page.Usages) == 0 {
+			<p class="mb-8 text-sm text-muted-foreground">Nenhuma categoria ainda.</p>
+		} else {
+			<ul class="mb-8 flex flex-col gap-4">
+				for _, usage := range page.Usages {
+					<li class="flex flex-col gap-1.5">
+						<div class="flex items-center justify-between gap-2 text-sm">
+							<span>{ usage.Name }</span>
+							<span class="tabular-nums text-muted-foreground">
+								if usage.MonthlyLimit > 0 {
+									{ money(usage.Used) + " de " + money(usage.MonthlyLimit) }
+								} else {
+									{ money(usage.Used) }
+								}
+							</span>
+						</div>
+						if usage.MonthlyLimit > 0 {
+							<div class="h-2 bg-muted">
+								<div class={ "h-full", colorClass(usage.Color) } style={ usageWidth(usage) }></div>
+							</div>
+						}
+					</li>
+				}
+			</ul>
+		}
+		<h2 class="mb-3 font-semibold">Pendentes</h2>
+		if len(page.Pending) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhuma ocorrência pendente.</p>
+		} else {
+			<ul class="divide-y border">
+				for _, pending := range page.Pending {
+					<li class={ "flex items-center gap-3 px-4 py-3 text-sm", templ.KV("text-destructive", pending.Overdue) }>
+						<span class="tabular-nums">{ shortDate(pending.Date) }</span>
+						<span class="flex-1">{ orEmpty(pending.Recurrence.Description) }</span>
+						if pending.Overdue {
+							@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+								atrasada
+							}
+						}
+						<span class="tabular-nums">{ money(signed(pending.Recurrence.Kind, pending.Recurrence.Amount)) }</span>
+						<form method="post" action={ templ.SafeURL("/recurrences/" + pending.Recurrence.ID + "/occurrences/" + pending.Date) }>
+							@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeSm}) {
+								Confirmar
+							}
+						</form>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ balanceCard(title string, cents int64) {
+	@card.Card() {
+		@card.Header() {
+			@card.Description() {
+				{ title }
+			}
+			@card.Title(card.TitleProps{Class: "text-2xl tabular-nums"}) {
+				{ money(cents) }
+			}
+		}
+	}
+}

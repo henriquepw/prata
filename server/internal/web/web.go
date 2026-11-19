@@ -42,9 +42,7 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.HandleFunc("GET /signup", func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, signupPage(authForm{})) })
 	mux.HandleFunc("POST /signup", h.signup)
 	mux.HandleFunc("POST /logout", h.logout)
-	mux.Handle("GET /{$}", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, http.StatusOK, homePage(newShell(r, "Visão geral")))
-	}))
+	mux.Handle("GET /{$}", h.requireSession(h.home))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
 	mux.Handle("GET /transactions/new", h.requireSession(h.newTransaction))
 	mux.Handle("GET /transactions/{id}", h.requireSession(h.editTransaction))
@@ -65,6 +63,7 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /recurrences", h.requireSession(h.saveRecurrence))
 	mux.Handle("POST /recurrences/{id}", h.requireSession(h.saveRecurrence))
 	mux.Handle("DELETE /recurrences/{id}", h.requireSession(h.deleteRecurrence))
+	mux.Handle("POST /recurrences/{id}/occurrences/{date}", h.requireSession(h.confirmOccurrence))
 	mux.Handle("GET /tags", h.requireSession(h.tags))
 	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, http.StatusOK, tagSheet(tagForm{}))
