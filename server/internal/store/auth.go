@@ -150,6 +150,36 @@ func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
 	return err
 }
 
+// ResetPassword replaces the user's password, deletes all their web sessions and revokes all their API keys.
+func (s *Store) ResetPassword(ctx context.Context, email, password string) error {
+	tx, err := s.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting password reset: %w", err)
+	}
+	defer tx.Rollback()
+
+	var userID string
+	err = tx.GetContext(ctx, &userID, "UPDATE users SET secret = ?, updated_at = ? WHERE email = ? AND deleted_at IS NULL RETURNING id",
+		hashPassword(password), formatTime(time.Now()), email)
+	if errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("no user with email %s", email)
+	}
+
+	if err != nil {
+		return fmt.Errorf("updating password: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", userID); err != nil {
+		return fmt.Errorf("deleting sessions: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, "UPDATE devices SET api_key_hash = NULL WHERE user_id = ?", userID); err != nil {
+		return fmt.Errorf("revoking api keys: %w", err)
+	}
+
+	return tx.Commit()
+}
+
 // newToken returns 256 random bits for an API key or session token; crypto/rand.Read never fails.
 func newToken() string {
 	raw := make([]byte, 32)

@@ -85,15 +85,21 @@ func TestRun_NewerDatabase(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	var logs bytes.Buffer
-	logger := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
-	t.Cleanup(func() { slog.SetDefault(logger) })
-
+	logs := captureLogs(t)
 	if got := run(nil, []string{"PRATA_DB_PATH=" + path}); got != 1 {
 		t.Errorf("newer database exit code = %d, want 1", got)
 	}
 	if !strings.Contains(logs.String(), "database schema version 2 is newer than this binary (1)") {
 		t.Errorf("logs = %q, want schema version error", logs.String())
 	}
+}
+
+func captureLogs(t *testing.T) *bytes.Buffer {
+	t.Helper()
+	var logs bytes.Buffer
+	logger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	t.Cleanup(func() { slog.SetDefault(logger) })
+
+	return &logs
 }
