@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"cmp"
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net"
@@ -42,6 +44,15 @@ func run(args, env []string) int {
 			slog.Error("healthcheck failed", "error", err)
 			return 1
 		}
+		return 0
+	}
+
+	if len(args) == 2 && args[0] == "reset-password" {
+		if err := resetPassword(cfg.dbPath, args[1]); err != nil {
+			slog.Error("resetting password", "error", err)
+			return 1
+		}
+
 		return 0
 	}
 
@@ -114,6 +125,25 @@ func newHandler(db *store.Store, cfg config) http.Handler {
 	})
 
 	return mux
+}
+
+// resetPassword reads the new password from the first line of stdin, typed or piped.
+func resetPassword(dbPath, email string) error {
+	fmt.Fprint(os.Stderr, "New password: ")
+	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	password := strings.TrimRight(line, "\r\n")
+	if password == "" {
+		return errors.New("empty password")
+	}
+
+	ctx := context.Background()
+	db, err := store.Open(ctx, dbPath)
+	if err != nil {
+		return fmt.Errorf("opening database: %w", err)
+	}
+	defer db.Close()
+
+	return db.ResetPassword(ctx, email, password)
 }
 
 func healthcheck(addr string) error {
