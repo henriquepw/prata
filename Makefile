@@ -4,6 +4,7 @@ export PATH := $(CURDIR)/.bin:$(PATH)
 
 -include .env
 export $(shell sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' .env 2>/dev/null)
+export PRATA_DB_PATH ?= $(CURDIR)/.tmp/prata.db
 
 all: help
 
@@ -30,7 +31,7 @@ start/server:
 	cd server && air \
 	--tmp_dir "../.tmp" \
 	--build.cmd "go generate ./internal/web && go build -o ../.tmp/server ./cmd/server" \
-	--build.bin "../.tmp/server" \
+	--build.entrypoint "../.tmp/server" \
 	--build.include_ext "go,templ,css" \
 	--build.exclude_regex "_templ.go,_test.go" \
 	--build.exclude_file "internal/web/static/app.css" \
@@ -46,7 +47,7 @@ start/tui:
 	cd tui && air \
 	--tmp_dir "../.tmp" \
 	--build.cmd "go build -o ../.tmp/tui ./cmd/tui" \
-	--build.bin "../.tmp/tui" \
+	--build.entrypoint "../.tmp/tui" \
 	--build.include_ext "go" \
 	--build.exclude_regex "_test.go" \
 	--build.send_interrupt "true" \
