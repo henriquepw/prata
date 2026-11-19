@@ -306,3 +306,57 @@ func isULID(id string) bool {
 
 	return err == nil
 }
+
+// Snapshot is an account's domain state, tombstones included, as of Cursor.
+type Snapshot struct {
+	Categories   []map[string]any `json:"categories"`
+	Tags         []map[string]any `json:"tags"`
+	Transactions []map[string]any `json:"transactions"`
+	Recurrences  []map[string]any `json:"recurrences"`
+	Cursor       int64            `json:"cursor"`
+}
+
+// Snapshot reads the account's four domain tables and max seq in one transaction; it leaves the device cursor alone.
+func (s *Store) Snapshot(ctx context.Context, actor Actor) (Snapshot, error) {
+	tx, err := s.BeginTxx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return Snapshot{}, fmt.Errorf("starting snapshot: %w", err)
+	}
+	defer tx.Rollback()
+
+	snapshot := Snapshot{}
+	if err := tx.GetContext(ctx, &snapshot.Cursor, "SELECT COALESCE(MAX(seq), 0) FROM sync_operations WHERE account_id = ?", actor.AccountID); err != nil {
+		return Snapshot{}, fmt.Errorf("reading max seq: %w", err)
+	}
+
+	for _, target := range []struct {
+		rows   *[]map[string]any
+		entity string
+	}{{&snapshot.Categories, "CATEGORY"}, {&snapshot.Tags, "TAG"}, {&snapshot.Transactions, "TRANSACTION"}, {&snapshot.Recurrences, "RECURRENCE"}} {
+		if *target.rows, err = selectRows(ctx, tx, "SELECT * FROM "+tables[target.entity].name+" WHERE account_id = ? ORDER BY id", actor.AccountID); err != nil {
+			return Snapshot{}, fmt.Errorf("reading %s rows: %w", target.entity, err)
+		}
+	}
+
+	return snapshot, nil
+}
+
+func selectRows(ctx context.Context, tx *sqlx.Tx, query string, args ...any) ([]map[string]any, error) {
+	rows, err := tx.QueryxContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := []map[string]any{}
+	for rows.Next() {
+		row := map[string]any{}
+		if err := rows.MapScan(row); err != nil {
+			return nil, err
+		}
+
+		result = append(result, row)
+	}
+
+	return result, rows.Err()
+}

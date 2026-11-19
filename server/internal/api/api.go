@@ -27,9 +27,11 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed}
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/signup", h.signup)
+	mux.HandleFunc("POST /api/auth/signin", h.signin)
 	mux.Handle("POST /api/auth/signout", h.requireAPIKey(h.signout))
 	mux.Handle("POST /api/sync/push", h.requireAPIKey(h.push))
 	mux.Handle("GET /api/sync/pull", h.requireAPIKey(h.pull))
+	mux.Handle("GET /api/sync/snapshot", h.requireAPIKey(h.snapshot))
 
 	return mux
 }
@@ -71,7 +73,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		OwnerID    string `json:"owner_id"`
 		DeviceID   string `json:"device_id"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || !isValidSignup(body.Email, body.Password, body.AccountID, body.OwnerID, body.DeviceID) {
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || !isValidAuth(body.Email, body.Password, body.AccountID, body.OwnerID, body.DeviceID) {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
@@ -86,6 +88,31 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		internalError(w, "creating account", err)
 	default:
 		writeJSON(w, http.StatusCreated, map[string]string{"api_key": key})
+	}
+}
+
+func (h handler) signin(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Email      string `json:"email"`
+		Password   string `json:"password"`
+		DeviceID   string `json:"device_id"`
+		DeviceName string `json:"device_name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || !isValidAuth(body.Email, body.Password, body.DeviceID) {
+		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+
+	actor, key, err := h.db.Signin(r.Context(), body.Email, body.Password, body.DeviceID, body.DeviceName)
+	switch {
+	case errors.Is(err, store.ErrInvalidCredentials):
+		writeReason(w, http.StatusUnauthorized, "INVALID_CREDENTIALS")
+	case errors.Is(err, store.ErrDuplicateID):
+		writeReason(w, http.StatusConflict, "DUPLICATE_ID")
+	case err != nil:
+		internalError(w, "signing in", err)
+	default:
+		writeJSON(w, http.StatusOK, map[string]string{"account_id": actor.AccountID, "owner_id": actor.UserID, "api_key": key})
 	}
 }
 
@@ -162,7 +189,24 @@ func (h handler) pull(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, page)
 }
 
-func isValidSignup(email, password string, ids ...string) bool {
+// snapshot returns the account's domain state; device_id must match the API key's device.
+func (h handler) snapshot(w http.ResponseWriter, r *http.Request) {
+	actor := actorFrom(r.Context())
+	if r.URL.Query().Get("device_id") != actor.DeviceID {
+		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+
+	snapshot, err := h.db.Snapshot(r.Context(), actor)
+	if err != nil {
+		internalError(w, "reading snapshot", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, snapshot)
+}
+
+func isValidAuth(email, password string, ids ...string) bool {
 	if !strings.Contains(email, "@") || password == "" {
 		return false
 	}

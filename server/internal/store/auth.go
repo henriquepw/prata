@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/oklog/ulid/v2"
@@ -24,6 +26,8 @@ var (
 	ErrDuplicateID = errors.New("duplicate id")
 	// ErrInvalidAPIKey means the API key is unknown or revoked.
 	ErrInvalidAPIKey = errors.New("invalid api key")
+	// ErrInvalidCredentials means the email is unknown or the password is wrong.
+	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
 // Signup creates an account from a device, adopting the device's local ids.
@@ -95,6 +99,40 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	return key, nil
 }
 
+// Signin registers a device on the user's account, or reissues the key of the user's own device with that id,
+// and returns who the new API key acts as and the key.
+func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceName string) (Actor, string, error) {
+	var user struct {
+		ID     string `db:"id"`
+		Secret string `db:"secret"`
+	}
+	err := s.GetContext(ctx, &user, "SELECT id, secret FROM users WHERE email = ? AND deleted_at IS NULL", email)
+	if errors.Is(err, sql.ErrNoRows) || err == nil && !verifyPassword(password, user.Secret) {
+		return Actor{}, "", ErrInvalidCredentials
+	}
+
+	if err != nil {
+		return Actor{}, "", fmt.Errorf("reading user: %w", err)
+	}
+
+	key := newAPIKey()
+	actor := Actor{UserID: user.ID, DeviceID: deviceID}
+	err = s.GetContext(ctx, &actor.AccountID, `INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at)
+		SELECT ?, user_id, account_id, ?, ?, ? FROM account_users WHERE user_id = ? ORDER BY created_at LIMIT 1
+		ON CONFLICT (id) DO UPDATE SET name = excluded.name, api_key_hash = excluded.api_key_hash
+		WHERE devices.user_id = excluded.user_id AND devices.account_id = excluded.account_id RETURNING account_id`,
+		deviceID, deviceName, hashAPIKey(key), time.Now().UTC().Format(time.RFC3339), user.ID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return Actor{}, "", ErrDuplicateID
+	}
+
+	if err != nil {
+		return Actor{}, "", fmt.Errorf("creating device: %w", err)
+	}
+
+	return actor, key, nil
+}
+
 // ActorByAPIKey returns who a live API key acts as.
 func (s *Store) ActorByAPIKey(ctx context.Context, key string) (Actor, error) {
 	var actor Actor
@@ -137,6 +175,27 @@ func hashPassword(password string) string {
 
 	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, memory, iterations, threads,
 		base64.RawStdEncoding.EncodeToString(salt), base64.RawStdEncoding.EncodeToString(hash))
+}
+
+// verifyPassword checks password against an argon2id hash in PHC string format.
+func verifyPassword(password, phc string) bool {
+	parts := strings.Split(phc, "$")
+	if len(parts) != 6 || parts[1] != "argon2id" || parts[2] != fmt.Sprintf("v=%d", argon2.Version) {
+		return false
+	}
+
+	var memory, iterations uint32
+	var threads uint8
+	_, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &memory, &iterations, &threads)
+	salt, saltErr := base64.RawStdEncoding.DecodeString(parts[4])
+	hash, hashErr := base64.RawStdEncoding.DecodeString(parts[5])
+	if err != nil || saltErr != nil || hashErr != nil {
+		return false
+	}
+
+	got := argon2.IDKey([]byte(password), salt, iterations, memory, threads, uint32(len(hash)))
+
+	return subtle.ConstantTimeCompare(got, hash) == 1
 }
 
 func isConstraint(err error) bool {

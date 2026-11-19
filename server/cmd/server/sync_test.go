@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"maps"
 	"net/http"
@@ -14,7 +12,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -367,25 +364,93 @@ func (d *device) sync() {
 	d.pullAll()
 }
 
-// addDevice registers a second device on c's account, as signin will, and returns it.
-func addDevice(t *testing.T, db *store.Store, c *client, deviceID string) *client {
+// signinClient signs a second device into c's account and returns it.
+func signinClient(t *testing.T, c *client, deviceID string) *client {
 	t.Helper()
-	key := "second-device-key"
-	sum := sha256.Sum256([]byte(key))
-	_, err := db.ExecContext(context.Background(), "INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) "+
-		"SELECT ?, user_id, account_id, 'phone', ?, created_at FROM devices WHERE id = ?", deviceID, hex.EncodeToString(sum[:]), c.deviceID)
-	if err != nil {
-		t.Fatal(err)
+	body := newSignin()
+	body.DeviceID = deviceID
+	got := signinAs(t, c.handler, body)
+
+	return &client{t: t, handler: c.handler, key: got.APIKey, deviceID: deviceID, ownerID: got.OwnerID}
+}
+
+type snapshotResult struct {
+	Categories   []map[string]any `json:"categories"`
+	Tags         []map[string]any `json:"tags"`
+	Transactions []map[string]any `json:"transactions"`
+	Recurrences  []map[string]any `json:"recurrences"`
+	Cursor       int64            `json:"cursor"`
+}
+
+func (c *client) snapshotAs(deviceID string) *httptest.ResponseRecorder {
+	return c.do(httptest.NewRequest(http.MethodGet, "/api/sync/snapshot?device_id="+deviceID, nil))
+}
+
+func (c *client) snapshot() snapshotResult {
+	c.t.Helper()
+	response := c.snapshotAs(c.deviceID)
+	if response.Code != http.StatusOK {
+		c.t.Fatalf("snapshot status = %d, want %d: %s", response.Code, http.StatusOK, response.Body)
 	}
 
-	return &client{t: t, handler: c.handler, key: key, deviceID: deviceID, ownerID: c.ownerID}
+	var result snapshotResult
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		c.t.Fatal(err)
+	}
+
+	return result
+}
+
+func TestSnapshot_ReturnsAccountStateWithTombstones(t *testing.T) {
+	db := openStore(t)
+	handler := newHandler(db, config{isSignupAllowed: true})
+	laptop := newClient(t, handler, newSignup())
+	pushed := laptop.push(newCategory(laptop), newTransaction(laptop), laptop.op("CATEGORY", categoryID, "DELETE", nil))
+	bia := newClient(t, handler, signup{
+		Email: "bia@example.com", Password: "another secret",
+		AccountID: "01JXQ9Z4000000000000000000", OwnerID: "01JXQ9Z5000000000000000000", DeviceID: "01JXQ9Z6000000000000000000",
+	})
+	if tag := bia.push(bia.op("TAG", "01JXQ9ZA000000000000000000", "CREATE", map[string]any{
+		"name": "Viagem", "start_at": "2026-08-01", "created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+	})); len(tag.Acks) != 1 {
+		t.Fatalf("bia's tag push = %+v, want acked", tag)
+	}
+
+	phone := signinClient(t, laptop, "01JXQ8Z9000000000000000000")
+
+	got := phone.snapshot()
+	if len(got.Categories) != 1 || got.Categories[0]["id"] != categoryID || got.Categories[0]["deleted_at"] != "2026-08-23T14:02:11Z" {
+		t.Errorf("categories = %v, want the deleted category as a tombstone", got.Categories)
+	}
+	if len(got.Transactions) != 1 || got.Transactions[0]["amount"] != float64(4590) {
+		t.Errorf("transactions = %v, want the transaction", got.Transactions)
+	}
+	if got.Tags == nil || len(got.Tags) != 0 || got.Recurrences == nil || len(got.Recurrences) != 0 {
+		t.Errorf("tags = %v, recurrences = %v, want empty arrays without bia's tag", got.Tags, got.Recurrences)
+	}
+	if got.Cursor != pushed.Acks[2].ServerSeq {
+		t.Errorf("cursor = %d, want the account's max seq %d", got.Cursor, pushed.Acks[2].ServerSeq)
+	}
+
+	var cursor int64
+	if err := db.GetContext(context.Background(), &cursor, "SELECT cursor FROM devices WHERE id = ?", phone.deviceID); err != nil {
+		t.Fatal(err)
+	}
+	if cursor != 0 {
+		t.Errorf("device cursor after snapshot = %d, want 0", cursor)
+	}
+	if page := phone.pull(got.Cursor, 500); len(page.Ops) != 0 || !page.UpToDate {
+		t.Errorf("pull from snapshot cursor = %+v, want empty and up to date", page)
+	}
+	if code := phone.snapshotAs(laptop.deviceID).Code; code != http.StatusBadRequest {
+		t.Errorf("snapshot as other device status = %d, want %d", code, http.StatusBadRequest)
+	}
 }
 
 func TestSync_TwoDevicesConverge(t *testing.T) {
-	db := openStore(t)
-	laptop := newClient(t, newHandler(db, config{}), newSignup())
+	laptop := newClient(t, newHandler(openStore(t), config{}), newSignup())
 	a := &device{client: laptop, base: map[string]map[string]any{}}
-	b := &device{client: addDevice(t, db, laptop, "01JXQ8Z9000000000000000000"), base: map[string]map[string]any{}}
+	b := &device{client: signinClient(t, laptop, "01JXQ8Z9000000000000000000"), base: map[string]map[string]any{}}
 
 	// Out of causal order: the transaction is pushed before its category.
 	a.mutate(newTransaction(a.client))
