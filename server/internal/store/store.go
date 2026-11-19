@@ -36,6 +36,7 @@ func Open(ctx context.Context, path string) (*Store, error) {
 	if _, err := db.ExecContext(ctx, "PRAGMA journal_mode=WAL"); err != nil {
 		return nil, errors.Join(fmt.Errorf("enabling wal: %w", err), db.Close())
 	}
+
 	if err := migrate(ctx, db); err != nil {
 		return nil, errors.Join(fmt.Errorf("migrating database: %w", err), db.Close())
 	}
@@ -48,21 +49,25 @@ func migrate(ctx context.Context, db *sqlx.DB) error {
 	if err := db.GetContext(ctx, &version, "PRAGMA user_version"); err != nil {
 		return fmt.Errorf("reading schema version: %w", err)
 	}
+
 	latest := migrations[len(migrations)-1].version
 	if version > latest {
 		return fmt.Errorf("database schema version %d is newer than this binary (%d)", version, latest)
 	}
+
 	if version < latest {
 		tx, err := db.BeginTxx(ctx, nil)
 		if err != nil {
 			return fmt.Errorf("starting migration: %w", err)
 		}
 		defer tx.Rollback()
+
 		for _, migration := range migrations[version:] {
 			if err := applyMigration(ctx, tx, migration); err != nil {
 				return err
 			}
 		}
+
 		if err := tx.Commit(); err != nil {
 			return fmt.Errorf("committing migration: %w", err)
 		}
@@ -75,6 +80,7 @@ func migrate(ctx context.Context, db *sqlx.DB) error {
 	if _, err := db.ExecContext(ctx, string(views)); err != nil {
 		return fmt.Errorf("recreating views: %w", err)
 	}
+
 	return nil
 }
 
@@ -88,8 +94,10 @@ func applyMigration(ctx context.Context, tx *sqlx.Tx, migration migration) error
 			return fmt.Errorf("applying %s: %w", name, err)
 		}
 	}
+
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", migration.version)); err != nil {
 		return fmt.Errorf("recording schema version %d: %w", migration.version, err)
 	}
+
 	return nil
 }

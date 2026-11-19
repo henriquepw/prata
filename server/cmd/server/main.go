@@ -42,6 +42,7 @@ func run(args, env []string) int {
 		}
 		return 0
 	}
+
 	if len(args) > 0 {
 		slog.Error("unknown command", "command", args[0])
 		return 1
@@ -71,12 +72,14 @@ func run(args, env []string) int {
 		return 1
 	case <-ctx.Done():
 	}
+
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		slog.Error("shutting down server", "error", err)
 		return 1
 	}
+
 	return 0
 }
 
@@ -86,6 +89,7 @@ func configFromEnv(env []string) config {
 		key, value, _ := strings.Cut(pair, "=")
 		vars[key] = value
 	}
+
 	return config{
 		dbPath:          cmp.Or(vars["PRATA_DB_PATH"], defaultDBPath),
 		addr:            cmp.Or(vars["PRATA_ADDR"], defaultAddr),
@@ -112,19 +116,24 @@ func healthcheck(addr string) error {
 	if err != nil {
 		return fmt.Errorf("parsing PRATA_ADDR %q: %w", addr, err)
 	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:"+port+"/healthz", nil)
 	if err != nil {
 		return fmt.Errorf("creating healthcheck request: %w", err)
 	}
+
 	response, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("requesting health endpoint: %w", err)
 	}
 	defer response.Body.Close()
+
 	if response.StatusCode != http.StatusOK {
 		return fmt.Errorf("health endpoint returned %s", response.Status)
 	}
+
 	return nil
 }
