@@ -50,9 +50,9 @@ func (s *Store) Authenticate(ctx context.Context, email, password string) (strin
 
 // CreateSession stores a new session for the user, valid for 30 days from now, and returns its token.
 func (s *Store) CreateSession(ctx context.Context, userID string, now time.Time) (string, error) {
-	token := newAPIKey()
+	token := newToken()
 	_, err := s.ExecContext(ctx, "INSERT INTO sessions (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)",
-		ulid.Make().String(), userID, hashAPIKey(token), formatTime(now.Add(SessionTTL)), formatTime(now))
+		ulid.Make().String(), userID, hashToken(token), formatTime(now.Add(SessionTTL)), formatTime(now))
 	if err != nil {
 		return "", fmt.Errorf("creating session: %w", err)
 	}
@@ -71,7 +71,7 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	}
 	err := s.GetContext(ctx, &row, `SELECT s.id, s.user_id, a.account_id, s.expires_at
 		FROM sessions s JOIN account_users a ON a.user_id = s.user_id
-		WHERE s.token_hash = ? LIMIT 1`, hashAPIKey(token))
+		WHERE s.token_hash = ? ORDER BY a.created_at LIMIT 1`, hashToken(token))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrInvalidSession
 	}
@@ -105,7 +105,7 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 
 // DeleteSession deletes only the session of this token.
 func (s *Store) DeleteSession(ctx context.Context, token string) error {
-	_, err := s.ExecContext(ctx, "DELETE FROM sessions WHERE token_hash = ?", hashAPIKey(token))
+	_, err := s.ExecContext(ctx, "DELETE FROM sessions WHERE token_hash = ?", hashToken(token))
 
 	return err
 }

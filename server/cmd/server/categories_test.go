@@ -134,3 +134,17 @@ func TestWebCategories_InvalidFormIs422AndWritesNothing(t *testing.T) {
 		t.Errorf("ops after invalid create = %+v, want none", ops)
 	}
 }
+
+func TestWebCategories_SigninWithWebDeviceIDIsRefused(t *testing.T) {
+	w := newWebClient(t)
+	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
+	webDeviceID := w.newOps()[0].DeviceID
+
+	body := newSignin()
+	body.DeviceID = webDeviceID
+	if code := postSignin(t, w.handler, body).Code; code != http.StatusConflict {
+		t.Fatalf("signin with the web device id = %d, want %d", code, http.StatusConflict)
+	}
+
+	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Feira", "GREEN", "0"))
+}

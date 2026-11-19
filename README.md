@@ -15,4 +15,4 @@ Os arquivos gerados da web (`server/internal/web/**/*_templ.go` e `server/intern
 cd server/internal/web && go generate
 ```
 
-Isso roda `go tool templ generate` e `tailwindcss -i static/globals.css -o static/app.css --minify`. No dev, `tailwindcss -i static/globals.css -o static/app.css --watch` no mesmo diretório.
+Isso roda `go tool templ generate -path ../..` (a partir de `server`, para manter os caminhos dos `*_templ.go` commitados) e `tailwindcss -i static/globals.css -o static/app.css --minify`. No dev, `tailwindcss -i static/globals.css -o static/app.css --watch` no mesmo diretório.

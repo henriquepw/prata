@@ -75,6 +75,31 @@ func TestSessionByToken_ResolvesUserAndAccount(t *testing.T) {
 	}
 }
 
+func TestSessionByToken_PicksEarliestJoinedAccountLikeSignin(t *testing.T) {
+	db := openWithUser(t)
+	const olderAccountID = "01JXQ8ZA000000000000000000"
+	_, err := db.ExecContext(context.Background(), "INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'MEMBER', ?)",
+		"01JXQ8ZB000000000000000000", olderAccountID, ownerID, "2000-01-01T00:00:00Z")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	token, err := db.CreateSession(context.Background(), ownerID, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	session, err := db.SessionByToken(context.Background(), token, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if session.AccountID != olderAccountID {
+		t.Errorf("session account = %q, want the earliest joined %q", session.AccountID, olderAccountID)
+	}
+}
+
 func TestSessionByToken_RenewsInLastDay(t *testing.T) {
 	db := openWithUser(t)
 	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)

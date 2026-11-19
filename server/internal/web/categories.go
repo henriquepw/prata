@@ -57,10 +57,10 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["monthly_limit"] = "Informe um limite maior ou igual a zero."
 	}
 
-	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: "UPDATE",
+	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
 		Fields: map[string]any{"name": form.Name, "color": form.Color, "monthly_limit": limit}}
 	if form.ID == "" {
-		change.EntityID, change.Kind = ulid.Make().String(), "CREATE"
+		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
 	} else if _, ok := h.category(w, r); !ok {
 		return
 	}
@@ -75,7 +75,7 @@ func (h handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := storedCategoryForm(category)
-	h.commit(w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: "DELETE"})
+	h.commit(w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: store.KindDelete})
 }
 
 // storedCategoryForm fills the sheet with the stored category.

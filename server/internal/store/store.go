@@ -25,9 +25,10 @@ type Store struct {
 	*sqlx.DB
 }
 
-// Open opens a SQLite database, enables WAL, and brings it to the current schema.
+// Open opens a SQLite database, enables WAL, and brings it to the current schema. Transactions take the write
+// lock when they begin, waiting up to 5s for another writer, so a read-then-write cannot race.
 func Open(ctx context.Context, path string) (*Store, error) {
-	db, err := sqlx.Open("sqlite", path)
+	db, err := sqlx.Open("sqlite", path+"?_txlock=immediate&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, err
 	}

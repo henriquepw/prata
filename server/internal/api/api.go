@@ -135,22 +135,41 @@ type rejection struct {
 	Reason store.Reason `json:"reason"`
 }
 
-// push commits the device's pending ops; device_id must match the API key's device.
+// push commits the device's pending ops; device_id must match the API key's device. An op that does not
+// decode is rejected on its own with INVALID_OPERATION.
 func (h handler) push(w http.ResponseWriter, r *http.Request) {
 	actor := actorFrom(r.Context())
 	var body struct {
-		DeviceID string     `json:"device_id"`
-		Ops      []store.Op `json:"ops"`
+		DeviceID string            `json:"device_id"`
+		Ops      []json.RawMessage `json:"ops"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.DeviceID != actor.DeviceID {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
 
-	results, err := h.db.CommitOps(r.Context(), actor, body.Ops)
+	ops := make([]store.Op, len(body.Ops))
+	results := make([]store.Result, len(body.Ops))
+	decoded := []store.Op{}
+	for i, raw := range body.Ops {
+		if err := json.Unmarshal(raw, &ops[i]); err != nil {
+			results[i].Reason = store.ReasonInvalidOperation
+			continue
+		}
+
+		decoded = append(decoded, ops[i])
+	}
+
+	committed, err := h.db.CommitOps(r.Context(), actor, decoded)
 	if err != nil {
 		internalError(w, "committing ops", err)
 		return
+	}
+
+	for i := range results {
+		if results[i].Reason == "" {
+			results[i], committed = committed[0], committed[1:]
+		}
 	}
 
 	response := struct {
@@ -159,9 +178,9 @@ func (h handler) push(w http.ResponseWriter, r *http.Request) {
 	}{Acks: []ack{}, Rejected: []rejection{}}
 	for i, result := range results {
 		if result.Reason != "" {
-			response.Rejected = append(response.Rejected, rejection{body.Ops[i].ID, result.Reason})
+			response.Rejected = append(response.Rejected, rejection{ops[i].ID, result.Reason})
 		} else {
-			response.Acks = append(response.Acks, ack{body.Ops[i].ID, result.Seq})
+			response.Acks = append(response.Acks, ack{ops[i].ID, result.Seq})
 		}
 	}
 

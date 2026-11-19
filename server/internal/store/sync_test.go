@@ -35,7 +35,7 @@ func newActor(t *testing.T) (*store.Store, store.Actor) {
 	return db, actor
 }
 
-func commit(t *testing.T, db *store.Store, actor store.Actor, id, kind, payload string) {
+func commit(t *testing.T, db *store.Store, actor store.Actor, id string, kind store.Kind, payload string) {
 	t.Helper()
 	results, err := db.CommitOps(context.Background(), actor, []store.Op{{
 		ID: id, Entity: "CATEGORY", EntityID: "01JXQ8Z7000000000000000000", Kind: kind, Payload: json.RawMessage(payload),

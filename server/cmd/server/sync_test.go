@@ -201,6 +201,11 @@ func TestPush_RejectsOpWithoutDroppingBatch(t *testing.T) {
 		{name: "create missing required field", reason: "INVALID_OPERATION", op: func() op {
 			return c.op("TAG", "01JXQ8ZA000000000000000000", "CREATE", map[string]any{"name": "Viagem"})
 		}},
+		{name: "created_at not RFC3339", reason: "INVALID_OPERATION", op: func() op {
+			o := c.op("CATEGORY", categoryID, "DELETE", nil)
+			o.CreatedAt = "yesterday"
+			return o
+		}},
 		{name: "update of missing row", reason: "INVALID_OPERATION", op: func() op {
 			return c.op("TAG", "01JXQ8ZA000000000000000000", "UPDATE", map[string]any{"name": "Viagem"})
 		}},
@@ -217,6 +222,41 @@ func TestPush_RejectsOpWithoutDroppingBatch(t *testing.T) {
 				t.Errorf("acks = %+v, want the good op %s", pushed.Acks, good.ID)
 			}
 		})
+	}
+}
+
+func TestPush_RejectsOnlyOpWithWrongEnvelopeType(t *testing.T) {
+	c := newClient(t, newHandler(openStore(t), config{}), newSignup())
+	first, second := newCategory(c), c.op("CATEGORY", categoryID, "UPDATE", map[string]any{"name": "Feira"})
+	bad := c.op("CATEGORY", categoryID, "UPDATE", map[string]any{"name": "x"})
+	badJSON, err := json.Marshal(bad)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var raw map[string]any
+	if err := json.Unmarshal(badJSON, &raw); err != nil {
+		t.Fatal(err)
+	}
+
+	raw["protocol_version"] = "1"
+	payload, err := json.Marshal(map[string]any{"device_id": c.deviceID, "protocol_version": 1, "ops": []any{first, raw, second}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := c.do(httptest.NewRequest(http.MethodPost, "/api/sync/push", bytes.NewReader(payload)))
+	var pushed pushResult
+	if err := json.NewDecoder(response.Body).Decode(&pushed); err != nil || response.Code != http.StatusOK {
+		t.Fatalf("push = %d, %v; want 200", response.Code, err)
+	}
+
+	if len(pushed.Rejected) != 1 || pushed.Rejected[0].ID != bad.ID || pushed.Rejected[0].Reason != "INVALID_OPERATION" {
+		t.Errorf("rejected = %+v, want INVALID_OPERATION for %s", pushed.Rejected, bad.ID)
+	}
+
+	if len(pushed.Acks) != 2 || pushed.Acks[0].ID != first.ID || pushed.Acks[1].ID != second.ID || pushed.Acks[0].ServerSeq >= pushed.Acks[1].ServerSeq {
+		t.Errorf("acks = %+v, want %s then %s", pushed.Acks, first.ID, second.ID)
 	}
 }
 

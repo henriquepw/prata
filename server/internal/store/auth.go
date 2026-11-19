@@ -69,7 +69,7 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		query string
 		args  []any
 	}
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := formatTime(time.Now())
 	statements := []statement{
 		{"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), now, now}},
@@ -83,9 +83,9 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 
 	var key string
 	if signup.DeviceID != "" {
-		key = newAPIKey()
+		key = newToken()
 		statements = append(statements, statement{"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashAPIKey(key), now}})
+			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashToken(key), now}})
 	}
 
 	for _, statement := range statements {
@@ -105,29 +105,22 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	return key, nil
 }
 
-// Signin registers a device on the user's account, or reissues the key of the user's own device with that id,
-// and returns who the new API key acts as and the key.
+// Signin registers a device on the user's account, or reissues the key of the user's own device with that id
+// unless it is the account's web device (its first), and returns who the new API key acts as and the key.
 func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceName string) (Actor, string, error) {
-	var user struct {
-		ID     string `db:"id"`
-		Secret string `db:"secret"`
-	}
-	err := s.GetContext(ctx, &user, "SELECT id, secret FROM users WHERE email = ? AND deleted_at IS NULL", email)
-	if errors.Is(err, sql.ErrNoRows) || err == nil && !verifyPassword(password, user.Secret) {
-		return Actor{}, "", ErrInvalidCredentials
-	}
-
+	userID, err := s.Authenticate(ctx, email, password)
 	if err != nil {
-		return Actor{}, "", fmt.Errorf("reading user: %w", err)
+		return Actor{}, "", err
 	}
 
-	key := newAPIKey()
-	actor := Actor{UserID: user.ID, DeviceID: deviceID}
+	key := newToken()
+	actor := Actor{UserID: userID, DeviceID: deviceID}
 	err = s.GetContext(ctx, &actor.AccountID, `INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at)
 		SELECT ?, user_id, account_id, ?, ?, ? FROM account_users WHERE user_id = ? ORDER BY created_at LIMIT 1
 		ON CONFLICT (id) DO UPDATE SET name = excluded.name, api_key_hash = excluded.api_key_hash
-		WHERE devices.user_id = excluded.user_id AND devices.account_id = excluded.account_id RETURNING account_id`,
-		deviceID, deviceName, hashAPIKey(key), time.Now().UTC().Format(time.RFC3339), user.ID)
+		WHERE devices.user_id = excluded.user_id AND devices.account_id = excluded.account_id
+		AND devices.rowid > (SELECT MIN(rowid) FROM devices WHERE account_id = excluded.account_id) RETURNING account_id`,
+		deviceID, deviceName, hashToken(key), formatTime(time.Now()), userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Actor{}, "", ErrDuplicateID
 	}
@@ -142,7 +135,7 @@ func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceNam
 // ActorByAPIKey returns who a live API key acts as.
 func (s *Store) ActorByAPIKey(ctx context.Context, key string) (Actor, error) {
 	var actor Actor
-	err := s.GetContext(ctx, &actor, "SELECT id, user_id, account_id FROM devices WHERE api_key_hash = ?", hashAPIKey(key))
+	err := s.GetContext(ctx, &actor, "SELECT id, user_id, account_id FROM devices WHERE api_key_hash = ?", hashToken(key))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Actor{}, ErrInvalidAPIKey
 	}
@@ -157,17 +150,17 @@ func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
 	return err
 }
 
-// newAPIKey returns 256 random bits; crypto/rand.Read never fails.
-func newAPIKey() string {
+// newToken returns 256 random bits for an API key or session token; crypto/rand.Read never fails.
+func newToken() string {
 	raw := make([]byte, 32)
 	rand.Read(raw)
 
 	return base64.RawURLEncoding.EncodeToString(raw)
 }
 
-// hashAPIKey uses SHA-256: the key already has 256 bits of entropy, so a slow hash adds nothing.
-func hashAPIKey(key string) string {
-	sum := sha256.Sum256([]byte(key))
+// hashToken uses SHA-256: the token already has 256 bits of entropy, so a slow hash adds nothing.
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
 
 	return hex.EncodeToString(sum[:])
 }

@@ -16,7 +16,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-//go:generate go tool templ generate
+//go:generate go tool templ generate -path ../..
 //go:generate tailwindcss -i static/globals.css -o static/app.css --minify
 
 //go:embed static/app.css static/htmx.min.js

@@ -28,13 +28,23 @@ const (
 	ReasonUnsupportedProtocol Reason = "UNSUPPORTED_PROTOCOL"
 )
 
+// Kind is what an op does to its row; the value is the wire kind.
+type Kind string
+
+// Op kinds.
+const (
+	KindCreate Kind = "CREATE"
+	KindUpdate Kind = "UPDATE"
+	KindDelete Kind = "DELETE"
+)
+
 // Op is one oplog operation in wire format. Payload keeps the client's original JSON, unknown fields included.
 type Op struct {
 	Seq             int64           `db:"seq" json:"server_seq,omitempty"`
 	ID              string          `db:"id" json:"id"`
 	Entity          string          `db:"entity" json:"entity"`
 	EntityID        string          `db:"entity_id" json:"entity_id"`
-	Kind            string          `db:"kind" json:"kind"`
+	Kind            Kind            `db:"kind" json:"kind"`
 	Payload         json.RawMessage `db:"payload" json:"payload"`
 	ProtocolVersion int             `db:"protocol_version" json:"protocol_version"`
 	DeviceID        string          `db:"device_id" json:"device_id"`
@@ -163,14 +173,14 @@ func validate(actor Actor, op Op) (map[string]any, Reason) {
 	}
 
 	table, ok := tables[op.Entity]
-	if !ok || !isULID(op.ID) || !isULID(op.EntityID) || op.DeviceID != actor.DeviceID || op.CreatedAt == "" {
+	if !ok || !isULID(op.ID) || !isULID(op.EntityID) || op.DeviceID != actor.DeviceID || !isRFC3339(op.CreatedAt) {
 		return nil, ReasonInvalidOperation
 	}
 
 	switch op.Kind {
-	case "DELETE":
+	case KindDelete:
 		return nil, ""
-	case "CREATE", "UPDATE":
+	case KindCreate, KindUpdate:
 	default:
 		return nil, ReasonInvalidOperation
 	}
@@ -206,7 +216,7 @@ func checkRow(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Reason, err
 	}
 	err := tx.GetContext(ctx, &row, "SELECT account_id, owner_id FROM "+tables[op.Entity].name+" WHERE id = ?", op.EntityID)
 	switch {
-	case errors.Is(err, sql.ErrNoRows) && op.Kind != "CREATE":
+	case errors.Is(err, sql.ErrNoRows) && op.Kind != KindCreate:
 		return ReasonInvalidOperation, nil
 	case errors.Is(err, sql.ErrNoRows):
 		return "", nil
@@ -223,7 +233,7 @@ func checkRow(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Reason, err
 // DELETE sets deleted_at to the op's created_at.
 func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[string]any) (int64, error) {
 	payload := op.Payload
-	if op.Kind == "DELETE" || len(payload) == 0 {
+	if op.Kind == KindDelete || len(payload) == 0 {
 		payload = json.RawMessage("{}")
 	}
 
@@ -232,15 +242,16 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 		(id, account_id, device_id, owner_id, entity, entity_id, kind, payload, protocol_version, created_at, received_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
 		op.ID, actor.AccountID, actor.DeviceID, op.OwnerID, op.Entity, op.EntityID, op.Kind, string(payload),
-		op.ProtocolVersion, op.CreatedAt, time.Now().UTC().Format(time.RFC3339))
+		op.ProtocolVersion, op.CreatedAt, formatTime(time.Now()))
 	if err != nil {
 		return 0, err
 	}
 
 	name := tables[op.Entity].name
-	if op.Kind == "DELETE" {
+	if op.Kind == KindDelete {
 		values = map[string]any{"deleted_at": op.CreatedAt}
 	}
+
 	values["server_seq"] = seq
 	columns := slices.Sorted(maps.Keys(values))
 	args := make([]any, len(columns))
@@ -250,7 +261,7 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 		sets[i] = column + " = excluded." + column
 	}
 
-	if op.Kind == "CREATE" {
+	if op.Kind == KindCreate {
 		_, err = tx.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s (id, owner_id, account_id, %s) VALUES (?, ?, ?%s) ON CONFLICT (id) DO UPDATE SET %s",
 			name, strings.Join(columns, ", "), strings.Repeat(", ?", len(columns)), strings.Join(sets, ", ")),
 			append([]any{op.EntityID, op.OwnerID, actor.AccountID}, args...)...)
@@ -265,7 +276,7 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 // Pull records cursor and last contact on the actor's device, then returns up to limit of the account's ops after cursor.
 func (s *Store) Pull(ctx context.Context, actor Actor, cursor int64, limit int) (Page, error) {
 	_, err := s.ExecContext(ctx, "UPDATE devices SET cursor = ?, last_seen_at = ? WHERE id = ?",
-		cursor, time.Now().UTC().Format(time.RFC3339), actor.DeviceID)
+		cursor, formatTime(time.Now()), actor.DeviceID)
 	if err != nil {
 		return Page{}, fmt.Errorf("recording cursor: %w", err)
 	}
@@ -303,6 +314,12 @@ func decodeField(raw json.RawMessage, isInteger bool) (any, error) {
 
 func isULID(id string) bool {
 	_, err := ulid.ParseStrict(id)
+
+	return err == nil
+}
+
+func isRFC3339(value string) bool {
+	_, err := time.Parse(time.RFC3339, value)
 
 	return err == nil
 }
@@ -366,7 +383,7 @@ func selectRows(ctx context.Context, tx *sqlx.Tx, query string, args ...any) ([]
 type Change struct {
 	Entity   string
 	EntityID string
-	Kind     string
+	Kind     Kind
 	Fields   map[string]any
 }
 
@@ -387,7 +404,7 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 		return "", fmt.Errorf("finding web device: %w", err)
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := formatTime(time.Now())
 	for _, change := range changes {
 		op, err := changeOp(ctx, tx, actor, change, now)
 		if err != nil {
@@ -419,9 +436,9 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 func changeOp(ctx context.Context, tx *sqlx.Tx, actor Actor, change Change, now string) (*Op, error) {
 	fields := maps.Clone(change.Fields)
 	switch change.Kind {
-	case "CREATE":
+	case KindCreate:
 		fields["created_at"], fields["updated_at"] = now, now
-	case "UPDATE":
+	case KindUpdate:
 		rows, err := selectRows(ctx, tx, "SELECT * FROM "+tables[change.Entity].name+" WHERE id = ?", change.EntityID)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s %s: %w", change.Entity, change.EntityID, err)
