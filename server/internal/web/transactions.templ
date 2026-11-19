@@ -28,9 +28,6 @@ type transactionForm struct {
 	Errors      map[string]string
 }
 
-// rightAligned aligns the amount column inline, since app.css has no text-right utility.
-var rightAligned = templ.Attributes{"style": "text-align: right"}
-
 // monthURL is the transactions page of the month offset months away from month.
 func monthURL(month time.Time, offset int) string {
 	return "/transactions?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
@@ -69,7 +66,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 							@table.Head() {
 								Categoria
 							}
-							@table.Head(table.HeadProps{Attributes: rightAligned}) {
+							@table.Head(table.HeadProps{Class: "text-right"}) {
 								Valor
 							}
 						}
@@ -78,7 +75,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 						for _, transaction := range transactions {
 							@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet"}}) {
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-									{ formatDate(transaction.OccurredAt, loc, "02/01/2006") }
+									{ formatDate(transaction.OccurredAt, loc, brDate) }
 								}
 								@table.Cell() {
 									{ orEmpty(transaction.Description) }
@@ -89,8 +86,8 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 										{ transaction.CategoryName }
 									</span>
 								}
-								@table.Cell(table.CellProps{Class: "tabular-nums", Attributes: rightAligned}) {
-									{ utils.IfElse(transaction.Kind == "INCOME", "+", "−") }R$ { formatCents(transaction.Amount) }
+								@table.Cell(table.CellProps{Class: "text-right tabular-nums"}) {
+									{ money(signed(transaction.Kind, transaction.Amount)) }
 								}
 							}
 						}

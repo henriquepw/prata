@@ -37,7 +37,7 @@ func usageWidth(usage store.CategoryUsage) string {
 func shortDate(date string) string {
 	t, _ := time.Parse(time.DateOnly, date)
 
-	return t.Format("02/01/2006")
+	return t.Format(brDate)
 }
 
 func homePage(s shell, page overview) templ.Component {

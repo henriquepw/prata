@@ -2,6 +2,7 @@ package web
 
 import (
 	"cmp"
+	"fmt"
 	"net/http"
 	"slices"
 	"time"
@@ -36,7 +37,7 @@ func (h handler) home(w http.ResponseWriter, r *http.Request) {
 func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
 	ctx, accountID := r.Context(), sessionFrom(r.Context()).AccountID
 	now := time.Now().In(location(r))
-	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	month, from, to := monthWindow(now)
 	page := overview{Error: message}
 
 	realized, err := h.db.RealizedBalance(ctx, accountID)
@@ -45,7 +46,7 @@ func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status i
 		return
 	}
 
-	page.Usages, err = h.db.CategoryUsages(ctx, accountID, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339))
+	page.Usages, err = h.db.CategoryUsages(ctx, accountID, from, to)
 	if err != nil {
 		internalError(w, "reading category usage", err)
 		return
@@ -86,9 +87,9 @@ func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status i
 	render(w, r, status, homePage(newShell(r, "Visão geral"), page))
 }
 
-// confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC.
-// An occurrence already confirmed elsewhere hits the unique (recurrence_id, occurrence_date) and reloads the
-// overview with "já confirmada".
+// confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC,
+// with the recurrence's category only while it is live. An occurrence already confirmed elsewhere hits the unique
+// (recurrence_id, occurrence_date) and reloads the overview with "já confirmada"; any other rejection is a 500.
 func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 	rec, ok := h.recurrence(w, r)
 	if !ok {
@@ -97,15 +98,31 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 
 	date := r.PathValue("date")
 	dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, date, date)
-	occurredAt, ok := parseDate(date, location(r))
-	if err != nil || len(dates) == 0 || !ok {
+	if err != nil || len(dates) == 0 {
 		http.NotFound(w, r)
 		return
 	}
 
-	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), store.Change{
+	occurredAt, ok := parseDate(date, location(r))
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return
+	}
+
+	categoryID := orEmpty(rec.CategoryID)
+	if !hasCategory(categories, categoryID) {
+		categoryID = ""
+	}
+
+	session := sessionFrom(r.Context())
+	reason, err := h.db.CommitChanges(r.Context(), session, store.Change{
 		Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
-			"kind": rec.Kind, "amount": rec.Amount, "category_id": orNil(orEmpty(rec.CategoryID)), "description": orNil(orEmpty(rec.Description)),
+			"kind": rec.Kind, "amount": rec.Amount, "category_id": orNil(categoryID), "description": orNil(orEmpty(rec.Description)),
 			"recurrence_id": rec.ID, "occurrence_date": date, "occurred_at": occurredAt,
 		},
 	})
@@ -114,12 +131,23 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if reason != "" {
-		h.renderOverview(w, r, http.StatusConflict, "Ocorrência já confirmada.")
+	if reason == "" {
+		redirect(w, r, "/")
 		return
 	}
 
-	redirect(w, r, "/")
+	confirmed, err := h.db.ConfirmedOccurrences(r.Context(), session.AccountID)
+	if err != nil {
+		internalError(w, "listing confirmed occurrences", err)
+		return
+	}
+
+	if !slices.Contains(confirmed[rec.ID], date) {
+		internalError(w, "confirming occurrence", fmt.Errorf("rejected: %s", reason))
+		return
+	}
+
+	h.renderOverview(w, r, http.StatusConflict, "Ocorrência já confirmada.")
 }
 
 // signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.

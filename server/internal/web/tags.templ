@@ -37,9 +37,9 @@ templ tagsPage(s shell, tags []store.Tag, loc *time.Location) {
 							<span class="flex-1">{ tag.Name }</span>
 							<span class="tabular-nums text-muted-foreground">
 								if tag.EndAt == nil {
-									desde { formatDate(tag.StartAt, loc, "02/01/2006") }
+									desde { formatDate(tag.StartAt, loc, brDate) }
 								} else {
-									{ formatDate(tag.StartAt, loc, "02/01/2006") } a { formatDate(*tag.EndAt, loc, "02/01/2006") }
+									{ formatDate(tag.StartAt, loc, brDate) } a { formatDate(*tag.EndAt, loc, brDate) }
 								}
 							</span>
 						</button>

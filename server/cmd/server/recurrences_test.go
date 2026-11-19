@@ -91,11 +91,11 @@ func TestWebRecurrences_InvalidFormIs422AndWritesNothing(t *testing.T) {
 		errors []string
 	}{
 		{"everything wrong", recurrenceForm("", "SAVING", "0", categoryID, "32", "2026-02-01", "2026-01-31"),
-			[]string{"Informe um valor maior que zero.", "Escolha o tipo.", "Escolha uma categoria.", "Informe um dia de 1 a 31.", "O fim não pode ser antes do início."}},
+			[]string{"Informe um valor maior que zero.", "Escolha o tipo.", "Escolha uma categoria.", "Informe um dia de 1 a 31.", "Informe um fim igual ou depois do início."}},
 		{"day zero", recurrenceForm("", "INCOME", "10", "", "0", "2026-01-01", ""), []string{"Informe um dia de 1 a 31."}},
 		{"day not a number", recurrenceForm("", "INCOME", "10", "", "5º", "2026-01-01", ""), []string{"Informe um dia de 1 a 31."}},
 		{"missing start", recurrenceForm("", "INCOME", "10", "", "5", "", ""), []string{"Informe o início."}},
-		{"bad end", recurrenceForm("", "INCOME", "10", "", "5", "2026-01-01", "31/01/2026"), []string{"O fim não pode ser antes do início."}},
+		{"bad end", recurrenceForm("", "INCOME", "10", "", "5", "2026-01-01", "31/01/2026"), []string{"Informe um fim igual ou depois do início."}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -119,5 +119,20 @@ func TestWebRecurrences_InvalidFormIs422AndWritesNothing(t *testing.T) {
 				t.Errorf("ops after invalid create = %+v, want none", ops)
 			}
 		})
+	}
+}
+
+func TestWebRecurrences_EditKeepsDeletedCategory(t *testing.T) {
+	w := newWebClient(t)
+	w.push(newCategory(w.client))
+	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("Aluguel", "OUTCOME", "1500", categoryID, "5", "2026-01-01", ""))
+	created := w.newOps()[1]
+	w.mustSubmit(http.MethodDelete, "/categories/"+categoryID, nil)
+	w.newOps()
+
+	w.mustSubmit(http.MethodPost, "/recurrences/"+created.EntityID, recurrenceForm("Aluguel", "OUTCOME", "1500", "", "10", "2026-01-01", ""))
+	ops := w.newOps()
+	if len(ops) != 1 || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"rule", "updated_at"}) {
+		t.Errorf("ops after editing the day = %+v, want one UPDATE with only rule and updated_at", ops)
 	}
 }

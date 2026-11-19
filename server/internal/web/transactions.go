@@ -3,7 +3,6 @@ package web
 import (
 	"errors"
 	"net/http"
-	"slices"
 	"strings"
 	"time"
 
@@ -15,17 +14,22 @@ const monthLayout = "2006-01"
 
 var monthNames = []string{"janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"}
 
-// transactions lists the month in ?month=YYYY-MM, the current one in the user's time zone by default, as
-// [from, to) in UTC.
+// monthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
+func monthWindow(t time.Time) (month time.Time, from, to string) {
+	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+
+	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
+}
+
+// transactions lists the month in ?month=YYYY-MM, the current one in the user's time zone by default.
 func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
 	loc := location(r)
 	month, err := time.ParseInLocation(monthLayout, r.URL.Query().Get("month"), loc)
 	if err != nil {
-		now := time.Now().In(loc)
-		month = time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
+		month = time.Now().In(loc)
 	}
 
-	from, to := month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
+	month, from, to := monthWindow(month)
 	transactions, err := h.db.Transactions(r.Context(), sessionFrom(r.Context()).AccountID, from, to)
 	if err != nil {
 		internalError(w, "listing transactions", err)
@@ -51,16 +55,17 @@ func (h handler) editTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form, ok := h.storedTransactionForm(w, r, transaction)
+	form, ok := h.transactionForm(w, r)
 	if !ok {
 		return
 	}
 
-	render(w, r, http.StatusOK, transactionSheet(form))
+	render(w, r, http.StatusOK, transactionSheet(storedTransactionForm(form, transaction, location(r))))
 }
 
 // saveTransaction creates the transaction, or updates the one in the path, from the sheet's form. The date is
-// local midnight in the user's time zone, stored in UTC.
+// local midnight in the user's time zone, stored in UTC. A category or tag left as displayed is not written, so a
+// stored reference to a deleted one, displayed as empty, survives editing other fields.
 func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	form, ok := h.transactionForm(w, r)
 	if !ok {
@@ -75,25 +80,17 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	form.CategoryID = r.PostFormValue("category_id")
 	form.TagID = r.PostFormValue("tag_id")
 
-	amount, ok := parseCents(form.Amount)
-	if !ok || amount <= 0 {
-		form.Errors["amount"] = "Informe um valor maior que zero."
-	}
-
-	if !slices.ContainsFunc(kinds, func(k kind) bool { return k.Value == form.Kind }) {
-		form.Errors["kind"] = "Escolha o tipo."
-	}
-
+	amount := parseEntry(form.Errors, form.Amount, form.Kind)
 	occurredAt, ok := parseDate(form.OccurredAt, location(r))
 	if !ok {
 		form.Errors["occurred_at"] = "Informe a data."
 	}
 
-	if form.CategoryID != "" && !slices.ContainsFunc(form.Categories, func(c store.Category) bool { return c.ID == form.CategoryID }) {
+	if form.CategoryID != "" && !hasCategory(form.Categories, form.CategoryID) {
 		form.Errors["category_id"] = "Escolha uma categoria."
 	}
 
-	if form.TagID != "" && !slices.ContainsFunc(form.Tags, func(t store.Tag) bool { return t.ID == form.TagID }) {
+	if form.TagID != "" && !hasTag(form.Tags, form.TagID) {
 		form.Errors["tag_id"] = "Escolha uma tag."
 	}
 
@@ -103,8 +100,20 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
-	} else if _, ok := h.transaction(w, r); !ok {
-		return
+	} else {
+		stored, ok := h.transaction(w, r)
+		if !ok {
+			return
+		}
+
+		displayed := storedTransactionForm(form, stored, location(r))
+		if form.CategoryID == displayed.CategoryID {
+			delete(change.Fields, "category_id")
+		}
+
+		if form.TagID == displayed.TagID {
+			delete(change.Fields, "tag_id")
+		}
 	}
 
 	h.commit(w, r, form.Errors, transactionSheet(form), change)
@@ -116,11 +125,12 @@ func (h handler) deleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form, ok := h.storedTransactionForm(w, r, transaction)
+	form, ok := h.transactionForm(w, r)
 	if !ok {
 		return
 	}
 
+	form = storedTransactionForm(form, transaction, location(r))
 	h.commit(w, r, form.Errors, transactionSheet(form), store.Change{Entity: "TRANSACTION", EntityID: transaction.ID, Kind: store.KindDelete})
 }
 
@@ -132,31 +142,32 @@ func (h handler) transactionForm(w http.ResponseWriter, r *http.Request) (transa
 		return transactionForm{}, false
 	}
 
-	tags, err := h.db.Tags(r.Context(), sessionFrom(r.Context()).AccountID)
-	if err != nil {
-		internalError(w, "listing tags", err)
+	tags, ok := h.liveTags(w, r)
+	if !ok {
 		return transactionForm{}, false
 	}
 
 	return transactionForm{Categories: categories, Tags: tags, Errors: map[string]string{}}, true
 }
 
-// storedTransactionForm fills the sheet with the stored transaction, its date in the user's time zone.
-func (h handler) storedTransactionForm(w http.ResponseWriter, r *http.Request, transaction store.Transaction) (transactionForm, bool) {
-	form, ok := h.transactionForm(w, r)
-	if !ok {
-		return form, false
-	}
-
+// storedTransactionForm fills the sheet with the stored transaction as displayed: its date in loc, and its category
+// and tag only when they are among the sheet's live ones.
+func storedTransactionForm(form transactionForm, transaction store.Transaction, loc *time.Location) transactionForm {
 	form.ID = transaction.ID
 	form.Description = orEmpty(transaction.Description)
 	form.Kind = transaction.Kind
 	form.Amount = formatCents(transaction.Amount)
-	form.OccurredAt = formatDate(transaction.OccurredAt, location(r), time.DateOnly)
-	form.CategoryID = orEmpty(transaction.CategoryID)
-	form.TagID = orEmpty(transaction.TagID)
+	form.OccurredAt = formatDate(transaction.OccurredAt, loc, time.DateOnly)
+	form.CategoryID, form.TagID = "", ""
+	if id := orEmpty(transaction.CategoryID); hasCategory(form.Categories, id) {
+		form.CategoryID = id
+	}
 
-	return form, true
+	if id := orEmpty(transaction.TagID); hasTag(form.Tags, id) {
+		form.TagID = id
+	}
+
+	return form
 }
 
 // transaction reads the live transaction in the path, answering 404 when the account has none.

@@ -10,8 +10,6 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const dateLayout = "2006-01-02"
-
 func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 	tags, err := h.db.Tags(r.Context(), sessionFrom(r.Context()).AccountID)
 	if err != nil {
@@ -84,9 +82,9 @@ func (h handler) deleteTag(w http.ResponseWriter, r *http.Request) {
 
 // storedTagForm fills the sheet with the stored tag, its dates in the user's time zone.
 func storedTagForm(tag store.Tag, loc *time.Location) tagForm {
-	form := tagForm{ID: tag.ID, Name: tag.Name, StartAt: formatDate(tag.StartAt, loc, dateLayout), Errors: map[string]string{}}
+	form := tagForm{ID: tag.ID, Name: tag.Name, StartAt: formatDate(tag.StartAt, loc, time.DateOnly), Errors: map[string]string{}}
 	if tag.EndAt != nil {
-		form.EndAt = formatDate(*tag.EndAt, loc, dateLayout)
+		form.EndAt = formatDate(*tag.EndAt, loc, time.DateOnly)
 	}
 
 	return form
@@ -106,24 +104,4 @@ func (h handler) tag(w http.ResponseWriter, r *http.Request) (store.Tag, bool) {
 	}
 
 	return tag, true
-}
-
-// parseDate reads a date input's YYYY-MM-DD as local midnight and returns it as RFC 3339 in UTC.
-func parseDate(s string, loc *time.Location) (string, bool) {
-	t, err := time.ParseInLocation(dateLayout, s, loc)
-	if err != nil {
-		return "", false
-	}
-
-	return t.UTC().Format(time.RFC3339), true
-}
-
-// formatDate writes a stored RFC 3339 time as a date in loc, or the raw value when it does not parse.
-func formatDate(stored string, loc *time.Location, layout string) string {
-	t, err := time.Parse(time.RFC3339, stored)
-	if err != nil {
-		return stored
-	}
-
-	return t.In(loc).Format(layout)
 }

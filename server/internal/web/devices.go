@@ -34,12 +34,11 @@ func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// localTime writes an RFC3339 time in loc as "02/01/2006 15:04", or "nunca" when it is empty.
+// localTime writes an RFC 3339 time in loc as "02/01/2006 15:04", or "nunca" when it is empty.
 func localTime(value string, loc *time.Location) string {
-	t, err := time.Parse(time.RFC3339, value)
-	if err != nil {
+	if value == "" {
 		return "nunca"
 	}
 
-	return t.In(loc).Format("02/01/2006 15:04")
+	return formatDate(value, loc, brDate+" 15:04")
 }

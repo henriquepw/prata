@@ -1,8 +1,6 @@
 package web
 
 import (
-	"strings"
-
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
@@ -41,8 +39,8 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 					<li>
 						<button type="button" hx-get={ "/recurrences/" + recurrence.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
 							<span class="flex-1">{ utils.IfElse(recurrence.Description == nil, "Sem descrição", orEmpty(recurrence.Description)) }</span>
-							<span class="text-muted-foreground">todo dia { strings.TrimPrefix(recurrence.Rule, "MONTHLY:") }</span>
-							<span class="tabular-nums">{ utils.IfElse(recurrence.Kind == "INCOME", "+", "−") }R$ { formatCents(recurrence.Amount) }</span>
+							<span class="text-muted-foreground">todo dia { ruleDay(recurrence.Rule) }</span>
+							<span class="tabular-nums">{ money(signed(recurrence.Kind, recurrence.Amount)) }</span>
 						</button>
 					</li>
 				}

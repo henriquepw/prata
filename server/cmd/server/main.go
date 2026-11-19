@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -130,7 +131,11 @@ func newHandler(db *store.Store, cfg config) http.Handler {
 // resetPassword reads the new password from the first line of stdin, typed or piped.
 func resetPassword(dbPath, email string) error {
 	fmt.Fprint(os.Stderr, "New password: ")
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	line, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	if err != nil && !errors.Is(err, io.EOF) {
+		return fmt.Errorf("reading password: %w", err)
+	}
+
 	password := strings.TrimRight(line, "\r\n")
 	if password == "" {
 		return errors.New("empty password")

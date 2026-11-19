@@ -204,3 +204,19 @@ func TestWebTransactions_DeletedCategoryAndTag(t *testing.T) {
 		t.Errorf("ops after referencing deleted rows = %+v, want none", ops)
 	}
 }
+
+func TestWebTransactions_EditKeepsDeletedCategoryAndTag(t *testing.T) {
+	w := newWebClient(t)
+	w.push(newCategory(w.client), newTag(w.client))
+	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-01", categoryID, tagID))
+	created := w.newOps()[2]
+	w.mustSubmit(http.MethodDelete, "/categories/"+categoryID, nil)
+	w.mustSubmit(http.MethodDelete, "/tags/"+tagID, nil)
+	w.newOps()
+
+	w.mustSubmit(http.MethodPost, "/transactions/"+created.EntityID, transactionForm("Feira livre", "OUTCOME", "10", "2026-07-01", "", ""))
+	ops := w.newOps()
+	if len(ops) != 1 || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"description", "updated_at"}) {
+		t.Errorf("ops after editing the description = %+v, want one UPDATE with only description and updated_at", ops)
+	}
+}

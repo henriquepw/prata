@@ -93,6 +93,46 @@ func TestWebOverview(t *testing.T) {
 	}
 }
 
+func TestWebOverview_ConfirmDropsDeletedCategory(t *testing.T) {
+	w := newWebClient(t)
+	recurrenceID := ulid.Make().String()
+	w.push(newCategory(w.client), w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
+		"category_id": categoryID, "kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:5", "start_at": "2026-01-01",
+		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+	}), w.op("CATEGORY", categoryID, "DELETE", nil))
+	w.newOps()
+
+	if response := w.submit(http.MethodPost, "/recurrences/"+recurrenceID+"/occurrences/2026-01-05", nil); response.Code >= 300 {
+		t.Fatalf("confirm = %d, want a redirect to the overview: %s", response.Code, response.Body)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 1 || ops[0].Payload["category_id"] != nil {
+		t.Errorf("ops after confirm = %+v, want one TRANSACTION CREATE without the deleted category", ops)
+	}
+}
+
+func TestWebOverview_ConfirmRejectedForOtherReasonIsServerError(t *testing.T) {
+	db := openStore(t)
+	handler := newHandler(db, config{})
+	w := &webClient{client: newClient(t, handler, newSignup()), cookie: login(t, handler)}
+	recurrenceID := ulid.Make().String()
+	w.push(w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
+		"kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:5", "start_at": "2026-01-01",
+		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+	}))
+	w.newOps()
+
+	if _, err := db.Exec("CREATE TRIGGER reject_transactions BEFORE INSERT ON transactions BEGIN SELECT RAISE(ABORT, 'rejected'); END"); err != nil {
+		t.Fatal(err)
+	}
+
+	response := w.submit(http.MethodPost, "/recurrences/"+recurrenceID+"/occurrences/2026-01-05", nil)
+	if response.Code != http.StatusInternalServerError || strings.Contains(response.Body.String(), "já confirmada") {
+		t.Errorf("confirm rejected by another constraint = %d, want %d without \"já confirmada\": %s", response.Code, http.StatusInternalServerError, response.Body)
+	}
+}
+
 func TestWebOverview_ConfirmAlreadyConfirmed(t *testing.T) {
 	w := newWebClient(t)
 	recurrenceID := ulid.Make().String()

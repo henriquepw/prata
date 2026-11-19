@@ -3,7 +3,6 @@ package web
 import (
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -11,6 +10,18 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
+
+const monthlyPrefix = "MONTHLY:"
+
+// monthlyRule is the rule of a recurrence on the given day of every month.
+func monthlyRule(day int) string {
+	return monthlyPrefix + strconv.Itoa(day)
+}
+
+// ruleDay is the day of a "MONTHLY:<day>" rule.
+func ruleDay(rule string) string {
+	return strings.TrimPrefix(rule, monthlyPrefix)
+}
 
 func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
 	recurrences, err := h.db.Recurrences(r.Context(), sessionFrom(r.Context()).AccountID)
@@ -46,7 +57,9 @@ func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
 	render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(recurrence, categories)))
 }
 
-// saveRecurrence creates the recurrence, or updates the one in the path, from the sheet's form.
+// saveRecurrence creates the recurrence, or updates the one in the path, from the sheet's form. A category left
+// as displayed is not written, so a stored reference to a deleted one, displayed as empty, survives editing
+// other fields.
 func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 	categories, ok := h.liveCategories(w, r)
 	if !ok {
@@ -65,16 +78,8 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	amount, ok := parseCents(form.Amount)
-	if !ok || amount <= 0 {
-		form.Errors["amount"] = "Informe um valor maior que zero."
-	}
-
-	if !slices.ContainsFunc(kinds, func(k kind) bool { return k.Value == form.Kind }) {
-		form.Errors["kind"] = "Escolha o tipo."
-	}
-
-	if form.CategoryID != "" && !slices.ContainsFunc(categories, func(c store.Category) bool { return c.ID == form.CategoryID }) {
+	amount := parseEntry(form.Errors, form.Amount, form.Kind)
+	if form.CategoryID != "" && !hasCategory(categories, form.CategoryID) {
 		form.Errors["category_id"] = "Escolha uma categoria."
 	}
 
@@ -88,17 +93,24 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if form.EndAt != "" && (!isDate(form.EndAt) || form.EndAt < form.StartAt) {
-		form.Errors["end_at"] = "O fim não pode ser antes do início."
+		form.Errors["end_at"] = "Informe um fim igual ou depois do início."
 	}
 
 	change := store.Change{Entity: "RECURRENCE", EntityID: form.ID, Kind: store.KindUpdate, Fields: map[string]any{
 		"description": orNil(form.Description), "kind": form.Kind, "amount": amount, "category_id": orNil(form.CategoryID),
-		"rule": "MONTHLY:" + strconv.Itoa(day), "start_at": form.StartAt, "end_at": orNil(form.EndAt),
+		"rule": monthlyRule(day), "start_at": form.StartAt, "end_at": orNil(form.EndAt),
 	}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
-	} else if _, ok := h.recurrence(w, r); !ok {
-		return
+	} else {
+		stored, ok := h.recurrence(w, r)
+		if !ok {
+			return
+		}
+
+		if form.CategoryID == storedRecurrenceForm(stored, categories).CategoryID {
+			delete(change.Fields, "category_id")
+		}
 	}
 
 	h.commit(w, r, form.Errors, recurrenceSheet(form), change)
@@ -120,20 +132,25 @@ func (h handler) deleteRecurrence(w http.ResponseWriter, r *http.Request) {
 	h.commit(w, r, form.Errors, recurrenceSheet(form), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
 }
 
-// storedRecurrenceForm fills the sheet with the stored recurrence.
+// storedRecurrenceForm fills the sheet with the stored recurrence as displayed: its category only when it is
+// among the live ones.
 func storedRecurrenceForm(recurrence store.Recurrence, categories []store.Category) recurrenceForm {
-	return recurrenceForm{
+	form := recurrenceForm{
 		ID:          recurrence.ID,
 		Description: orEmpty(recurrence.Description),
 		Kind:        recurrence.Kind,
 		Amount:      formatCents(recurrence.Amount),
-		CategoryID:  orEmpty(recurrence.CategoryID),
-		Day:         strings.TrimPrefix(recurrence.Rule, "MONTHLY:"),
+		Day:         ruleDay(recurrence.Rule),
 		StartAt:     recurrence.StartAt,
 		EndAt:       orEmpty(recurrence.EndAt),
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
+	if id := orEmpty(recurrence.CategoryID); hasCategory(categories, id) {
+		form.CategoryID = id
+	}
+
+	return form
 }
 
 // recurrence reads the live recurrence in the path, answering 404 when the account has none.
@@ -150,15 +167,4 @@ func (h handler) recurrence(w http.ResponseWriter, r *http.Request) (store.Recur
 	}
 
 	return recurrence, true
-}
-
-// liveCategories reads the categories a sheet can pick from, answering 500 when it cannot.
-func (h handler) liveCategories(w http.ResponseWriter, r *http.Request) ([]store.Category, bool) {
-	categories, err := h.db.Categories(r.Context(), sessionFrom(r.Context()).AccountID)
-	if err != nil {
-		internalError(w, "listing categories", err)
-		return nil, false
-	}
-
-	return categories, true
 }
