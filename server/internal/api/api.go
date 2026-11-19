@@ -2,11 +2,13 @@
 package api
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/store"
@@ -26,6 +28,8 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/signup", h.signup)
 	mux.Handle("POST /api/auth/signout", h.requireAPIKey(h.signout))
+	mux.Handle("POST /api/sync/push", h.requireAPIKey(h.push))
+	mux.Handle("GET /api/sync/pull", h.requireAPIKey(h.pull))
 
 	return mux
 }
@@ -92,6 +96,70 @@ func (h handler) signout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type ack struct {
+	ID        string `json:"id"`
+	ServerSeq int64  `json:"server_seq"`
+}
+
+type rejection struct {
+	ID     string       `json:"id"`
+	Reason store.Reason `json:"reason"`
+}
+
+// push commits the device's pending ops; device_id must match the API key's device.
+func (h handler) push(w http.ResponseWriter, r *http.Request) {
+	actor := actorFrom(r.Context())
+	var body struct {
+		DeviceID string     `json:"device_id"`
+		Ops      []store.Op `json:"ops"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.DeviceID != actor.DeviceID {
+		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+
+	results, err := h.db.CommitOps(r.Context(), actor, body.Ops)
+	if err != nil {
+		internalError(w, "committing ops", err)
+		return
+	}
+
+	response := struct {
+		Acks     []ack       `json:"acks"`
+		Rejected []rejection `json:"rejected"`
+	}{Acks: []ack{}, Rejected: []rejection{}}
+	for i, result := range results {
+		if result.Reason != "" {
+			response.Rejected = append(response.Rejected, rejection{body.Ops[i].ID, result.Reason})
+		} else {
+			response.Acks = append(response.Acks, ack{body.Ops[i].ID, result.Seq})
+		}
+	}
+
+	writeJSON(w, http.StatusOK, response)
+}
+
+// pull returns the account's ops after cursor; device_id must match the API key's device.
+func (h handler) pull(w http.ResponseWriter, r *http.Request) {
+	const maxLimit = 500
+	actor := actorFrom(r.Context())
+	query := r.URL.Query()
+	cursor, cursorErr := strconv.ParseInt(cmp.Or(query.Get("cursor"), "0"), 10, 64)
+	limit, limitErr := strconv.Atoi(cmp.Or(query.Get("limit"), strconv.Itoa(maxLimit)))
+	if cursorErr != nil || limitErr != nil || cursor < 0 || limit < 1 || query.Get("device_id") != actor.DeviceID {
+		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+
+	page, err := h.db.Pull(r.Context(), actor, cursor, min(limit, maxLimit))
+	if err != nil {
+		internalError(w, "pulling ops", err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, page)
 }
 
 func isValidSignup(email, password string, ids ...string) bool {
