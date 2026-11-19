@@ -1,0 +1,99 @@
+package web
+
+import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// recurrenceForm is the recurrence sheet: what the user typed, the categories to pick from and an error
+// message per field name, "form" holding a rejected commit.
+type recurrenceForm struct {
+	ID          string
+	Description string
+	Kind        string
+	Amount      string
+	CategoryID  string
+	Day         string
+	StartAt     string
+	EndAt       string
+	Categories  []store.Category
+	Errors      map[string]string
+}
+
+templ recurrencesPage(s shell, recurrences []store.Recurrence) {
+	@layout(s) {
+		<div class="mb-6 flex items-center justify-between">
+			<h1 class="text-2xl font-semibold tracking-tight">Recorrências</h1>
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/recurrences/new", "hx-target": "#sheet"}}) {
+				Nova recorrência
+			}
+		</div>
+		if len(recurrences) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhuma recorrência ainda.</p>
+		} else {
+			<ul class="divide-y border">
+				for _, recurrence := range recurrences {
+					<li>
+						<button type="button" hx-get={ "/recurrences/" + recurrence.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
+							<span class="flex-1">{ utils.IfElse(recurrence.Description == nil, "Sem descrição", orEmpty(recurrence.Description)) }</span>
+							<span class="text-muted-foreground">todo dia { strings.TrimPrefix(recurrence.Rule, "MONTHLY:") }</span>
+							<span class="tabular-nums">{ utils.IfElse(recurrence.Kind == "INCOME", "+", "−") }R$ { formatCents(recurrence.Amount) }</span>
+						</button>
+					</li>
+				}
+			</ul>
+		}
+	}
+}
+
+templ recurrenceSheet(form recurrenceForm) {
+	@sheet(sheetProps{
+		Title:     utils.IfElse(form.ID == "", "Nova recorrência", "Editar recorrência"),
+		Action:    utils.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
+		DeleteURL: utils.IfElse(form.ID == "", "", "/recurrences/"+form.ID),
+		Confirm:   "Excluir esta recorrência? Ela para de gerar pendentes; as transações já confirmadas continuam.",
+		Error:     form.Errors["form"],
+	}) {
+		@formField("description", "Descrição", form.Errors["description"]) {
+			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
+		}
+		@formField("kind", "Tipo", form.Errors["kind"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "kind", Name: "kind", Class: "w-full", Attributes: ariaInvalid(form.Errors["kind"])}) {
+				for _, kind := range kinds {
+					@nativeselect.Option(nativeselect.OptionProps{Value: kind.Value, Selected: kind.Value == form.Kind}) {
+						{ kind.Label }
+					}
+				}
+			}
+		}
+		@formField("amount", "Valor", form.Errors["amount"]) {
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
+		}
+		@formField("category_id", "Categoria", form.Errors["category_id"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
+				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
+					Sem categoria
+				}
+				for _, category := range form.Categories {
+					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
+						{ category.Name }
+					}
+				}
+			}
+		}
+		@formField("day", "Dia do mês (1 a 31)", form.Errors["day"]) {
+			@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"])})
+		}
+		@formField("start_at", "Início", form.Errors["start_at"]) {
+			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
+		}
+		@formField("end_at", "Fim (opcional)", form.Errors["end_at"]) {
+			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
+		}
+	}
+}
