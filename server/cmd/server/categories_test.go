@@ -25,12 +25,15 @@ func newWebClient(t *testing.T) *webClient {
 	return &webClient{client: device, cookie: login(t, handler)}
 }
 
-// submit sends the form like htmx does and returns the response.
-func (w *webClient) submit(method, path string, form url.Values) *httptest.ResponseRecorder {
+// submit sends the form like htmx does, with extra cookies such as tz, and returns the response.
+func (w *webClient) submit(method, path string, form url.Values, cookies ...*http.Cookie) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(method, path, strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("HX-Request", "true")
-	req.AddCookie(w.cookie)
+	for _, cookie := range append(cookies, w.cookie) {
+		req.AddCookie(cookie)
+	}
+
 	response := httptest.NewRecorder()
 	w.handler.ServeHTTP(response, req)
 
@@ -38,9 +41,9 @@ func (w *webClient) submit(method, path string, form url.Values) *httptest.Respo
 }
 
 // mustSubmit asserts the write succeeded with HX-Refresh.
-func (w *webClient) mustSubmit(method, path string, form url.Values) {
+func (w *webClient) mustSubmit(method, path string, form url.Values, cookies ...*http.Cookie) {
 	w.t.Helper()
-	response := w.submit(method, path, form)
+	response := w.submit(method, path, form, cookies...)
 	if response.Code >= 300 || response.Header().Get("HX-Refresh") != "true" {
 		w.t.Fatalf("%s %s = %d (HX-Refresh %q), want success with HX-Refresh: %s", method, path, response.Code, response.Header().Get("HX-Refresh"), response.Body)
 	}

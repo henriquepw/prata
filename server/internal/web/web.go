@@ -59,6 +59,16 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /recurrences", h.requireSession(h.saveRecurrence))
 	mux.Handle("POST /recurrences/{id}", h.requireSession(h.saveRecurrence))
 	mux.Handle("DELETE /recurrences/{id}", h.requireSession(h.deleteRecurrence))
+	mux.Handle("GET /tags", h.requireSession(h.tags))
+	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, http.StatusOK, tagSheet(tagForm{}))
+	}))
+	mux.Handle("GET /tags/{id}", h.requireSession(h.editTag))
+	mux.Handle("POST /tags", h.requireSession(h.saveTag))
+	mux.Handle("POST /tags/{id}", h.requireSession(h.saveTag))
+	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
+	mux.Handle("GET /devices", h.requireSession(h.devices))
+	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }
