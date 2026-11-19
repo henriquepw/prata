@@ -61,6 +61,8 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /tags", h.requireSession(h.saveTag))
 	mux.Handle("POST /tags/{id}", h.requireSession(h.saveTag))
 	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
+	mux.Handle("GET /devices", h.requireSession(h.devices))
+	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }

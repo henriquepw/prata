@@ -1,0 +1,36 @@
+package web
+
+import (
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+)
+
+templ devicesPage(s shell, devices []store.Device, loc *time.Location) {
+	@layout(s) {
+		<h1 class="mb-6 text-2xl font-semibold tracking-tight">Dispositivos</h1>
+		if len(devices) == 0 {
+			<p class="text-sm text-muted-foreground">Nenhum dispositivo conectado.</p>
+		} else {
+			<ul class="divide-y border">
+				for _, device := range devices {
+					<li class="flex items-center gap-3 px-4 py-3 text-sm">
+						<div class="flex-1">
+							<div class="font-medium">{ device.Name }</div>
+							<div class="text-muted-foreground">
+								Último contato: { localTime(device.LastSeenAt, loc) } · Criado em { localTime(device.CreatedAt, loc) }
+							</div>
+						</div>
+						@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{
+							"hx-delete":  "/devices/" + device.ID,
+							"hx-confirm": "Revogar o acesso de " + device.Name + "? Ele para de sincronizar até entrar de novo.",
+						}}) {
+							Revogar
+						}
+					</li>
+				}
+			</ul>
+		}
+	}
+}
