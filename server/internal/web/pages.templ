@@ -1,0 +1,89 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/card"
+	"github.com/henriquepw/prata/server/internal/web/components/field"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+)
+
+// authForm is the login or signup form with what the user typed and the error to show.
+type authForm struct {
+	Email string
+	Error string
+}
+
+// ariaInvalid marks a control invalid when its field has an error message.
+func ariaInvalid(message string) templ.Attributes {
+	if message == "" {
+		return nil
+	}
+
+	return templ.Attributes{"aria-invalid": "true"}
+}
+
+templ loginPage(form authForm) {
+	@authPage("Entrar", "/login", form) {
+		<p class="text-sm text-muted-foreground">
+			Ainda não tem conta? <a href="/signup" class="underline underline-offset-4">Criar conta</a>
+		</p>
+	}
+}
+
+templ signupPage(form authForm) {
+	@authPage("Criar conta", "/signup", form) {
+		<p class="text-sm text-muted-foreground">
+			Já usa o Prata no app? Crie a conta pelo app para preservar os dados dele; criar aqui começa uma conta vazia.
+		</p>
+		<p class="text-sm text-muted-foreground">
+			Já tem conta? <a href="/login" class="underline underline-offset-4">Entrar</a>
+		</p>
+	}
+}
+
+templ authPage(title, action string, form authForm) {
+	@document(title) {
+		<main class="flex min-h-dvh items-center justify-center p-4">
+			@card.Card(card.Props{Class: "w-full max-w-sm"}) {
+				@card.Header() {
+					@card.Title() {
+						<h1>{ title }</h1>
+					}
+				}
+				@card.Content() {
+					<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
+						@field.Field() {
+							@field.Label(field.LabelProps{For: "email"}) {
+								E-mail
+							}
+							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: templ.Attributes{"autocomplete": "email"}})
+						}
+						@field.Field() {
+							@field.Label(field.LabelProps{For: "password"}) {
+								Senha
+							}
+							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.Error)})
+							if form.Error != "" {
+								@field.Error() {
+									{ form.Error }
+								}
+							}
+						}
+						@button.Button(button.Props{Type: button.TypeSubmit}) {
+							{ title }
+						}
+					</form>
+				}
+				@card.Footer(card.FooterProps{Class: "flex-col items-start gap-2"}) {
+					{ children... }
+				}
+			}
+		</main>
+	}
+}
+
+templ homePage(s shell) {
+	@layout(s) {
+		<h1 class="mb-6 text-2xl font-semibold tracking-tight">Visão geral</h1>
+	}
+}

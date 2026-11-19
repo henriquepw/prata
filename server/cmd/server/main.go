@@ -15,6 +15,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/api"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web"
 	_ "modernc.org/sqlite"
 )
 
@@ -101,6 +102,7 @@ func configFromEnv(env []string) config {
 func newHandler(db *store.Store, cfg config) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", api.New(db, cfg.isSignupAllowed))
+	mux.Handle("/", web.New(db, cfg.isSignupAllowed))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
 		defer cancel()

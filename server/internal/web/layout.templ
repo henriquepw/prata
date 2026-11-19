@@ -1,0 +1,97 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// shell is what the authenticated layout needs from the request.
+type shell struct {
+	Title string
+	Path  string
+	Theme string
+}
+
+var nav = []struct{ Href, Label string }{
+	{"/", "Visão geral"},
+	{"/transactions", "Transações"},
+	{"/categories", "Categorias"},
+	{"/tags", "Tags"},
+	{"/recurrences", "Recorrências"},
+	{"/devices", "Dispositivos"},
+}
+
+var themes = []struct{ Value, Label string }{
+	{"system", "Tema do sistema"},
+	{"light", "Tema claro"},
+	{"dark", "Tema escuro"},
+}
+
+// headScript applies the theme cookie before the first paint and stores the browser time zone in the tz cookie.
+const headScript = `(() => {
+  const theme = document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
+  const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.classList.toggle('dark', dark)
+  document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+  document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+})()`
+
+const setTheme = "document.cookie = 'theme=' + this.value + '; path=/; max-age=31536000; samesite=lax'; location.reload()"
+
+templ document(title string) {
+	<!DOCTYPE html>
+	<html lang="pt-BR">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } · Prata</title>
+			@templ.Raw("<script>" + headScript + "</script>")
+			<link rel="stylesheet" href="/static/app.css"/>
+			<script src="/static/htmx.min.js"></script>
+		</head>
+		<body hx-boost="true" class="min-h-dvh antialiased">
+			{ children... }
+		</body>
+	</html>
+}
+
+templ layout(s shell) {
+	@document(s.Title) {
+		<div class="flex min-h-dvh">
+			<aside class="sticky top-0 flex h-dvh w-56 shrink-0 flex-col gap-1 border-r bg-sidebar p-3 text-sidebar-foreground max-sm:hidden">
+				<div class="px-2 py-3 font-semibold tracking-tight">Prata</div>
+				<nav class="flex flex-col gap-1">
+					for _, item := range nav {
+						<a
+							href={ templ.SafeURL(item.Href) }
+							if item.Href == s.Path {
+								aria-current="page"
+							}
+							class={ utils.CN("px-2 py-1.5 text-sm", utils.IfElse(item.Href == s.Path, "bg-sidebar-accent font-medium text-sidebar-accent-foreground", "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")) }
+						>
+							{ item.Label }
+						</a>
+					}
+				</nav>
+				<div class="mt-auto flex flex-col gap-2">
+					@nativeselect.NativeSelect(nativeselect.Props{Size: nativeselect.SizeSm, Class: "w-full", Attributes: templ.Attributes{"aria-label": "Tema", "onchange": templ.JSUnsafeFuncCall(setTheme)}}) {
+						for _, theme := range themes {
+							@nativeselect.Option(nativeselect.OptionProps{Value: theme.Value, Selected: theme.Value == s.Theme}) {
+								{ theme.Label }
+							}
+						}
+					}
+					<form method="post" action="/logout">
+						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "w-full"}) {
+							Sair
+						}
+					</form>
+				</div>
+			</aside>
+			<main class="max-w-5xl flex-1 p-6 md:p-10">
+				{ children... }
+			</main>
+		</div>
+	}
+}

@@ -30,7 +30,7 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
-// Signup creates an account from a device, adopting the device's local ids.
+// Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup.
 type Signup struct {
 	Email      string
 	Password   string
@@ -47,8 +47,8 @@ type Actor struct {
 	DeviceID  string `db:"id"`
 }
 
-// CreateAccount creates the user, account, owner link, client device and hidden web device
-// in one transaction and returns the client device's API key.
+// CreateAccount creates the user, account, owner link, hidden web device and, unless DeviceID is empty
+// (signup from the web), the client device in one transaction, and returns the client device's API key.
 func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowed bool) (string, error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
@@ -65,23 +65,29 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		return "", ErrSignupClosed
 	}
 
-	key := newAPIKey()
-	now := time.Now().UTC().Format(time.RFC3339)
-	statements := []struct {
+	type statement struct {
 		query string
 		args  []any
-	}{
+	}
+	now := time.Now().UTC().Format(time.RFC3339)
+	statements := []statement{
 		{"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), now, now}},
 		{"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
 			[]any{signup.AccountID, signup.Email, signup.OwnerID, now, now}},
 		{"INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'OWNER', ?)",
 			[]any{ulid.Make().String(), signup.AccountID, signup.OwnerID, now}},
-		{"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashAPIKey(key), now}},
 		{"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
 			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now}},
 	}
+
+	var key string
+	if signup.DeviceID != "" {
+		key = newAPIKey()
+		statements = append(statements, statement{"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashAPIKey(key), now}})
+	}
+
 	for _, statement := range statements {
 		if _, err := tx.ExecContext(ctx, statement.query, statement.args...); err != nil {
 			if isConstraint(err) {
