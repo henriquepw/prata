@@ -258,7 +258,8 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 	shown := "/?month=" + month.Format("2006-01")
 	body := get(w.handler, shown+"&category="+categoryID, w.cookie).Body.String()
 	assertInOrder(t, body, boxes("R$ 0,00", "R$ 0,00", "−R$ 75,90", "−R$ 75,90", "−R$ 50,00", "−R$ 125,90")...)
-	for _, text := range []string{"padaria", "Mercado ✕", "[todas]", `aria-current="true"`, "∞"} {
+	selected := `href="` + shown + "&amp;category=" + categoryID + `" class="usage" aria-current="true"`
+	for _, text := range []string{"padaria", "Mercado ✕", "[todas]", selected, "∞"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("filtered month lacks %q: %s", text, body)
 		}
