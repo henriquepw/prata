@@ -182,6 +182,35 @@ func TestWebSignup(t *testing.T) {
 	}
 }
 
+func TestAuthPages_ShowTheConsoleEntrance(t *testing.T) {
+	handler := newHandler(openStore(t), config{})
+
+	for path, action := range map[string]string{"/login": "&gt; entrar", "/signup": "&gt; criar conta"} {
+		body := get(handler, path).Body.String()
+		for _, text := range []string{`role="img" aria-label="Prata"`, "██████╗", "finanças pessoais · sincronizadas", action, "prata v1", "[online]"} {
+			if !strings.Contains(body, text) {
+				t.Errorf("%s lacks %q", path, text)
+			}
+		}
+	}
+}
+
+func TestWebSignup_FlagsEachMissingField(t *testing.T) {
+	handler := newHandler(openStore(t), config{})
+
+	response := postForm(handler, "/signup", url.Values{"email": {"bia"}, "password": {""}})
+	body := response.Body.String()
+	if response.Code != http.StatusUnprocessableEntity || strings.Count(body, `aria-invalid="true"`) != 2 {
+		t.Errorf("signup without email or password = %d, want %d with both fields invalid: %s", response.Code, http.StatusUnprocessableEntity, body)
+	}
+
+	for _, text := range []string{"Informe um e-mail.", "Informe uma senha."} {
+		if !strings.Contains(body, text) {
+			t.Errorf("signup body lacks %q", text)
+		}
+	}
+}
+
 func TestStaticAssets(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 

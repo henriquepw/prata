@@ -1,16 +1,21 @@
 package web
 
 import (
+	"strconv"
+	"strings"
+
 	"github.com/henriquepw/prata/server/internal/web/components/button"
-	"github.com/henriquepw/prata/server/internal/web/components/card"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 )
 
-// authForm is the login or signup form with what the user typed and the error to show.
+// authForm is the login or signup form with what the user typed and the errors to show: one per field
+// and Error for the whole form, such as a closed signup.
 type authForm struct {
-	Email string
-	Error string
+	Email         string
+	EmailError    string
+	PasswordError string
+	Error         string
 }
 
 // ariaInvalid marks a control invalid when its field has an error message.
@@ -22,62 +27,110 @@ func ariaInvalid(message string) templ.Attributes {
 	return templ.Attributes{"aria-invalid": "true"}
 }
 
+// figlet is PRATA in the ANSI Shadow font.
+const figlet = `██████╗ ██████╗  █████╗ ████████╗ █████╗
+██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
+██████╔╝██████╔╝███████║   ██║   ███████║
+██╔═══╝ ██╔══██╗██╔══██║   ██║   ██╔══██║
+██║     ██║  ██║██║  ██║   ██║   ██║  ██║
+╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝`
+
+// authScript draws the ASCII particle field in a diagonal band, sized to the window on every frame and
+// still with reduced motion, and ticks the footer clock. Both stop once a page change detaches them.
+const authScript = `(() => {
+  const pre = document.querySelector('[data-particles]'), clock = document.querySelector('[data-clock]')
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches, CH = ' .·:-=+*#%@'
+  const probe = pre.appendChild(document.createElement('span'))
+  probe.textContent = 'MMMMMMMMMM'
+  const { width, height } = probe.getBoundingClientRect()
+  probe.remove()
+  let t = 0
+  const frame = () => {
+    if (!pre.isConnected) return
+    const cols = Math.ceil(pre.clientWidth / (width / 10)), rows = Math.ceil(pre.clientHeight / height)
+    let out = ''
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const d = (y - (rows * .8 - x / cols * rows * .6)) / (rows * .17)
+        const n = (Math.sin(x * .09 + t) + Math.sin(y * .21 - t * .7) + Math.sin((x + y) * .05 + t * .4) + Math.sin(x * .023 - y * .05 + t * 1.3)) / 4
+        const v = Math.exp(-d * d) * (.55 + .45 * n) + (!still && Math.random() < .003 ? .35 : 0)
+        out += CH[Math.max(0, Math.min(CH.length - 1, Math.floor(v * v * CH.length * 1.3)))]
+      }
+      out += '\n'
+    }
+    pre.textContent = out
+    t += .08
+    if (!still) setTimeout(frame, 90)
+  }
+  const tick = () => {
+    if (!clock.isConnected) return
+    clock.textContent = new Date().toLocaleString('pt-BR').replace(',', '')
+    setTimeout(tick, 1000)
+  }
+  frame()
+  tick()
+  if (still) addEventListener('resize', frame)
+})()`
+
 templ loginPage(form authForm) {
 	@authPage("Entrar", "/login", form) {
-		<p class="text-sm text-muted-foreground">
-			Ainda não tem conta? <a href="/signup" class="underline underline-offset-4">Criar conta</a>
+		<p>
+			Ainda não tem conta? <a href="/signup" class="text-foreground underline underline-offset-4">Criar conta</a>
 		</p>
 	}
 }
 
 templ signupPage(form authForm) {
 	@authPage("Criar conta", "/signup", form) {
-		<p class="text-sm text-muted-foreground">
+		<p>
 			Já usa o Prata no app? Crie a conta pelo app para preservar os dados dele; criar aqui começa uma conta vazia.
 		</p>
-		<p class="text-sm text-muted-foreground">
-			Já tem conta? <a href="/login" class="underline underline-offset-4">Entrar</a>
+		<p>
+			Já tem conta? <a href="/login" class="text-foreground underline underline-offset-4">Entrar</a>
 		</p>
 	}
 }
 
+// authPage is the console entrance shared by login and signup: the particle field behind the figlet,
+// the tagline, a panel with the form and a footer with the version, the server status and a clock.
 templ authPage(title, action string, form authForm) {
 	@document(title) {
-		<main class="flex min-h-dvh items-center justify-center p-4">
-			@card.Card(card.Props{Class: "w-full max-w-sm"}) {
-				@card.Header() {
-					@card.Title() {
-						<h1>{ title }</h1>
-					}
-				}
-				@card.Content() {
+		<main class="login">
+			<pre class="login-particles" data-particles aria-hidden="true"></pre>
+			<div class="login-center">
+				<pre class="login-figlet" role="img" aria-label="Prata">{ figlet }</pre>
+				<p class="login-tagline">finanças pessoais · sincronizadas</p>
+				<section class="panel login-panel">
+					<header class="panel-head">
+						<h1 class="panel-title">{ title }</h1>
+					</header>
 					<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
-						@field.Field() {
-							@field.Label(field.LabelProps{For: "email"}) {
-								E-mail
-							}
-							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: templ.Attributes{"autocomplete": "email"}})
+						@formField("email", "E-mail", form.EmailError) {
+							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: templ.Attributes{"autocomplete": "email", "aria-invalid": strconv.FormatBool(form.EmailError != "")}})
 						}
-						@field.Field() {
-							@field.Label(field.LabelProps{For: "password"}) {
-								Senha
-							}
-							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.Error)})
-							if form.Error != "" {
-								@field.Error() {
-									{ form.Error }
-								}
+						@formField("password", "Senha", form.PasswordError) {
+							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
+						}
+						if form.Error != "" {
+							@field.Error() {
+								{ form.Error }
 							}
 						}
 						@button.Button(button.Props{Type: button.TypeSubmit}) {
-							{ title }
+							{ "> " + strings.ToLower(title) }
 						}
 					</form>
-				}
-				@card.Footer(card.FooterProps{Class: "flex-col items-start gap-2"}) {
-					{ children... }
-				}
-			}
+					<div class="mt-4 flex flex-col gap-2 text-xs text-muted-foreground">
+						{ children... }
+					</div>
+				</section>
+			</div>
+			<footer class="login-foot">
+				<span>prata v1</span>
+				<span><span class="text-cat-green">●</span> <span class="bg-cat-green px-[.5ch] text-background">[online]</span></span>
+				<span data-clock></span>
+			</footer>
+			@templ.Raw("<script>" + authScript + "</script>")
 		</main>
 	}
 }
