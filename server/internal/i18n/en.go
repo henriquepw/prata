@@ -2,6 +2,20 @@ package i18n
 
 // en has the texts in English; a key missing here shows its pt-BR text.
 var en = map[string]string{
+	// Login and signup.
+	"auth.sign_in":           "Sign in",
+	"auth.sign_up":           "Create account",
+	"auth.email":             "Email",
+	"auth.password":          "Password",
+	"auth.no_account":        "Don't have an account yet?",
+	"auth.has_account":       "Already have an account?",
+	"auth.app_note":          "Already use Prata in the app? Create the account in the app to keep its data; creating here starts an empty account.",
+	"auth.error.credentials": "Invalid email or password.",
+	"auth.error.email":       "Enter an email.",
+	"auth.error.password":    "Enter a password.",
+	"auth.error.closed":      "Sign-up is closed on this server.",
+	"auth.error.taken":       "This email already has an account.",
+
 	// Rail, mobile nav and screen titles.
 	"nav.label":        "Screens",
 	"nav.overview":     "Overview",

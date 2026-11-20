@@ -3,6 +3,7 @@ package web
 import (
 	"strings"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
@@ -67,20 +68,18 @@ const authScript = `(() => {
 })()`
 
 templ loginPage(form authForm) {
-	@authPage("Entrar", "/login", form) {
+	@authPage(i18n.T(ctx, "auth.sign_in"), "/login", form) {
 		<p>
-			Ainda não tem conta? <a href="/signup" class="text-foreground underline underline-offset-4">Criar conta</a>
+			{ i18n.T(ctx, "auth.no_account") } <a href="/signup" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_up") }</a>
 		</p>
 	}
 }
 
 templ signupPage(form authForm) {
-	@authPage("Criar conta", "/signup", form) {
+	@authPage(i18n.T(ctx, "auth.sign_up"), "/signup", form) {
+		<p>{ i18n.T(ctx, "auth.app_note") }</p>
 		<p>
-			Já usa o Prata no app? Crie a conta pelo app para preservar os dados dele; criar aqui começa uma conta vazia.
-		</p>
-		<p>
-			Já tem conta? <a href="/login" class="text-foreground underline underline-offset-4">Entrar</a>
+			{ i18n.T(ctx, "auth.has_account") } <a href="/login" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_in") }</a>
 		</p>
 	}
 }
@@ -98,10 +97,10 @@ templ authPage(title, action string, form authForm) {
 						<h1 class="panel-title">{ title }</h1>
 					</header>
 					<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
-						@formField("email", "E-mail", form.EmailError) {
+						@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
 							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
 						}
-						@formField("password", "Senha", form.PasswordError) {
+						@formField("password", i18n.T(ctx, "auth.password"), form.PasswordError) {
 							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
 						}
 						if form.Error != "" {

@@ -30,7 +30,8 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
-// Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup.
+// Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup. Language,
+// the Idioma of the signup page, only comes from the web; empty keeps the database default.
 type Signup struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
@@ -38,6 +39,7 @@ type Signup struct {
 	AccountID  string `json:"account_id"`
 	OwnerID    string `json:"owner_id"`
 	DeviceID   string `json:"device_id"`
+	Language   string `json:"-"`
 }
 
 type Signin struct {
@@ -96,6 +98,10 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 			"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
 			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now},
 		},
+	}
+
+	if signup.Language != "" {
+		statements = append(statements, statement{"UPDATE users SET language = ? WHERE id = ?", []any{signup.Language, signup.OwnerID}})
 	}
 
 	var key string
