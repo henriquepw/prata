@@ -1,0 +1,87 @@
+package web
+
+import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/utils"
+)
+
+// launchPanel is the Mês prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
+// on screen, which the answer swaps with the new row flashing; a 422 swaps only the preview. headScript focuses it on
+// "/", completes "@" and "#" on tab and blurs it on esc.
+templ launchPanel(page month) {
+	@panel(i18n.T(ctx, "launch.title"), "", launchKeys()) {
+		<form hx-post="/launch" hx-target="#month" hx-swap="outerHTML" hx-status:422="target:#launch-preview swap:innerHTML">
+			<input type="hidden" name="month" value={ page.Month.Format(monthLayout) }/>
+			<label class="prompt launch-prompt">
+				<span class="text-primary" aria-hidden="true">&gt;</span>
+				<input
+					id="launch"
+					name="line"
+					type="text"
+					autocomplete="off"
+					spellcheck="false"
+					placeholder={ i18n.T(ctx, "launch.placeholder") }
+					aria-label={ i18n.T(ctx, "launch.input") }
+					aria-describedby="launch-preview"
+					hx-get="/launch"
+					hx-trigger="input changed delay:150ms"
+					hx-include="closest form"
+					hx-target="#launch-preview"
+					hx-swap="innerHTML"
+				/>
+			</label>
+			<div id="launch-preview" class="launch-preview" aria-live="polite">
+				@launchPreview("", launchLine{})
+			</div>
+		</form>
+	}
+}
+
+// launchKeys is the prompt panel's "/ focar · enter lançar".
+templ launchKeys() {
+	<span class="month-keys"><kbd>/</kbd> { i18n.T(ctx, "launch.focus") } · <kbd>enter</kbd> { i18n.T(ctx, "launch.submit") }</span>
+}
+
+// launchPreview is what line saves, as "[despesa] −R$ 45,90 "padaria" ■ Mercado #casa 19/11/2026", with each problem
+// as "! falta o valor" or "! @x não existe", over the "tab" completions; the syntax while line is empty.
+templ launchPreview(line string, l launchLine) {
+	if strings.TrimSpace(line) == "" {
+		<p class="text-muted-foreground">{ i18n.T(ctx, "launch.hint") }</p>
+	} else {
+		<p class="launch-parsed">
+			<span class="launch-kind">[{ strings.ToLower(i18n.T(ctx, "kind."+l.Kind)) }]</span>
+			if l.Amount == 0 {
+				<span class="text-destructive">! { i18n.T(ctx, "launch.no_amount") }</span>
+			} else {
+				<span class={ utils.CN("tabular-nums", kindClass(l.Kind)) }>{ money(ctx, signed(l.Kind, l.Amount)) }</span>
+			}
+			if l.Description == "" {
+				@description(nil)
+			} else {
+				<span>"{ l.Description }"</span>
+			}
+			if l.Category.ID == "" {
+				<span class="text-muted-foreground">{ strings.ToLower(i18n.T(ctx, "field.no_category")) }</span>
+			} else {
+				@categoryName(l.Category.Name, l.Category.Color)
+			}
+			if l.Tag.ID != "" {
+				<span class="text-muted-foreground">#{ l.Tag.Name }</span>
+			}
+			<span class="tabular-nums text-muted-foreground">{ dayOf(l.Date).Format(dateLayout(ctx)) }</span>
+			for _, word := range l.Unknown {
+				<span class="text-destructive">! { i18n.T(ctx, "launch.unknown", word) }</span>
+			}
+		</p>
+	}
+	if len(l.Suggestions) > 0 {
+		<p class="launch-suggestions">
+			<kbd>tab</kbd>
+			for _, suggestion := range l.Suggestions {
+				<b>{ suggestion }</b>
+			}
+		</p>
+	}
+}

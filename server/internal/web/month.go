@@ -349,14 +349,20 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		status, message = http.StatusConflict, i18n.T(r.Context(), "month.error.confirmed")
 	}
 
+	h.renderMonth(w, r, status, change.EntityID, message)
+}
+
+// renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
+// its error.
+func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
 	now := time.Now().In(location(r))
-	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now))
+	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, now, shownMonth(r, now))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return
 	}
 
-	page.Flash, page.Error = change.EntityID, message
+	page.Flash, page.Error = flash, message
 	render(w, r, status, monthContent(page))
 }
 

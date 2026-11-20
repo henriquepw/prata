@@ -2,6 +2,8 @@ package web
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"slices"
 	"strconv"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/oklog/ulid/v2"
 )
 
 // launchLine is a line of the Mês prompt read as a transaction: Amount is 0 when the line has none, Date is
@@ -105,4 +108,66 @@ func completions(names []string, word string) []string {
 	}
 
 	return all
+}
+
+// isValid reports whether the line has an amount and every "@x" and "#x" names something.
+func (l launchLine) isValid() bool { return l.Amount > 0 && len(l.Unknown) == 0 }
+
+// readLaunch parses the request's prompt line against the live categories and tags, today in the user's time zone
+// and the year of the month on screen, answering 500 when it cannot read them.
+func (h handler) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine, bool) {
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return launchLine{}, false
+	}
+
+	tags, ok := h.liveTags(w, r)
+	if !ok {
+		return launchLine{}, false
+	}
+
+	now := time.Now().In(location(r))
+
+	return parseLaunch(r.Context(), r.FormValue("line"), categories, tags, now, shownMonth(r, now).Year()), true
+}
+
+// launchPreview answers the preview of the request's prompt line.
+func (h handler) launchPreview(w http.ResponseWriter, r *http.Request) {
+	l, ok := h.readLaunch(w, r)
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
+}
+
+// launch creates the transaction the prompt line reads as, at local midnight of its date in UTC, and answers the
+// month on screen with the new row flashing; a line with problems answers 422 with its preview and creates nothing.
+func (h handler) launch(w http.ResponseWriter, r *http.Request) {
+	l, ok := h.readLaunch(w, r)
+	if !ok {
+		return
+	}
+
+	if !l.isValid() {
+		render(w, r, http.StatusUnprocessableEntity, launchPreview(r.FormValue("line"), l))
+		return
+	}
+
+	occurredAt, _ := parseDate(l.Date, location(r))
+	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
+		"kind": l.Kind, "amount": l.Amount, "description": orNil(l.Description), "occurred_at": occurredAt,
+		"category_id": orNil(l.Category.ID), "tag_id": orNil(l.Tag.ID),
+	}}
+	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), change)
+	if err == nil && reason != "" {
+		err = fmt.Errorf("rejected: %s", reason)
+	}
+
+	if err != nil {
+		internalError(w, "launching transaction", err)
+		return
+	}
+
+	h.renderMonth(w, r, http.StatusOK, change.EntityID, "")
 }

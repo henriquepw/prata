@@ -49,6 +49,8 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.HandleFunc("POST /signup", visitor(h.signup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.Handle("GET /{$}", h.requireSession(h.home))
+	mux.Handle("GET /launch", h.requireSession(h.launchPreview))
+	mux.Handle("POST /launch", h.requireSession(h.launch))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
 	mux.Handle("GET /transactions/new", h.requireSession(h.newTransaction))
 	mux.Handle("GET /transactions/{id}", h.requireSession(h.editTransaction))
