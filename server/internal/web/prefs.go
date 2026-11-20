@@ -44,6 +44,27 @@ type numberFormat struct{ Value, Thousands, Decimal string }
 
 var numberFormats = []numberFormat{{"1.234,56", ".", ","}, {"1,234.56", ",", "."}}
 
+// currency is a Moeda: its schema value and its symbol.
+type currency struct{ Value, Symbol string }
+
+var currencies = []currency{{"BRL", "R$"}, {"USD", "$"}, {"EUR", "€"}}
+
+func findCurrency(value string) (currency, bool) {
+	i := slices.IndexFunc(currencies, func(c currency) bool { return c.Value == value })
+	if i < 0 {
+		return currency{}, false
+	}
+
+	return currencies[i], true
+}
+
+// currencySymbol is the symbol of the request's Moeda, as "R$".
+func currencySymbol(ctx context.Context) string {
+	c, _ := findCurrency(prefsFrom(ctx).Currency)
+
+	return c.Symbol
+}
+
 func findDateFormat(value string) (dateFormat, bool) {
 	i := slices.IndexFunc(dateFormats, func(f dateFormat) bool { return f.Value == value })
 	if i < 0 {
@@ -74,13 +95,13 @@ func clock(ctx context.Context, t time.Time) string {
 	return t.Format(dateLayout(ctx) + " 15:04:05")
 }
 
-// money writes signed cents in the request's Formato numérico, as "−R$ 1.234,56".
+// money writes signed cents with the request's Moeda symbol in its Formato numérico, as "−R$ 1.234,56".
 func money(ctx context.Context, cents int64) string {
 	if cents < 0 {
-		return "−R$ " + amount(ctx, -cents)
+		return "−" + currencySymbol(ctx) + " " + amount(ctx, -cents)
 	}
 
-	return "R$ " + amount(ctx, cents)
+	return currencySymbol(ctx) + " " + amount(ctx, cents)
 }
 
 // amount writes non-negative cents in the request's Formato numérico, as "1.234,56", for display and form fields.

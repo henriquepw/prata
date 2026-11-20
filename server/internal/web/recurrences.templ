@@ -77,7 +77,9 @@ templ recurrenceSheet(form recurrenceForm) {
 		}
 		@kindChoice(form.Kind, form.Errors["kind"])
 		@formField("amount", "Valor", form.Errors["amount"]) {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
+			@currencyPrefix() {
+				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
+			}
 		}
 		@formField("category_id", "Categoria", form.Errors["category_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {

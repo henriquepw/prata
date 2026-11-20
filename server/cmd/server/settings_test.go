@@ -9,7 +9,7 @@ import (
 )
 
 func settingsForm(dateFormat, numberFormat string) url.Values {
-	return url.Values{"date_format": {dateFormat}, "number_format": {numberFormat}}
+	return url.Values{"date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}}
 }
 
 // assertSelected checks /settings shows each value as the selected option.
@@ -43,6 +43,7 @@ func TestWebSettings_InvalidValueIs422AndSavesNothing(t *testing.T) {
 	for name, form := range map[string]url.Values{
 		"unknown date format":   settingsForm("DD.MM.YYYY", "1,234.56"),
 		"unknown number format": settingsForm("MM/DD/YYYY", "1 234,56"),
+		"unknown currency":      {"date_format": {"MM/DD/YYYY"}, "number_format": {"1,234.56"}, "currency": {"JPY"}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			response := w.submit(http.MethodPost, "/settings", form)
@@ -51,7 +52,7 @@ func TestWebSettings_InvalidValueIs422AndSavesNothing(t *testing.T) {
 				t.Errorf("POST /settings = %d, want %d with the form flagging the field: %s", response.Code, http.StatusUnprocessableEntity, body)
 			}
 
-			w.assertSelected("DD/MM/YYYY", "1.234,56")
+			w.assertSelected("DD/MM/YYYY", "1.234,56", "BRL")
 		})
 	}
 }
@@ -124,6 +125,33 @@ func TestWebSettings_DatesFollowTheDateFormat(t *testing.T) {
 		w.assertBody("/transactions?month=2026-07", time.Date(2026, 7, 15, 0, 0, 0, 0, loc).Format(layout))
 		w.assertBody("/tags", time.Date(2026, 7, 1, 0, 0, 0, 0, loc).Format(layout))
 		w.assertBody("/devices", now.Format(layout)+" ")
+	}
+}
+
+func TestWebSettings_CurrencySymbolFollowsTheAccountCurrency(t *testing.T) {
+	w := newWebClient(t)
+	tz := &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}
+
+	w.assertBody("/settings", "Moeda", "não serão convertidos")
+	w.assertSelected("BRL")
+	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Salário", "INCOME", "1.234,56", time.Now().Format(time.DateOnly), "", ""), tz)
+	w.assertBody("/", "R$ 1.234,56")
+
+	form := settingsForm("DD/MM/YYYY", "1,234.56")
+	form.Set("currency", "USD")
+	w.mustSubmit(http.MethodPost, "/settings", form)
+	w.assertSelected("USD")
+	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1,234.56", "2026-07-15", "", ""), tz)
+
+	w.assertBody("/transactions?month=2026-07", "−$ 1,234.56")
+	for _, path := range []string{"/transactions/new", "/recurrences/new", "/categories/new"} {
+		w.assertBody(path, ">$</span>")
+	}
+
+	for _, path := range []string{"/", "/transactions?month=2026-07", "/transactions/new"} {
+		if body := get(w.handler, path, w.cookie, tz).Body.String(); strings.Contains(body, "R$") {
+			t.Errorf("%s still shows R$ after switching to USD: %s", path, body)
+		}
 	}
 }
 

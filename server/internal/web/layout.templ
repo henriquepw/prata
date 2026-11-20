@@ -270,6 +270,14 @@ templ launcher() {
 	</dialog>
 }
 
+// currencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
+templ currencyPrefix() {
+	<div class="flex items-center gap-[1ch]">
+		<span class="text-xs text-muted-foreground">{ currencySymbol(ctx) }</span>
+		{ children... }
+	</div>
+}
+
 // formField is one sheet field: label, the control as children and its error message.
 templ formField(id, label, message string) {
 	@field.Field() {

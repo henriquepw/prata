@@ -94,7 +94,9 @@ templ categorySheet(form categoryForm) {
 			}
 		}
 		@formField("monthly_limit", "Limite mensal (0 = sem limite)", form.Errors["monthly_limit"]) {
-			@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+			@currencyPrefix() {
+				@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+			}
 		}
 	}
 }

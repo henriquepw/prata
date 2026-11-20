@@ -3,13 +3,16 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 )
 
-// settingsForm is the settings screen: the Preferences shown or typed and an error message per field name.
+// settingsForm is the settings screen: the Preferences and the account's Moeda shown or typed and an error message
+// per field name.
 type settingsForm struct {
 	store.Preferences
-	Errors map[string]string
+	Currency string
+	Errors   map[string]string
 }
 
 templ settingsPage(s shell, form settingsForm) {
@@ -42,6 +45,20 @@ templ settingsFields(form settingsForm) {
 					}
 				}
 			</div>
+		}
+		@panel("Conta", "", nil) {
+			@formField("currency", "Moeda", form.Errors["currency"]) {
+				@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
+					for _, c := range currencies {
+						@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
+							{ c.Value + " (" + c.Symbol + ")" }
+						}
+					}
+				}
+				@field.Description() {
+					Trocar a moeda só muda o símbolo: os valores lançados não serão convertidos.
+				}
+			}
 		}
 		<div class="flex justify-end">
 			@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {

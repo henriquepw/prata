@@ -122,7 +122,9 @@ templ transactionSheet(form transactionForm) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		@formField("amount", "Valor", form.Errors["amount"]) {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
+			@currencyPrefix() {
+				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
+			}
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
 			@formField("occurred_at", "Data", form.Errors["occurred_at"]) {

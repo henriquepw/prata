@@ -12,11 +12,12 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, settingsPage(s, settingsForm{Preferences: prefsFrom(r.Context()).Preferences, Errors: map[string]string{}}))
+	p := prefsFrom(r.Context())
+	render(w, r, http.StatusOK, settingsPage(s, settingsForm{Preferences: p.Preferences, Currency: p.Currency, Errors: map[string]string{}}))
 }
 
-// saveSettings stores the Preferences and reloads the page in them, or answers 422 with the form and stores nothing
-// when a value is not one of the options.
+// saveSettings stores the Preferences and the account's Moeda and reloads the page in them, or answers 422 with the
+// form and stores nothing when a value is not one of the options.
 func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	session := sessionFrom(r.Context())
 	form := settingsForm{
@@ -25,7 +26,8 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 			DateFormat:   r.PostFormValue("date_format"),
 			NumberFormat: r.PostFormValue("number_format"),
 		},
-		Errors: map[string]string{},
+		Currency: r.PostFormValue("currency"),
+		Errors:   map[string]string{},
 	}
 	if _, ok := findDateFormat(form.DateFormat); !ok {
 		form.Errors["date_format"] = "Escolha um formato de data."
@@ -35,6 +37,10 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		form.Errors["number_format"] = "Escolha um formato numérico."
 	}
 
+	if _, ok := findCurrency(form.Currency); !ok {
+		form.Errors["currency"] = "Escolha uma moeda."
+	}
+
 	if len(form.Errors) > 0 {
 		render(w, r, http.StatusUnprocessableEntity, settingsFields(form))
 		return
@@ -42,6 +48,11 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.db.SavePreferences(r.Context(), session.UserID, form.Preferences); err != nil {
 		internalError(w, "saving preferences", err)
+		return
+	}
+
+	if err := h.db.SaveCurrency(r.Context(), session.AccountID, form.Currency); err != nil {
+		internalError(w, "saving currency", err)
 		return
 	}
 

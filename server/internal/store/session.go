@@ -151,6 +151,15 @@ func (s *Store) SavePreferences(ctx context.Context, userID string, preferences 
 	return err
 }
 
+// SaveCurrency stores the account's Moeda without converting any amount; the schema refuses values outside its options.
+func (s *Store) SaveCurrency(ctx context.Context, accountID, currency string) error {
+	query := "UPDATE accounts SET currency = ?, updated_at = ? WHERE id = ?"
+
+	_, err := s.ExecContext(ctx, query, currency, formatTime(time.Now()), accountID)
+
+	return err
+}
+
 // DeleteSession deletes only the session of this token.
 func (s *Store) DeleteSession(ctx context.Context, token string) error {
 	query := "DELETE FROM sessions WHERE token_hash = ?"
