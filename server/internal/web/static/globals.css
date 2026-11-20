@@ -295,6 +295,92 @@
     color: var(--background);
   }
 
+  /* Launcher: the ctrl+k dialog, a panel 14vh from the top whose options invert when selected. */
+  .launcher {
+    margin: 14vh auto auto;
+    width: min(100% - 4ch, 600px);
+    max-width: none;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    color: var(--foreground);
+  }
+
+  .launcher::backdrop {
+    background: rgb(0 0 0 / 0.45);
+    backdrop-filter: blur(2px);
+  }
+
+  .launcher .panel {
+    background: var(--background);
+  }
+
+  .launcher kbd,
+  .option-n {
+    color: var(--muted-foreground);
+  }
+
+  .launcher kbd {
+    font: inherit;
+    font-size: 11px;
+    text-transform: uppercase;
+  }
+
+  .prompt {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    margin-bottom: 0.5lh;
+    padding-bottom: 0.5lh;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .prompt input {
+    flex: 1;
+    background: transparent;
+    outline: none;
+    caret-color: var(--primary);
+    caret-shape: block;
+  }
+
+  #launcher-options {
+    max-height: 60vh;
+    overflow: auto;
+  }
+
+  #launcher-options [role="option"] {
+    display: flex;
+    justify-content: space-between;
+    gap: 2ch;
+    width: 100%;
+    padding: 0.2lh 1ch;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color var(--snap) var(--ease),
+      color var(--snap) var(--ease);
+  }
+
+  #launcher-options [role="option"]:hover,
+  #launcher-options [aria-selected="true"] {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  #launcher-options [role="option"]:hover *,
+  #launcher-options [aria-selected="true"] * {
+    color: inherit;
+  }
+
+  .launcher-empty {
+    display: none;
+    padding: 0.2lh 1ch;
+  }
+
+  #launcher-options:not(:has([role="option"]:not([hidden]))) + .launcher-empty {
+    display: block;
+  }
+
   /* Console chrome: status bar, ticker, rail (or the mobile nav row), main and keybar. Only main scrolls. */
   .console-frame {
     position: relative;
