@@ -70,12 +70,12 @@ func TestSessionByToken_ResolvesUserEmailAndAccount(t *testing.T) {
 	}
 
 	want := store.Session{
-		UserID:      ownerID,
-		Email:       "ana@example.com",
-		AccountID:   accountID,
-		Preferences: store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"},
-		Currency:    "BRL",
-		ExpiresAt:   now.Add(30 * 24 * time.Hour),
+		UserID:    ownerID,
+		Email:     "ana@example.com",
+		AccountID: accountID,
+		Language:  "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56",
+		Currency:  "BRL",
+		ExpiresAt: now.Add(30 * 24 * time.Hour),
 	}
 	if session != want {
 		t.Errorf("session = %+v, want %+v", session, want)

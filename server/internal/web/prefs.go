@@ -14,7 +14,7 @@ import (
 
 // visitorSession holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
 // Idioma comes from visitor.
-var visitorSession = store.Session{Preferences: store.Preferences{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}, Currency: "BRL"}
+var visitorSession = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: "BRL"}
 
 // option is a choice of a settings or form field: its schema value.
 type option struct{ Value string }

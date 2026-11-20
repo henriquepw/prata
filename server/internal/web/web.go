@@ -208,7 +208,7 @@ func visitor(next http.HandlerFunc) http.HandlerFunc {
 // preferredLanguage is the tag of the Accept-Language entry with the highest q weight, the first one on a tie.
 func preferredLanguage(header string) string {
 	preferred, best := "", 0.0
-	for _, entry := range strings.Split(header, ",") {
+	for entry := range strings.SplitSeq(header, ",") {
 		tag, params, _ := strings.Cut(entry, ";")
 		weight := 1.0
 		if q, ok := strings.CutPrefix(strings.TrimSpace(params), "q="); ok {

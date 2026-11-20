@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/store"
 )
 
 func (h handler) settings(w http.ResponseWriter, r *http.Request) {
@@ -22,13 +21,11 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	session := sessionFrom(r.Context())
 	form := settingsForm{
-		Preferences: store.Preferences{
-			Language:     r.PostFormValue("language"),
-			DateFormat:   r.PostFormValue("date_format"),
-			NumberFormat: r.PostFormValue("number_format"),
-		},
-		Currency: r.PostFormValue("currency"),
-		Errors:   map[string]string{},
+		Language:     r.PostFormValue("language"),
+		DateFormat:   r.PostFormValue("date_format"),
+		NumberFormat: r.PostFormValue("number_format"),
+		Currency:     r.PostFormValue("currency"),
+		Errors:       map[string]string{},
 	}
 	if _, ok := find(languages, form.Language); !ok {
 		form.Errors["language"] = i18n.T(r.Context(), "settings.error.language")

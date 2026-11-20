@@ -95,22 +95,26 @@ func attrString(attrs templ.Attributes) string {
 	if len(attrs) == 0 {
 		return ""
 	}
+
 	keys := make([]string, 0, len(attrs))
 	for k := range attrs {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 	var b strings.Builder
 	for _, k := range keys {
 		switch v := attrs[k].(type) {
 		case bool:
 			if v {
-				b.WriteString(" " + templ.EscapeString(k))
+				b.WriteString(" ")
+				b.WriteString(templ.EscapeString(k))
 			}
 		default:
-			b.WriteString(fmt.Sprintf(" %s=\"%s\"", templ.EscapeString(k), templ.EscapeString(fmt.Sprint(v))))
+			fmt.Fprintf(&b, " %s=\"%s\"", templ.EscapeString(k), templ.EscapeString(fmt.Sprint(v)))
 		}
 	}
+
 	return b.String()
 }
 
@@ -121,5 +125,6 @@ func getIconContent(name string) (string, error) {
 	if !exists {
 		return "", fmt.Errorf("icon '%s' not found in internalSvgData map", name)
 	}
+
 	return content, nil
 }
