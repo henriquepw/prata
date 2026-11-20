@@ -149,7 +149,7 @@ func kpi(label string, cents int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = decoded(money(cents)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = decoded(money(ctx, cents)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

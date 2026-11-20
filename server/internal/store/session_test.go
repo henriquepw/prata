@@ -69,7 +69,14 @@ func TestSessionByToken_ResolvesUserEmailAndAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := store.Session{UserID: ownerID, Email: "ana@example.com", AccountID: accountID, ExpiresAt: now.Add(30 * 24 * time.Hour)}
+	want := store.Session{
+		UserID:      ownerID,
+		Email:       "ana@example.com",
+		AccountID:   accountID,
+		Preferences: store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"},
+		Currency:    "BRL",
+		ExpiresAt:   now.Add(30 * 24 * time.Hour),
+	}
 	if session != want {
 		t.Errorf("session = %+v, want %+v", session, want)
 	}
@@ -78,7 +85,13 @@ func TestSessionByToken_ResolvesUserEmailAndAccount(t *testing.T) {
 func TestSessionByToken_PicksEarliestJoinedAccountLikeSignin(t *testing.T) {
 	db := openWithUser(t)
 	const olderAccountID = "01JXQ8ZA000000000000000000"
-	_, err := db.ExecContext(context.Background(), "INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'MEMBER', ?)",
+	_, err := db.ExecContext(context.Background(), "INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, 'Bia', ?, '', '')",
+		olderAccountID, ownerID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = db.ExecContext(context.Background(), "INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'MEMBER', ?)",
 		"01JXQ8ZB000000000000000000", olderAccountID, ownerID, "2000-01-01T00:00:00Z")
 	if err != nil {
 		t.Fatal(err)

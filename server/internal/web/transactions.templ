@@ -51,8 +51,8 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label="Próximo mês">›</a>
 						</div>
 						<div class="hide-m text-xs tabular-nums">
-							<span class="text-muted-foreground">entradas</span> { money(income) }
-							<span class="text-muted-foreground">· saídas</span> { money(-outcome) }
+							<span class="text-muted-foreground">entradas</span> { money(ctx, income) }
+							<span class="text-muted-foreground">· saídas</span> { money(ctx, -outcome) }
 						</div>
 					</div>
 					if len(transactions) == 0 {
@@ -82,7 +82,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 								for _, transaction := range transactions {
 									@table.Row(sheetRow("/transactions/"+transaction.ID, transaction.ID == s.Flash)) {
 										@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-											{ formatDate(transaction.OccurredAt, s.Now.Location(), brDate) }
+											{ formatDate(transaction.OccurredAt, s.Now.Location(), dateLayout(ctx)) }
 										}
 										@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 											{ orEmpty(transaction.Description) }
@@ -96,7 +96,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 											}
 										}
 										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(transaction.Kind))}) {
-											{ money(signed(transaction.Kind, transaction.Amount)) }
+											{ money(ctx, signed(transaction.Kind, transaction.Amount)) }
 										}
 									}
 								}
@@ -122,7 +122,7 @@ templ transactionSheet(form transactionForm) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		@formField("amount", "Valor", form.Errors["amount"]) {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
 			@formField("occurred_at", "Data", form.Errors["occurred_at"]) {

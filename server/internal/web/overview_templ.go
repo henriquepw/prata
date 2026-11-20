@@ -10,6 +10,7 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -19,15 +20,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
-
-// money writes signed cents as a pt-BR amount such as "−R$ 1.234,56".
-func money(cents int64) string {
-	if cents < 0 {
-		return "−R$ " + formatCents(-cents)
-	}
-
-	return "R$ " + formatCents(cents)
-}
 
 const meterSegments = 20
 
@@ -69,11 +61,11 @@ func percent(usage store.CategoryUsage) string {
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
 const tightTable = "@max-[640px]:[&_:is(td,th)]:px-1"
 
-// shortDate writes a pure "YYYY-MM-DD" date as "DD/MM/YYYY".
-func shortDate(date string) string {
+// shortDate writes a pure "YYYY-MM-DD" date in the request's Formato de data.
+func shortDate(ctx context.Context, date string) string {
 	t, _ := time.Parse(time.DateOnly, date)
 
-	return t.Format(brDate)
+	return t.Format(dateLayout(ctx))
 }
 
 // homePage lays the KPI strip, Pendentes and Uso por categoria in the main column and the activity log down the
@@ -152,7 +144,7 @@ func homePage(s shell, page overview) templ.Component {
 					var templ_7745c5c3_Var4 string
 					templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(page.Error)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 84, Col: 69}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 76, Col: 69}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 					if templ_7745c5c3_Err != nil {
@@ -347,9 +339,9 @@ func homePage(s shell, page overview) templ.Component {
 										}
 										ctx = templ.InitializeContext(ctx)
 										var templ_7745c5c3_Var15 string
-										templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(shortDate(pending.Date))
+										templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(shortDate(ctx, pending.Date))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 110, Col: 35}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 102, Col: 40}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 										if templ_7745c5c3_Err != nil {
@@ -376,7 +368,7 @@ func homePage(s shell, page overview) templ.Component {
 										var templ_7745c5c3_Var17 string
 										templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(orEmpty(pending.Recurrence.Description))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 113, Col: 51}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 105, Col: 51}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 										if templ_7745c5c3_Err != nil {
@@ -452,9 +444,9 @@ func homePage(s shell, page overview) templ.Component {
 										}
 										ctx = templ.InitializeContext(ctx)
 										var templ_7745c5c3_Var21 string
-										templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(money(signed(pending.Recurrence.Kind, pending.Recurrence.Amount)))
+										templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, signed(pending.Recurrence.Kind, pending.Recurrence.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 125, Col: 77}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 117, Col: 82}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 										if templ_7745c5c3_Err != nil {
@@ -485,7 +477,7 @@ func homePage(s shell, page overview) templ.Component {
 										var templ_7745c5c3_Var23 string
 										templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL("/recurrences/" + pending.Recurrence.ID + "/occurrences/" + pending.Date)).ResolveURL(ctx)
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 128, Col: 126}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 120, Col: 126}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 										if templ_7745c5c3_Err != nil {
@@ -583,7 +575,7 @@ func homePage(s shell, page overview) templ.Component {
 						var templ_7745c5c3_Var26 string
 						templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(usage.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 147, Col: 44}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 139, Col: 44}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 						if templ_7745c5c3_Err != nil {
@@ -682,7 +674,7 @@ func homePage(s shell, page overview) templ.Component {
 						var templ_7745c5c3_Var31 string
 						templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(percent(usage))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 154, Col: 126}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 146, Col: 126}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 						if templ_7745c5c3_Err != nil {
@@ -694,9 +686,9 @@ func homePage(s shell, page overview) templ.Component {
 						}
 						if usage.MonthlyLimit > 0 {
 							var templ_7745c5c3_Var32 string
-							templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(money(usage.Used) + " / " + money(usage.MonthlyLimit))
+							templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, usage.Used) + " / " + money(ctx, usage.MonthlyLimit))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 158, Col: 65}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 150, Col: 75}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 							if templ_7745c5c3_Err != nil {
@@ -704,9 +696,9 @@ func homePage(s shell, page overview) templ.Component {
 							}
 						} else {
 							var templ_7745c5c3_Var33 string
-							templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(money(usage.Used))
+							templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, usage.Used))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 160, Col: 29}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/overview.templ`, Line: 152, Col: 34}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 							if templ_7745c5c3_Err != nil {

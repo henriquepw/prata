@@ -56,7 +56,7 @@ templ categoriesPage(s shell, categories []store.Category) {
 									if category.MonthlyLimit == 0 {
 										sem limite
 									} else {
-										{ money(category.MonthlyLimit) }
+										{ money(ctx, category.MonthlyLimit) }
 									}
 								}
 							}
@@ -94,7 +94,7 @@ templ categorySheet(form categoryForm) {
 			}
 		}
 		@formField("monthly_limit", "Limite mensal (0 = sem limite)", form.Errors["monthly_limit"]) {
-			@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: "0,00", Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+			@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Attributes: ariaInvalid(form.Errors["monthly_limit"])})
 		}
 	}
 }

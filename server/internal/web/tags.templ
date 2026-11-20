@@ -43,9 +43,9 @@ templ tagsPage(s shell, tags []store.Tag) {
 								}
 								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
 									if tag.EndAt == nil {
-										desde { formatDate(tag.StartAt, loc, brDate) }
+										desde { formatDate(tag.StartAt, loc, dateLayout(ctx)) }
 									} else {
-										{ formatDate(tag.StartAt, loc, brDate) } a { formatDate(*tag.EndAt, loc, brDate) }
+										{ formatDate(tag.StartAt, loc, dateLayout(ctx)) } a { formatDate(*tag.EndAt, loc, dateLayout(ctx)) }
 									}
 								}
 							}

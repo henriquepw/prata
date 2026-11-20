@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -59,7 +60,7 @@ func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(recurrence, categories)))
+	render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
 }
 
 // saveRecurrence creates the recurrence, or updates the one in the path, from the sheet's form. A category left
@@ -83,7 +84,7 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	amount := parseEntry(form.Errors, form.Amount, form.Kind)
+	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	if form.CategoryID != "" && !hasCategory(categories, form.CategoryID) {
 		form.Errors["category_id"] = "Escolha uma categoria."
 	}
@@ -113,7 +114,7 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if form.CategoryID == storedRecurrenceForm(stored, categories).CategoryID {
+		if form.CategoryID == storedRecurrenceForm(r.Context(), stored, categories).CategoryID {
 			delete(change.Fields, "category_id")
 		}
 	}
@@ -133,18 +134,18 @@ func (h handler) deleteRecurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := storedRecurrenceForm(recurrence, categories)
+	form := storedRecurrenceForm(r.Context(), recurrence, categories)
 	h.commit(w, r, form.Errors, recurrenceSheet(form), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
 }
 
 // storedRecurrenceForm fills the sheet with the stored recurrence as displayed: its category only when it is
 // among the live ones.
-func storedRecurrenceForm(recurrence store.Recurrence, categories []store.Category) recurrenceForm {
+func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, categories []store.Category) recurrenceForm {
 	form := recurrenceForm{
 		ID:          recurrence.ID,
 		Description: orEmpty(recurrence.Description),
 		Kind:        recurrence.Kind,
-		Amount:      formatCents(recurrence.Amount),
+		Amount:      amount(ctx, recurrence.Amount),
 		Day:         ruleDay(recurrence.Rule),
 		StartAt:     recurrence.StartAt,
 		EndAt:       orEmpty(recurrence.EndAt),

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
@@ -39,11 +40,12 @@ func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// localTime writes an RFC 3339 time in loc as "02/01/2006 15:04", or "nunca" when it is empty.
-func localTime(value string, loc *time.Location) string {
+// localTime writes an RFC 3339 time in loc in the request's Formato de data and 24h time, as "02/01/2006 15:04", or
+// "nunca" when it is empty.
+func localTime(ctx context.Context, value string, loc *time.Location) string {
 	if value == "" {
 		return "nunca"
 	}
 
-	return formatDate(value, loc, brDate+" 15:04")
+	return formatDate(value, loc, dateLayout(ctx)+" 15:04")
 }

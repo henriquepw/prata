@@ -1,0 +1,52 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+)
+
+// settingsForm is the settings screen: the Preferences shown or typed and an error message per field name.
+type settingsForm struct {
+	store.Preferences
+	Errors map[string]string
+}
+
+templ settingsPage(s shell, form settingsForm) {
+	@layout(s) {
+		@settingsFields(form)
+	}
+}
+
+// settingsFields is the settings form: the Preferências panel and "> salvar". A 422 swaps the whole form.
+templ settingsFields(form settingsForm) {
+	<form hx-post="/settings" hx-swap="outerHTML" hx-disable="find [type=submit]" class="grid max-w-[60ch] gap-[1lh]">
+		@panel("Preferências", "", nil) {
+			<div class="grid gap-[1lh]">
+				@formField("date_format", "Formato de data", form.Errors["date_format"]) {
+					@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
+						for _, f := range dateFormats {
+							@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
+								{ f.Label }
+							}
+						}
+					}
+				}
+				@formField("number_format", "Formato numérico", form.Errors["number_format"]) {
+					@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
+						for _, f := range numberFormats {
+							@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
+								{ f.Value }
+							}
+						}
+					}
+				}
+			</div>
+		}
+		<div class="flex justify-end">
+			@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {
+				<span>&gt; Salvar</span>
+			}
+		</div>
+	</form>
+}

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -35,7 +36,7 @@ func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
+	render(w, r, http.StatusOK, categorySheet(storedCategoryForm(r.Context(), category)))
 }
 
 // saveCategory creates the category, or updates the one in the path, from the sheet's form.
@@ -55,7 +56,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["color"] = "Escolha uma cor."
 	}
 
-	limit, ok := parseCents(form.MonthlyLimit)
+	limit, ok := parseAmount(r.Context(), form.MonthlyLimit)
 	if !ok || limit < 0 {
 		form.Errors["monthly_limit"] = "Informe um limite maior ou igual a zero."
 	}
@@ -77,13 +78,13 @@ func (h handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := storedCategoryForm(category)
+	form := storedCategoryForm(r.Context(), category)
 	h.commit(w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: store.KindDelete})
 }
 
 // storedCategoryForm fills the sheet with the stored category.
-func storedCategoryForm(category store.Category) categoryForm {
-	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, MonthlyLimit: formatCents(category.MonthlyLimit), Errors: map[string]string{}}
+func storedCategoryForm(ctx context.Context, category store.Category) categoryForm {
+	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, MonthlyLimit: amount(ctx, category.MonthlyLimit), Errors: map[string]string{}}
 }
 
 // category reads the live category in the path, answering 404 when the account has none.

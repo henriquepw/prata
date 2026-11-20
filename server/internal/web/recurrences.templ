@@ -53,7 +53,7 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 									todo dia { ruleDay(recurrence.Rule) }
 								}
 								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}) {
-									{ money(signed(recurrence.Kind, recurrence.Amount)) }
+									{ money(ctx, signed(recurrence.Kind, recurrence.Amount)) }
 								}
 							}
 						}
@@ -77,7 +77,7 @@ templ recurrenceSheet(form recurrenceForm) {
 		}
 		@kindChoice(form.Kind, form.Errors["kind"])
 		@formField("amount", "Valor", form.Errors["amount"]) {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
 		}
 		@formField("category_id", "Categoria", form.Errors["category_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {

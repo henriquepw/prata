@@ -77,6 +77,8 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
 	mux.Handle("GET /devices", h.requireSession(h.devices))
 	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
+	mux.Handle("GET /settings", h.requireSession(h.settings))
+	mux.Handle("POST /settings", h.requireSession(h.saveSettings))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }
@@ -154,7 +156,7 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID str
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
-// visitors without a live session to /login.
+// visitors without a live session to /login. The session and its prefs ride in the request context.
 func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
@@ -175,7 +177,9 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 		}
 
 		setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
-		next(w, r.WithContext(context.WithValue(r.Context(), sessionKey{}, session)))
+		ctx := context.WithValue(r.Context(), sessionKey{}, session)
+		ctx = context.WithValue(ctx, prefsKey{}, prefs{session.Preferences, session.Currency})
+		next(w, r.WithContext(ctx))
 	})
 }
 

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -72,7 +73,7 @@ func (h handler) editTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, transactionSheet(storedTransactionForm(form, transaction, location(r))))
+	render(w, r, http.StatusOK, transactionSheet(storedTransactionForm(r.Context(), form, transaction, location(r))))
 }
 
 // saveTransaction creates the transaction, or updates the one in the path, from the sheet's form. The date is
@@ -92,7 +93,7 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	form.CategoryID = r.PostFormValue("category_id")
 	form.TagID = r.PostFormValue("tag_id")
 
-	amount := parseEntry(form.Errors, form.Amount, form.Kind)
+	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	occurredAt, ok := parseDate(form.OccurredAt, location(r))
 	if !ok {
 		form.Errors["occurred_at"] = "Informe a data."
@@ -118,7 +119,7 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		displayed := storedTransactionForm(form, stored, location(r))
+		displayed := storedTransactionForm(r.Context(), form, stored, location(r))
 		if form.CategoryID == displayed.CategoryID {
 			delete(change.Fields, "category_id")
 		}
@@ -142,7 +143,7 @@ func (h handler) deleteTransaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form = storedTransactionForm(form, transaction, location(r))
+	form = storedTransactionForm(r.Context(), form, transaction, location(r))
 	h.commit(w, r, form.Errors, transactionSheet(form), store.Change{Entity: "TRANSACTION", EntityID: transaction.ID, Kind: store.KindDelete})
 }
 
@@ -164,11 +165,11 @@ func (h handler) transactionForm(w http.ResponseWriter, r *http.Request) (transa
 
 // storedTransactionForm fills the sheet with the stored transaction as displayed: its date in loc, and its category
 // and tag only when they are among the sheet's live ones.
-func storedTransactionForm(form transactionForm, transaction store.Transaction, loc *time.Location) transactionForm {
+func storedTransactionForm(ctx context.Context, form transactionForm, transaction store.Transaction, loc *time.Location) transactionForm {
 	form.ID = transaction.ID
 	form.Description = orEmpty(transaction.Description)
 	form.Kind = transaction.Kind
-	form.Amount = formatCents(transaction.Amount)
+	form.Amount = amount(ctx, transaction.Amount)
 	form.OccurredAt = formatDate(transaction.OccurredAt, loc, time.DateOnly)
 	form.CategoryID, form.TagID = "", ""
 	if id := orEmpty(transaction.CategoryID); hasCategory(form.Categories, id) {

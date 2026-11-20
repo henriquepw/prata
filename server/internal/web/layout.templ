@@ -22,7 +22,7 @@ type shell struct {
 	Flash   string
 }
 
-// nav is the rail, in the order of the 1–6 shortcuts. NewURL is the screen's "novo" sheet, when it has one, and
+// nav is the rail, in the order of the 1–7 shortcuts. NewURL is the screen's "novo" sheet, when it has one, and
 // NewLabel its launcher command.
 var nav = []struct{ Href, Label, NewURL, NewLabel string }{
 	{"/", "Visão geral", "", ""},
@@ -31,6 +31,7 @@ var nav = []struct{ Href, Label, NewURL, NewLabel string }{
 	{"/tags", "Tags", "/tags/new", "Nova tag"},
 	{"/recurrences", "Recorrências", "/recurrences/new", "Nova recorrência"},
 	{"/devices", "Dispositivos", "", ""},
+	{"/settings", "Configurações", "", ""},
 }
 
 // newURL is the URL of the current screen's "novo" sheet, empty where there is none.
@@ -46,9 +47,10 @@ func (s shell) newURL() string {
 
 // headScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
-// [data-clock] (status bar and login footer). It also runs the shortcuts: ctrl+k (cmd+k) toggles the launcher
-// anywhere, which filters its options without accents by every word, moves the selection with ↑↓ and runs it with
-// enter; outside fields and dialogs, 1–6 and n click their [data-key] and enter opens the focused row.
+// [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
+// runs the shortcuts: ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by
+// every word, moves the selection with ↑↓ and runs it with enter; outside fields and dialogs, 1–7 and n click their
+// [data-key] and enter opens the focused row.
 const headScript = `(() => {
   const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const applyTheme = () => {
@@ -62,7 +64,11 @@ const headScript = `(() => {
     applyTheme()
   }
   document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
-  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => e.textContent = new Date().toLocaleString('pt-BR').replace(',', ''))
+  const pad = n => String(n).padStart(2, '0')
+  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => {
+    const d = new Date(), parts = { DD: pad(d.getDate()), MM: pad(d.getMonth() + 1), YYYY: d.getFullYear() }
+    e.textContent = e.dataset.clock.replace(/YYYY|MM|DD/g, k => parts[k]) + ' ' + d.toTimeString().slice(0, 8)
+  })
   setInterval(tick, 1000)
   addEventListener('DOMContentLoaded', tick)
   addEventListener('htmx:after:swap', () => {
@@ -107,7 +113,7 @@ const headScript = `(() => {
     }
     if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
     if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
-    else if (/^[1-6n]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+    else if (/^[1-7n]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
   })
 })()`
 
@@ -144,14 +150,14 @@ templ layout(s shell) {
 				<header class="sbar">
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
 					<div class="sbar-right">
-						<time data-clock>{ s.Now.Format("02/01/2006 15:04:05") }</time>
+						<time data-clock={ prefsFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
 						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>[ctrl k] buscar</button>
 					</div>
 				</header>
 				<div class="ticker">
 					<dl>
-						<div><dt>Realizado</dt><dd>{ money(s.Balance.Realized) }</dd></div>
-						<div><dt>Projetado</dt><dd>{ money(s.Balance.Projected) }</dd></div>
+						<div><dt>Realizado</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
+						<div><dt>Projetado</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
 						<div>
 							<dt>Pendentes</dt>
 							<dd>
@@ -203,7 +209,7 @@ templ layout(s shell) {
 					</main>
 				</div>
 				<footer class="keybar">
-					<span><kbd>1-6</kbd> navegar</span>
+					<span><kbd>1-7</kbd> navegar</span>
 					if url := s.newURL(); url != "" {
 						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> novo</button></span>
 					}

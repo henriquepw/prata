@@ -1,20 +1,15 @@
 package web
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"slices"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
-// Form helpers shared by the sheets: pt-BR money, dates, optional fields and the live options of a select.
-
-// brDate is how pages show a date.
-const brDate = "02/01/2006"
+// Form helpers shared by the sheets: entries, dates, optional fields and the live options of a select.
 
 // kind is a transaction or recurrence kind with its label.
 type kind struct{ Value, Label string }
@@ -25,10 +20,10 @@ func isKind(value string) bool {
 	return slices.ContainsFunc(kinds, func(k kind) bool { return k.Value == value })
 }
 
-// parseEntry reads the amount in cents and checks the kind every transaction and recurrence has, setting their
-// field errors.
-func parseEntry(errs map[string]string, amount, kind string) int64 {
-	cents, ok := parseCents(amount)
+// parseEntry reads the amount in cents, typed in the request's Formato numérico, and checks the kind every
+// transaction and recurrence has, setting their field errors.
+func parseEntry(ctx context.Context, errs map[string]string, typed, kind string) int64 {
+	cents, ok := parseAmount(ctx, typed)
 	if !ok || cents <= 0 {
 		errs["amount"] = "Informe um valor maior que zero."
 	}
@@ -38,28 +33,6 @@ func parseEntry(errs map[string]string, amount, kind string) int64 {
 	}
 
 	return cents
-}
-
-// parseCents reads a pt-BR amount such as "1.234,56" as cents; empty is zero.
-func parseCents(s string) (int64, bool) {
-	whole, frac, _ := strings.Cut(strings.ReplaceAll(s, ".", ""), ",")
-	if len(frac) > 2 {
-		return 0, false
-	}
-
-	cents, err := strconv.ParseInt(whole+(frac + "00")[:2], 10, 64)
-
-	return cents, err == nil
-}
-
-// formatCents writes non-negative cents as a pt-BR amount such as "1.234,56".
-func formatCents(cents int64) string {
-	whole := strconv.FormatInt(cents/100, 10)
-	for i := len(whole) - 3; i > 0; i -= 3 {
-		whole = whole[:i] + "." + whole[i:]
-	}
-
-	return fmt.Sprintf("%s,%02d", whole, cents%100)
 }
 
 // isDate reports whether s is a pure "YYYY-MM-DD" date, as <input type="date"> sends it.

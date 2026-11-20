@@ -236,9 +236,9 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 												return templ_7745c5c3_Err
 											}
 											var templ_7745c5c3_Var14 string
-											templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, brDate))
+											templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, dateLayout(ctx)))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 46, Col: 54}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 46, Col: 63}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 											if templ_7745c5c3_Err != nil {
@@ -246,9 +246,9 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 											}
 										} else {
 											var templ_7745c5c3_Var15 string
-											templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, brDate))
+											templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, dateLayout(ctx)))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 48}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 57}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 											if templ_7745c5c3_Err != nil {
@@ -259,9 +259,9 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 												return templ_7745c5c3_Err
 											}
 											var templ_7745c5c3_Var16 string
-											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(*tag.EndAt, loc, brDate))
+											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(*tag.EndAt, loc, dateLayout(ctx)))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 90}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 108}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {

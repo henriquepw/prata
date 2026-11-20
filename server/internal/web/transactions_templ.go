@@ -148,9 +148,9 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var7 string
-				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(money(income))
+				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, income))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 54, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 54, Col: 79}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -161,9 +161,9 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var8 string
-				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(money(-outcome))
+				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, -outcome))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 55, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 55, Col: 83}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -375,9 +375,9 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 										}
 										ctx = templ.InitializeContext(ctx)
 										var templ_7745c5c3_Var20 string
-										templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(transaction.OccurredAt, s.Now.Location(), brDate))
+										templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(transaction.OccurredAt, s.Now.Location(), dateLayout(ctx)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 85, Col: 73}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 85, Col: 82}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 										if templ_7745c5c3_Err != nil {
@@ -480,9 +480,9 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 										}
 										ctx = templ.InitializeContext(ctx)
 										var templ_7745c5c3_Var27 string
-										templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(money(signed(transaction.Kind, transaction.Amount)))
+										templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, signed(transaction.Kind, transaction.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 99, Col: 64}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 99, Col: 69}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 										if templ_7745c5c3_Err != nil {
@@ -601,7 +601,7 @@ func transactionSheet(form transactionForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

@@ -19,12 +19,22 @@ const (
 // ErrInvalidSession means the session token is unknown, expired or deleted.
 var ErrInvalidSession = errors.New("invalid session")
 
-// Session is who a web session acts as and when it expires.
+// Session is who a web session acts as, the user's Preferences, the account's Moeda and when it expires.
 type Session struct {
 	UserID    string
 	Email     string
 	AccountID string
+	Preferences
+	Currency  string
 	ExpiresAt time.Time
+}
+
+// Preferences are a user's Idioma, Formato de data and Formato numérico, spelled as the schema stores them
+// ("pt-BR", "DD/MM/YYYY", "1.234,56").
+type Preferences struct {
+	Language     string `db:"language"`
+	DateFormat   string `db:"date_format"`
+	NumberFormat string `db:"number_format"`
 }
 
 // Authenticate returns the id of the user with this email and password.
@@ -71,20 +81,24 @@ func (s *Store) CreateSession(ctx context.Context, userID string, now time.Time)
 // An expired session is deleted and rejected.
 func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time) (Session, error) {
 	query := `
-		SELECT s.id, s.user_id, u.email, a.account_id, s.expires_at
+		SELECT s.id, s.user_id, u.email, u.language, u.date_format, u.number_format, a.account_id, c.currency,
+			s.expires_at
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		JOIN account_users a ON a.user_id = s.user_id
+		JOIN accounts c ON c.id = a.account_id
 		WHERE s.token_hash = ?
 		ORDER BY a.created_at
 		LIMIT 1
 	`
 
 	var row struct {
-		ID        string `db:"id"`
-		UserID    string `db:"user_id"`
-		Email     string `db:"email"`
+		ID     string `db:"id"`
+		UserID string `db:"user_id"`
+		Email  string `db:"email"`
+		Preferences
 		AccountID string `db:"account_id"`
+		Currency  string `db:"currency"`
 		ExpiresAt string `db:"expires_at"`
 	}
 	err := s.GetContext(ctx, &row, query, hashToken(token))
@@ -118,7 +132,23 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 		}
 	}
 
-	return Session{UserID: row.UserID, Email: row.Email, AccountID: row.AccountID, ExpiresAt: expiresAt.UTC()}, nil
+	return Session{
+		UserID:      row.UserID,
+		Email:       row.Email,
+		AccountID:   row.AccountID,
+		Preferences: row.Preferences,
+		Currency:    row.Currency,
+		ExpiresAt:   expiresAt.UTC(),
+	}, nil
+}
+
+// SavePreferences stores the user's Preferences; the schema refuses values outside its options.
+func (s *Store) SavePreferences(ctx context.Context, userID string, preferences Preferences) error {
+	query := "UPDATE users SET language = ?, date_format = ?, number_format = ?, updated_at = ? WHERE id = ?"
+
+	_, err := s.ExecContext(ctx, query, preferences.Language, preferences.DateFormat, preferences.NumberFormat, formatTime(time.Now()), userID)
+
+	return err
 }
 
 // DeleteSession deletes only the session of this token.

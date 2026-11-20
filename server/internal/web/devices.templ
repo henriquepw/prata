@@ -35,10 +35,10 @@ templ devicesPage(s shell, devices []store.Device) {
 									{ device.Name }
 								}
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-									{ localTime(device.LastSeenAt, loc) }
+									{ localTime(ctx, device.LastSeenAt, loc) }
 								}
 								@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
-									{ localTime(device.CreatedAt, loc) }
+									{ localTime(ctx, device.CreatedAt, loc) }
 								}
 								@table.Cell(table.CellProps{Class: "text-right"}) {
 									@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
