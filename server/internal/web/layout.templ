@@ -153,8 +153,8 @@ templ document(title string) {
 	</html>
 }
 
-// layout is the console chrome around an authenticated page: status bar, ticker, rail (or the mobile nav row),
-// main and keybar. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
+// layout is the console chrome around an authenticated page: header (title and ticker), rail (or the mobile nav row),
+// main and keybar, which ends with the clock. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
 // dialog's: ctrl enter salvar for the sheet and esc fechar.
 templ layout(s shell) {
 	@document(s.Title) {
@@ -162,17 +162,14 @@ templ layout(s shell) {
 			<div class="console">
 				<header class="sbar">
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
-					<div class="sbar-right">
-						<time data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
+					<div class="ticker">
+						@ticker(s, false)
+						<div>
+							<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
+							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
+						</div>
 					</div>
 				</header>
-				<div class="ticker">
-					@ticker(s, false)
-					<div>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
-						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
-					</div>
-				</div>
 				@balanceLine(s.Balance, false)
 				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range nav {
@@ -216,6 +213,7 @@ templ layout(s shell) {
 						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
 						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
 					</div>
+					<time class="keybar-clock" data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
 				</footer>
 			</div>
 		</div>
@@ -233,25 +231,6 @@ templ ticker(s shell, oob bool) {
 			hx-swap-oob="true"
 		}
 	>
-		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
-		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
-		<div>
-			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
-			<dd>
-				<a href="/" class="lnk">{ strconv.Itoa(len(s.Balance.Pending)) }</a>
-				if overdue := s.Balance.overdue(); overdue > 0 {
-					@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-						{ i18n.Plural(ctx, "layout.overdue", overdue) }
-					}
-				}
-			</dd>
-		</div>
-		<div>
-			<dt>{ i18n.T(ctx, "layout.sync") }</dt>
-			<dd>
-				@online()
-			</dd>
-		</div>
 		<div class="ticker-user"><dt>{ i18n.T(ctx, "layout.user") }</dt><dd>{ s.Email }</dd></div>
 	</dl>
 }

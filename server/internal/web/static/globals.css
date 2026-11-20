@@ -427,13 +427,6 @@
     color: var(--primary);
   }
 
-  .sbar-right {
-    display: flex;
-    align-items: center;
-    gap: 1.5ch;
-    font-variant-numeric: tabular-nums;
-  }
-
   .cursor {
     color: var(--primary);
     animation: blink 1s steps(1) infinite;
@@ -441,7 +434,6 @@
 
   .ticker {
     display: flex;
-    border-bottom: 1px solid var(--line-soft);
     font-size: 12px;
     white-space: nowrap;
     overflow: hidden;
@@ -456,8 +448,7 @@
     display: flex;
     align-items: center;
     gap: 1ch;
-    padding: 0.4lh 2ch;
-    border-right: 1px solid var(--line-soft);
+    padding-inline: 1.5ch;
   }
 
   .ticker dt {
@@ -472,12 +463,6 @@
     align-items: center;
     gap: 1ch;
     font-variant-numeric: tabular-nums;
-  }
-
-  .ticker .ticker-user {
-    flex: 1;
-    justify-content: flex-end;
-    border-right: 0;
   }
 
   /* Sync dot: "●", and the braille spinner while any htmx request is in flight. */
@@ -612,6 +597,11 @@
     display: inline;
   }
 
+  .keybar-clock {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
   .keybar kbd {
     font: inherit;
     color: var(--primary);
@@ -644,8 +634,7 @@
   @container console (max-width: 640px) {
     .rail,
     .ticker,
-    .keybar,
-    .sbar-right time {
+    .keybar {
       display: none;
     }
 
