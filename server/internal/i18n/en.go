@@ -27,7 +27,8 @@ var en = map[string]string{
 	"nav.settings":     "Settings",
 
 	// Status bar, ticker and keybar.
-	"layout.search":        "[ctrl k] search",
+	"layout.commands":      "[ctrl k] commands",
+	"layout.balance":       "Balance",
 	"layout.realized":      "Realized",
 	"layout.projected":     "Projected",
 	"layout.pending":       "Pending",
@@ -41,6 +42,7 @@ var en = map[string]string{
 	"keybar.new":           "new",
 	"keybar.commands":      "commands",
 	"keybar.close":         "close",
+	"keybar.save":          "save",
 
 	// Ctrl+k launcher.
 	"launcher.title":           "Commands",

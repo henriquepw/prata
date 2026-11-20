@@ -143,7 +143,8 @@ templ document(title string) {
 }
 
 // layout is the console chrome around an authenticated page: status bar, ticker, rail (or the mobile nav row),
-// main and keybar. Only main scrolls.
+// main and keybar. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
+// dialog's: ctrl enter salvar for the sheet and esc fechar.
 templ layout(s shell) {
 	@document(s.Title) {
 		<div class="console-frame">
@@ -152,7 +153,7 @@ templ layout(s shell) {
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
 					<div class="sbar-right">
 						<time data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.search") }</button>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.commands") }</button>
 					</div>
 				</header>
 				<div class="ticker">
@@ -162,7 +163,7 @@ templ layout(s shell) {
 						<div>
 							<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 							<dd>
-								{ strconv.Itoa(len(s.Balance.Pending)) }
+								<a href="/" class="lnk">{ strconv.Itoa(len(s.Balance.Pending)) }</a>
 								if overdue := s.Balance.overdue(); overdue > 0 {
 									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 										{ i18n.Plural(ctx, "layout.overdue", overdue) }
@@ -183,6 +184,21 @@ templ layout(s shell) {
 						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
 					</div>
 				</div>
+				<dl aria-label={ i18n.T(ctx, "layout.balance") } class="mbal">
+					<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
+					<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
+					<div>
+						<dt>{ i18n.T(ctx, "layout.pending") }</dt>
+						<dd>
+							{ strconv.Itoa(len(s.Balance.Pending)) }
+							if overdue := s.Balance.overdue(); overdue > 0 {
+								@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+									{ fmt.Sprintf("[%d]", overdue) }
+								}
+							}
+						</dd>
+					</div>
+				</dl>
 				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range nav {
 						<a
@@ -190,7 +206,7 @@ templ layout(s shell) {
 							if item.Href == s.Path {
 								aria-current="page"
 							}
-						>{ fmt.Sprintf("[%d]%s", i+1, string([]rune(i18n.T(ctx, item.Label))[:3])) }</a>
+						><span class="text-primary">{ strconv.Itoa(i + 1) }</span>{ i18n.T(ctx, item.Label) }</a>
 					}
 				</nav>
 				<div class="console-body">
@@ -210,12 +226,17 @@ templ layout(s shell) {
 					</main>
 				</div>
 				<footer class="keybar">
-					<span><kbd>1-7</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
-					if url := s.newURL(); url != "" {
-						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
-					}
-					<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
-					<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
+					<div class="keys">
+						<span><kbd>1-7</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
+						if url := s.newURL(); url != "" {
+							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
+						}
+						<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
+					</div>
+					<div class="keys-open">
+						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
+						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
+					</div>
 				</footer>
 			</div>
 		</div>

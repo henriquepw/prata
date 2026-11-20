@@ -27,7 +27,8 @@ var ptBR = map[string]string{
 	"nav.settings":     "Configurações",
 
 	// Status bar, ticker and keybar.
-	"layout.search":        "[ctrl k] buscar",
+	"layout.commands":      "[ctrl k] comandos",
+	"layout.balance":       "Saldo",
 	"layout.realized":      "Realizado",
 	"layout.projected":     "Projetado",
 	"layout.pending":       "Pendentes",
@@ -41,6 +42,7 @@ var ptBR = map[string]string{
 	"keybar.new":           "novo",
 	"keybar.commands":      "comandos",
 	"keybar.close":         "fechar",
+	"keybar.save":          "salvar",
 
 	// Ctrl+k launcher.
 	"launcher.title":           "Comandos",
