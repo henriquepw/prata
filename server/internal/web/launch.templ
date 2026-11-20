@@ -13,7 +13,7 @@ import (
 templ launchPanel(page month) {
 	@panel(i18n.T(ctx, "launch.title"), "", launchKeys()) {
 		<form hx-post="/launch" hx-target="#month" hx-swap="outerHTML" hx-status:422="target:#launch-preview swap:innerHTML">
-			<input type="hidden" name="month" value={ page.Month.Format(monthLayout) }/>
+			<input type="hidden" name="month" value={ page.yearMonth() }/>
 			<input type="hidden" name="category" value={ page.Filter.ID }/>
 			<label class="prompt launch-prompt">
 				<span class="text-primary" aria-hidden="true">&gt;</span>

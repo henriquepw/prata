@@ -129,7 +129,10 @@ type day struct {
 	Transactions []store.Transaction
 }
 
-func (m month) isCurrent() bool { return m.Month.Format(monthLayout) == m.Today[:len(monthLayout)] }
+// yearMonth is the month shown, as YYYY-MM.
+func (m month) yearMonth() string { return m.Month.Format(monthLayout) }
+
+func (m month) isCurrent() bool { return m.yearMonth() == m.Today[:len(monthLayout)] }
 
 func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
 

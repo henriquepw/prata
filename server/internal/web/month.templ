@@ -178,7 +178,7 @@ templ monthContent(page month) {
 						for _, usage := range page.Usages {
 							{{ isOver := usage.MonthlyLimit > 0 && usage.Used > usage.MonthlyLimit }}
 							<a
-								href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), usage.ID)) }
+								href={ templ.SafeURL(monthURL(page.yearMonth(), usage.ID)) }
 								class="usage"
 								if usage.ID == page.Filter.ID {
 									aria-current="true"
@@ -204,7 +204,7 @@ templ monthContent(page month) {
 templ statementActions(page month) {
 	<span class="flex items-center gap-[1ch]">
 		if page.Filter.ID != "" {
-			<a href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), "")) } class="lnk flex items-center gap-[1ch]">
+			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk flex items-center gap-[1ch]">
 				@categoryName(page.Filter.Name, page.Filter.Color)
 				✕
 			</a>
@@ -216,7 +216,7 @@ templ statementActions(page month) {
 // allCategories is "[todas]", which clears the filter, only while there is one.
 templ allCategories(page month) {
 	if page.Filter.ID != "" {
-		<a href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), "")) } class="lnk">{ i18n.T(ctx, "month.all") }</a>
+		<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk">{ i18n.T(ctx, "month.all") }</a>
 	}
 }
 
@@ -266,7 +266,7 @@ templ pendingRow(page month, p occurrence, withDate bool) {
 		}
 		@table.Cell(table.CellProps{Class: "hide-m"}) {
 			<form hx-post={ url } hx-target="#month" hx-swap="outerHTML" onclick="event.stopPropagation()" class="flex justify-end">
-				<input type="hidden" name="month" value={ page.Month.Format(monthLayout) }/>
+				<input type="hidden" name="month" value={ page.yearMonth() }/>
 				<input type="hidden" name="category" value={ page.Filter.ID }/>
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
 					<span>{ i18n.T(ctx, "month.confirm") }</span>
