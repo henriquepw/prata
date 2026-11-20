@@ -13,11 +13,15 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// overview is the home page's own content: this month's category usage and Error holding a rejected confirmation.
-// The balances and the pending occurrences come from the shell's balance.
+// overview is the home page's own content: this month's INCOME and OUTCOME totals in cents and category usage, the
+// activity log and Error holding a rejected confirmation. The balances and the pending occurrences come from the
+// shell's balance.
 type overview struct {
-	Usages []store.CategoryUsage
-	Error  string
+	Month           time.Time
+	Income, Outcome int64
+	Usages          []store.CategoryUsage
+	Activity        []store.Activity
+	Error           string
 }
 
 // balance is what the ticker and the overview show: the realized balance, the occurrences still pending up to the
@@ -91,22 +95,37 @@ func (h handler) home(w http.ResponseWriter, r *http.Request) {
 	h.renderOverview(w, r, http.StatusOK, "")
 }
 
-// renderOverview reads the overview in the user's time zone: the shell's balance and the usage over this month as
-// [from, to) in UTC.
+// renderOverview reads the overview in the user's time zone: the shell's balance, this month's totals and usage
+// over [from, to) in UTC, and the activity log.
 func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
 	s, ok := h.shell(w, r, "Visão geral")
 	if !ok {
 		return
 	}
 
-	_, from, to := monthWindow(s.Now)
-	usages, err := h.db.CategoryUsages(r.Context(), sessionFrom(r.Context()).AccountID, from, to)
+	accountID := sessionFrom(r.Context()).AccountID
+	month, from, to := monthWindow(s.Now)
+	page := overview{Month: month, Error: message}
+	transactions, err := h.db.Transactions(r.Context(), accountID, from, to)
+	if err != nil {
+		internalError(w, "listing transactions", err)
+		return
+	}
+
+	page.Income, page.Outcome = totals(transactions)
+	page.Usages, err = h.db.CategoryUsages(r.Context(), accountID, from, to)
 	if err != nil {
 		internalError(w, "reading category usage", err)
 		return
 	}
 
-	render(w, r, status, homePage(s, overview{Usages: usages, Error: message}))
+	page.Activity, err = h.db.Activity(r.Context(), accountID)
+	if err != nil {
+		internalError(w, "reading activity", err)
+		return
+	}
+
+	render(w, r, status, homePage(s, page))
 }
 
 // confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC,
@@ -170,6 +189,19 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderOverview(w, r, http.StatusConflict, "Ocorrência já confirmada.")
+}
+
+// totals is the INCOME and the OUTCOME sums of transactions, in cents.
+func totals(transactions []store.Transaction) (income, outcome int64) {
+	for _, transaction := range transactions {
+		if transaction.Kind == "INCOME" {
+			income += transaction.Amount
+		} else {
+			outcome += transaction.Amount
+		}
+	}
+
+	return income, outcome
 }
 
 // signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.

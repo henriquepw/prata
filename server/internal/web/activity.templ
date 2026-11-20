@@ -1,0 +1,37 @@
+package web
+
+import (
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/store"
+)
+
+var entityNames = map[string]string{"CATEGORY": "categoria", "TAG": "tag", "TRANSACTION": "transação", "RECURRENCE": "recorrência"}
+
+var kindNames = map[store.Kind]string{store.KindCreate: "criada", store.KindUpdate: "alterada", store.KindDelete: "excluída"}
+
+// activityPhrase is what an op did, such as `transação "Uber" criada`, without the quoted label when it has none.
+func activityPhrase(a store.Activity) string {
+	phrase := entityNames[a.Entity]
+	if a.Label != "" {
+		phrase += ` "` + a.Label + `"`
+	}
+
+	return phrase + " " + kindNames[a.Kind]
+}
+
+// activityLog is the "Log de atividade" panel: one line per op, newest first, with the time in loc, and the
+// prompt pinned to the bottom.
+templ activityLog(activity []store.Activity, loc *time.Location) {
+	@panel("Log de atividade", "log-panel") {
+		<ol class="log">
+			for _, a := range activity {
+				<li><span class="text-muted-foreground">{ "> [" + formatDate(a.CreatedAt, loc, "15:04") + "]" }</span> { a.Device } · { activityPhrase(a) }</li>
+			}
+			if len(activity) == 0 {
+				<li class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma operação ainda</li>
+			}
+			<li class="log-prompt" aria-hidden="true"><span class="text-muted-foreground">{ ">" }</span> <span class="cursor">▋</span></li>
+		</ol>
+	}
+}
