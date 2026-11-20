@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
@@ -21,23 +22,33 @@ type shell struct {
 	Balance balance
 }
 
-// nav is the rail, in the order of the 1–6 shortcuts. New is the screen's "novo" sheet, when it has one.
-var nav = []struct{ Href, Label, New string }{
-	{"/", "Visão geral", ""},
-	{"/transactions", "Transações", "/transactions/new"},
-	{"/categories", "Categorias", "/categories/new"},
-	{"/tags", "Tags", "/tags/new"},
-	{"/recurrences", "Recorrências", "/recurrences/new"},
-	{"/devices", "Dispositivos", ""},
+// nav is the rail, in the order of the 1–6 shortcuts. New is the screen's "novo" sheet, when it has one, and
+// NewLabel its launcher command.
+var nav = []struct{ Href, Label, New, NewLabel string }{
+	{"/", "Visão geral", "", ""},
+	{"/transactions", "Transações", "/transactions/new", "Nova transação"},
+	{"/categories", "Categorias", "/categories/new", "Nova categoria"},
+	{"/tags", "Tags", "/tags/new", "Nova tag"},
+	{"/recurrences", "Recorrências", "/recurrences/new", "Nova recorrência"},
+	{"/devices", "Dispositivos", "", ""},
+}
+
+// create is the current screen's "novo" sheet, empty where there is none.
+func (s shell) create() string {
+	for _, item := range nav {
+		if item.Href == s.Path {
+			return item.New
+		}
+	}
+
+	return ""
 }
 
 // keys is the keybar: the shortcuts that work on the current screen, "n novo" only where there is a "novo".
 func (s shell) keys() [][2]string {
 	keys := [][2]string{{"1-6", "navegar"}}
-	for _, item := range nav {
-		if item.Href == s.Path && item.New != "" {
-			keys = append(keys, [2]string{"n", "novo"})
-		}
+	if s.create() != "" {
+		keys = append(keys, [2]string{"n", "novo"})
 	}
 
 	return append(keys, [2]string{"ctrl k", "comandos"}, [2]string{"esc", "fechar"})
@@ -45,7 +56,10 @@ func (s shell) keys() [][2]string {
 
 // headScript applies the theme cookie before the first paint, stores the browser time zone in the tz cookie,
 // opens the #sheet dialog once htmx swaps a form into it, ticks every [data-clock] (status bar and login footer)
-// and turns the sync dot into a braille spinner while any htmx request is in flight.
+// and turns the sync dot into a braille spinner while any htmx request is in flight. It also runs the shortcuts:
+// ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by every word, moves
+// the selection with ↑↓ and runs it with enter; outside fields and dialogs, 1–6 and n click their [data-key] and
+// enter opens the focused row.
 const headScript = `(() => {
   const theme = document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
@@ -65,6 +79,45 @@ const headScript = `(() => {
   addEventListener('htmx:before:request', () => { requests++; spin() })
   addEventListener('htmx:finally:request', () => { requests = Math.max(0, requests - 1); spin() })
   setInterval(() => requests && spin(), 80)
+  const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  const options = () => [...document.querySelectorAll('#launcher [role=option]:not([hidden])')]
+  const select = option => {
+    document.querySelector('#launcher [aria-selected]')?.removeAttribute('aria-selected')
+    option?.setAttribute('aria-selected', 'true')
+    option?.scrollIntoView({ block: 'nearest' })
+  }
+  const filter = query => {
+    const words = norm(query).split(/\s+/).filter(Boolean)
+    document.querySelectorAll('#launcher [role=option]').forEach(o => o.hidden = !words.every(w => norm(o.textContent).includes(w)))
+    select(options()[0])
+  }
+  addEventListener('input', e => e.target.matches('#launcher input') && filter(e.target.value))
+  addEventListener('close', e => {
+    if (e.target.id !== 'launcher') return
+    e.target.querySelector('input').value = ''
+    filter('')
+  }, true)
+  addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
+  addEventListener('keydown', e => {
+    const launcher = document.getElementById('launcher')
+    if (!launcher) return
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault()
+      return launcher.open ? launcher.close() : launcher.showModal()
+    }
+    if (launcher.open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      e.preventDefault()
+      const all = options()
+      return select(all[(all.indexOf(launcher.querySelector('[aria-selected]')) + (e.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length])
+    }
+    if (launcher.open && e.key === 'Enter') {
+      e.preventDefault()
+      return launcher.querySelector('[aria-selected]')?.click()
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
+    if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
+    else if (/^[1-6n]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+  })
 })()`
 
 const closeSheet = "this.closest('dialog').close()"
@@ -131,7 +184,7 @@ templ layout(s shell) {
 					</dl>
 					<div>
 						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(toggleTheme) }>[tema]</button>
-						<form method="post" action="/logout" class="inline"><button type="submit" class="lnk">[sair]</button></form>
+						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">[sair]</button></form>
 					</div>
 				</div>
 				<nav class="mnav" aria-label="Telas">
@@ -149,6 +202,7 @@ templ layout(s shell) {
 						for i, item := range nav {
 							<a
 								href={ templ.SafeURL(item.Href) }
+								data-key={ strconv.Itoa(i + 1) }
 								if item.Href == s.Path {
 									aria-current="page"
 								}
@@ -161,13 +215,65 @@ templ layout(s shell) {
 				</div>
 				<footer class="keybar">
 					for _, key := range s.keys() {
-						<span><kbd>{ key[0] }</kbd> { key[1] }</span>
+						if key[0] == "n" {
+							<span><button type="button" data-key="n" hx-get={ s.create() } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { key[1] }</button></span>
+						} else {
+							<span><kbd>{ key[0] }</kbd> { key[1] }</span>
+						}
 					}
 				</footer>
 			</div>
 		</div>
+		@launcher()
 		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full border-l bg-background p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-md"></dialog>
 	}
+}
+
+// launcher is the ctrl+k dialog: a prompt over the numbered commands, the first one selected. headScript filters,
+// selects and runs them.
+templ launcher() {
+	{{ n := len(nav) }}
+	<dialog id="launcher" aria-label="Comandos" class="launcher">
+		<div class="panel">
+			<div class="panel-head">
+				<h2 class="panel-title">Comandos</h2>
+				<kbd class="text-muted-foreground">esc</kbd>
+			</div>
+			<label class="prompt">
+				<span class="text-primary">&gt;</span>
+				<input type="text" autocomplete="off" spellcheck="false" placeholder="digite um comando" aria-label="Comando" aria-controls="launcher-options"/>
+			</label>
+			<div id="launcher-options" role="listbox">
+				for i, item := range nav {
+					<a
+						href={ templ.SafeURL(item.Href) }
+						role="option"
+						if i == 0 {
+							aria-selected="true"
+						}
+					>
+						<span><span class="option-n">{ fmt.Sprintf("%02d", i+1) }</span> Ir para { strings.ToLower(item.Label) }</span>
+						<kbd>{ strconv.Itoa(i + 1) }</kbd>
+					</a>
+				}
+				for _, item := range nav {
+					if item.New != "" {
+						{{ n++ }}
+						<button type="button" role="option" hx-get={ item.New } hx-target="#sheet">
+							<span><span class="option-n">{ fmt.Sprintf("%02d", n) }</span> { item.NewLabel }</span>
+						</button>
+					}
+				}
+				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(toggleTheme) }>
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> Alternar tema</span>
+				</button>
+				<button type="submit" role="option" form="logout">
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> Sair</span>
+				</button>
+			</div>
+			<p class="launcher-empty text-muted-foreground">¯\_(ツ)_/¯ nenhum comando</p>
+		</div>
+	</dialog>
 }
 
 // sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir" asking Confirm first;
