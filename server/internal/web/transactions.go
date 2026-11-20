@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// newTransaction is an empty transaction sheet for today, in the category the Mês it is opened from is filtered by.
 func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
 	form, ok := h.transactionForm(w, r)
 	if !ok {
@@ -19,6 +21,10 @@ func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form.Kind, form.OccurredAt = "OUTCOME", time.Now().In(location(r)).Format(time.DateOnly)
+	if current, err := url.Parse(r.Header.Get("HX-Current-URL")); err == nil && hasCategory(form.Categories, current.Query().Get("category")) {
+		form.CategoryID = current.Query().Get("category")
+	}
+
 	render(w, r, http.StatusOK, transactionSheet(form))
 }
 

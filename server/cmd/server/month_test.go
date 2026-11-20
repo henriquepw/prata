@@ -3,6 +3,7 @@ package main
 import (
 	"maps"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -112,7 +113,7 @@ func TestWebMonth_ReadsTheMonthInTheUserTimeZone(t *testing.T) {
 
 			body := get(w.handler, "/", w.cookie, &http.Cookie{Name: "tz", Value: zone}).Body.String()
 			assertInOrder(t, body, boxes("R$ 4.920,00", "R$ 0,00", "−R$ 30,00", "R$ 4.890,00", "R$ 0,00", "R$ 4.890,00")...)
-			for _, text := range []string{"Mercado", "R$ 30,00 / R$ 500,00", "6%"} {
+			for _, text := range []string{"Mercado", "6%"} {
 				if !strings.Contains(body, text) {
 					t.Errorf("month lacks %q: %s", text, body)
 				}
@@ -232,6 +233,56 @@ func TestWebMonth_MonthBar(t *testing.T) {
 
 	if body := get(w.handler, "/", w.cookie).Body.String(); strings.Contains(body, "[mês atual]") {
 		t.Errorf("the current month links to itself: %s", body)
+	}
+}
+
+func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T) {
+	w := newWebClient(t)
+	now := time.Now().UTC()
+	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	leisure := ulid.Make().String()
+	spent := func(category, description string, amount int) op {
+		return w.op("TRANSACTION", ulid.Make().String(), "CREATE", map[string]any{
+			"category_id": category, "kind": "OUTCOME", "amount": amount, "description": description, "occurred_at": month.Format(time.RFC3339),
+			"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+		})
+	}
+
+	w.push(newCategory(w.client),
+		w.op("CATEGORY", leisure, "CREATE", map[string]any{"name": "Lazer", "color": "BLUE", "created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z"}),
+		spent(categoryID, "padaria", 4590),
+		spent(leisure, "cinema", 3000),
+		monthlyRecurrence(w.client, ulid.Make().String(), "OUTCOME", 5000, "Internet", "28", month, ""),
+	)
+
+	shown := "/?month=" + month.Format("2006-01")
+	body := get(w.handler, shown+"&category="+categoryID, w.cookie).Body.String()
+	assertInOrder(t, body, boxes("R$ 0,00", "R$ 0,00", "−R$ 75,90", "−R$ 75,90", "−R$ 50,00", "−R$ 125,90")...)
+	for _, text := range []string{"padaria", "Mercado ✕", "[todas]", `aria-current="true"`, "∞"} {
+		if !strings.Contains(body, text) {
+			t.Errorf("filtered month lacks %q: %s", text, body)
+		}
+	}
+
+	if strings.Contains(body, "cinema") || strings.Contains(body, "Internet") || strings.Count(body, `aria-current="true"`) != 1 {
+		t.Errorf("filtered month shows another category or marks more than one: %s", body)
+	}
+
+	if body := get(w.handler, shown, w.cookie).Body.String(); !strings.Contains(body, "cinema") || strings.Contains(body, "[todas]") || strings.Contains(body, `aria-current="true"`) {
+		t.Errorf("unfiltered month hides a category or shows a filter: %s", body)
+	}
+
+	if body := get(w.handler, "/?month="+month.AddDate(0, 1, 0).Format("2006-01")+"&category="+leisure, w.cookie).Body.String(); !strings.Contains(body, "nenhuma transação nesta categoria") {
+		t.Errorf("empty filtered month lacks its empty state: %s", body)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/transactions/new", nil)
+	req.AddCookie(w.cookie)
+	req.Header.Set("HX-Current-URL", "http://example.com"+shown+"&category="+leisure)
+	sheet := httptest.NewRecorder()
+	w.handler.ServeHTTP(sheet, req)
+	if !strings.Contains(sheet.Body.String(), `value="`+leisure+`" selected`) {
+		t.Errorf("new transaction from a filtered month lacks its category: %s", sheet.Body)
 	}
 }
 

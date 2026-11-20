@@ -105,7 +105,8 @@ func (h handler) pending(ctx context.Context, accountID string, now, end time.Ti
 // month is the Mês screen: the boxes of the month shown, in cents, its statement by day, newest first, and the usage of
 // each category. Overdue holds, on the current month only, the occurrences of earlier months still pending, drawn under
 // the "hoje" line, which sits before Days[TodayAt] (after the last day when TodayAt is len(Days), nowhere when it is
-// -1). Flash is the row to flash and Error a rejected confirmation.
+// -1). Filter is the category the statement is narrowed to, empty when it shows all; the boxes never are. Flash is the
+// row to flash and Error a rejected confirmation.
 type month struct {
 	Month                              time.Time
 	Today                              string
@@ -114,6 +115,7 @@ type month struct {
 	Overdue                            []occurrence
 	TodayAt                            int
 	Usages                             []store.CategoryUsage
+	Filter                             store.CategoryUsage
 	Flash, Error                       string
 }
 
@@ -129,9 +131,15 @@ func (m month) isCurrent() bool { return m.Month.Format(monthLayout) == m.Today[
 
 func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
 
+// shows reports whether the statement lists an entry of categoryID under the month's filter.
+func (m month) shows(categoryID *string) bool {
+	return m.Filter.ID == "" || orEmpty(categoryID) == m.Filter.ID
+}
+
 // readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
-// occurrences pending in it plus, on the current month, the overdue ones of earlier months.
-func (h handler) readMonth(ctx context.Context, accountID string, now, shown time.Time) (month, error) {
+// occurrences pending in it plus, on the current month, the overdue ones of earlier months. The statement lists only
+// the entries of category when it is one of the live categories.
+func (h handler) readMonth(ctx context.Context, accountID string, now, shown time.Time, category string) (month, error) {
 	first, from, to := monthWindow(shown)
 	last := first.AddDate(0, 1, -1)
 	page := month{Month: first, Today: now.Format(time.DateOnly)}
@@ -148,6 +156,10 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 	page.Usages, err = h.db.CategoryUsages(ctx, accountID, from, to)
 	if err != nil {
 		return month{}, fmt.Errorf("reading category usage: %w", err)
+	}
+
+	if i := slices.IndexFunc(page.Usages, func(u store.CategoryUsage) bool { return u.ID == category }); i >= 0 {
+		page.Filter = page.Usages[i]
 	}
 
 	pending, err := h.pending(ctx, accountID, now, last)
@@ -167,19 +179,27 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 	}
 
 	for _, p := range pending {
-		switch {
-		case p.Date >= first.Format(time.DateOnly):
-			at(p.Date).Pending = append(at(p.Date).Pending, p)
-		case page.isCurrent():
-			page.Overdue = append(page.Overdue, p)
-		default:
+		isEarlier := p.Date < first.Format(time.DateOnly)
+		if isEarlier && !page.isCurrent() {
 			continue
 		}
 
 		page.Pending += signed(p.Recurrence.Kind, p.Recurrence.Amount)
+		switch {
+		case !page.shows(p.Recurrence.CategoryID):
+			continue
+		case isEarlier:
+			page.Overdue = append(page.Overdue, p)
+		default:
+			at(p.Date).Pending = append(at(p.Date).Pending, p)
+		}
 	}
 
 	for _, t := range transactions {
+		if !page.shows(t.CategoryID) {
+			continue
+		}
+
 		d := at(formatDate(t.OccurredAt, now.Location(), time.DateOnly))
 		d.Transactions = append(d.Transactions, t)
 		d.Total += signed(t.Kind, t.Amount)
@@ -211,14 +231,15 @@ func shownMonth(r *http.Request, now time.Time) time.Time {
 	return shown
 }
 
-// home is the Mês screen of ?month=YYYY-MM, the current month in the user's time zone by default.
+// home is the Mês screen of ?month=YYYY-MM, the current month in the user's time zone by default, with the statement
+// narrowed to ?category=<id>.
 func (h handler) home(w http.ResponseWriter, r *http.Request) {
 	s, ok := h.shell(w, r, "nav.month")
 	if !ok {
 		return
 	}
 
-	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now))
+	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return
@@ -284,9 +305,10 @@ func (h handler) occurrenceSheet(w http.ResponseWriter, r *http.Request) {
 }
 
 // confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC. The
-// sheet posts what the user adjusted and gets the sheet's answer; the statement's row posts nothing but the month on
-// screen and gets that month back with the new row flashing. On the row, an occurrence already confirmed elsewhere
-// hits the unique (recurrence_id, occurrence_date) and answers 409 with "já confirmada"; any other rejection is a 500.
+// sheet posts what the user adjusted and gets the sheet's answer; the statement's row posts nothing but the month and
+// the filter on screen and gets that month back with the new row flashing. On the row, an occurrence already confirmed
+// elsewhere hits the unique (recurrence_id, occurrence_date) and answers 409 with "já confirmada"; any other rejection
+// is a 500.
 func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 	form, ok := h.occurrence(w, r)
 	if !ok {
@@ -356,7 +378,7 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 // its error.
 func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
 	now := time.Now().In(location(r))
-	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, now, shownMonth(r, now))
+	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, now, shownMonth(r, now), r.FormValue("category"))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return

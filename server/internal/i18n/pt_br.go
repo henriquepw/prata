@@ -193,6 +193,8 @@ var ptBR = map[string]string{
 	"month.projected":        "= Projetado",
 	"month.statement":        "Extrato",
 	"month.empty":            "nenhuma transação neste mês",
+	"month.empty_category":   "nenhuma transação nesta categoria",
+	"month.all":              "[todas]",
 	"month.today":            "hoje",
 	"month.overdue":          "[atrasada]",
 	"month.pending_chip":     "[pendente]",

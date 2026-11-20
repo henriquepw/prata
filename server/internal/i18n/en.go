@@ -193,6 +193,8 @@ var en = map[string]string{
 	"month.projected":        "= Projected",
 	"month.statement":        "Statement",
 	"month.empty":            "no transactions this month",
+	"month.empty_category":   "no transactions in this category",
+	"month.all":              "[all]",
 	"month.today":            "today",
 	"month.overdue":          "[overdue]",
 	"month.pending_chip":     "[pending]",

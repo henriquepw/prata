@@ -68,8 +68,10 @@ func TestWebEnglish_Month(t *testing.T) {
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""), tz)
-	id := w.newOps()[1].EntityID
-	w.assertBody("/?month=2026-07", "Feira", "wed 15/07", "Mercado", "R$ 0,00 · no limit")
+	ops := w.newOps()
+	id := ops[1].EntityID
+	w.assertBody("/?month=2026-07", "Feira", "wed 15/07", "Mercado", "∞")
+	w.assertBody("/?month=2026-08&category="+ops[0].EntityID, "[all]", "no transactions in this category")
 	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "No category", "Tag", "No tag", "[today]", "[yesterday]",
 		"delete this transaction? It disappears from the lists and balances on every device.")
 	w.assertBody("/transactions/new", "New transaction")

@@ -829,28 +829,36 @@
     color: var(--muted-foreground);
   }
 
+  /* Categories beside the statement: a link per category, "■ nome" and its % over a thin meter, the selected one
+     marked like the rail's current item. */
   .usages {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(22ch, 1fr));
-    gap: 1lh 3ch;
-  }
-
-  .usage-name {
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-  }
-
-  .usage-meter {
     display: flex;
-    align-items: center;
-    gap: 1ch;
-    margin-block: 0.3lh;
+    flex-direction: column;
   }
 
-  .usage-meter > .meter {
-    flex: 1;
+  .usage {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.2lh 1ch;
+    padding: 0.5lh 1ch;
+    border-left: 3px solid transparent;
+    transition: background-color var(--snap) var(--ease);
+  }
+
+  .usage:hover,
+  .usage[aria-current] {
+    background: var(--line-soft);
+  }
+
+  .usage[aria-current] {
+    border-left-color: var(--primary);
+  }
+
+  .usage > .meter {
+    grid-column: 1 / -1;
+    height: 8px;
+    gap: 2px;
   }
 
   /* Activity log: the panel's list fills its height, so the prompt sits at the bottom. */
