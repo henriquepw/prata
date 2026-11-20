@@ -241,6 +241,24 @@ func TestWebKeybar_BindsNewOnlyWhereThereIsOne(t *testing.T) {
 	}
 }
 
+func TestWebChrome_NamesCommandsAlikeAndClosesOnlyWithSomethingOpen(t *testing.T) {
+	w := newWebClient(t)
+	body := get(w.handler, "/tags", w.cookie).Body.String()
+	for _, text := range []string{"[ctrl k] comandos", "<kbd>ctrl k</kbd> comandos", "<kbd>ctrl enter</kbd> salvar", "Categorias</a>"} {
+		if !strings.Contains(body, text) {
+			t.Errorf("tags chrome lacks %q: %s", text, body)
+		}
+	}
+
+	if save, esc := strings.Index(body, "<kbd>ctrl enter</kbd>"), strings.Index(body, "<kbd>esc</kbd> fechar"); esc < save {
+		t.Errorf("keybar shows esc fechar outside the open sheet: %s", body)
+	}
+
+	if strings.Contains(body, "]Cat") {
+		t.Errorf("mobile nav still abbreviates: %s", body)
+	}
+}
+
 func TestStaticAssets(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 

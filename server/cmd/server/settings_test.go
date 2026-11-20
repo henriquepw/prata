@@ -188,7 +188,7 @@ func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 	}
 
 	w.assertBody("/",
-		`<html lang="en">`, "Overview", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] search",
+		`<html lang="en">`, "Overview", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] commands",
 		"Go to overview", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
 		"<kbd>1-7</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", time.Now().In(loc).Format("Jan")+"</div>")
 	w.assertBody("/transactions?month=2026-11", "November 2026", "<kbd>n</kbd> new")

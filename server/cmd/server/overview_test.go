@@ -177,9 +177,18 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 	)
 
 	body := get(w.handler, "/categories", w.cookie).Body.String()
-	for _, text := range []string{"R$ 5.000,00", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2 atrasadas]", newSignup().Email} {
+	for _, text := range []string{"R$ 5.000,00", "R$ 5.800,00", `<a href="/" class="lnk">3</a>`, "[2 atrasadas]", newSignup().Email} {
 		if !strings.Contains(body, text) {
 			t.Errorf("categories ticker lacks %q: %s", text, body)
+		}
+	}
+
+	start := strings.Index(body, `<dl aria-label="Saldo"`)
+	line := body[max(start, 0):]
+	line = line[:strings.Index(line, "</dl>")+1]
+	for _, text := range []string{"Realizado", "R$ 5.000,00", "Projetado", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2]"} {
+		if start < 0 || !strings.Contains(line, text) {
+			t.Errorf("categories balance line lacks %q: %s", text, line)
 		}
 	}
 
