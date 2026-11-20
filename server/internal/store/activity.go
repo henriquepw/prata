@@ -12,13 +12,14 @@ type Activity struct {
 	CreatedAt string `db:"created_at"`
 }
 
-// Activity returns the account's 12 latest sync operations, newest first.
+// Activity returns the account's 12 latest sync operations by created_at, read as a time since devices may send
+// offsets, newest first, so a late sync still lands in time order; seq breaks ties.
 func (s *Store) Activity(ctx context.Context, accountID string) ([]Activity, error) {
 	activity := []Activity{}
 	err := s.SelectContext(ctx, &activity, `SELECT COALESCE(d.name, '') AS device, o.entity, o.kind,
 		COALESCE(json_extract(o.payload, '$.name'), json_extract(o.payload, '$.description'), '') AS label, o.created_at
 		FROM sync_operations o LEFT JOIN devices d ON d.id = o.device_id
-		WHERE o.account_id = ? ORDER BY o.seq DESC LIMIT 12`, accountID)
+		WHERE o.account_id = ? ORDER BY julianday(o.created_at) DESC, o.seq DESC LIMIT 12`, accountID)
 
 	return activity, err
 }
