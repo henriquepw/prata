@@ -54,9 +54,9 @@ type Props struct {
 	Form       string
 }
 
-// 1:1 base/ui/button.tsx: structure lives here, the look comes from the
-// active style-*.css via the classes.
-const baseClasses = "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-none border border-transparent bg-clip-padding text-xs font-medium focus-visible:ring-1 aria-invalid:ring-1 active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-all outline-none select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+// Structure from base/ui/button.tsx, look from the prata-web-ui skill: caps with tracking, --line-strong
+// border and a hover that inverts in --snap.
+const baseClasses = "aria-invalid:border-destructive rounded-none border border-line-strong bg-clip-padding text-xs font-medium uppercase tracking-[.08em] hover:border-foreground hover:bg-foreground hover:text-background active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-colors duration-(--snap) ease-(--ease) select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
 
 func Button(props ...Props) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -375,17 +375,17 @@ func Variants(p Props) string {
 func (b Props) variantClasses() string {
 	switch b.Variant {
 	case VariantDestructive:
-		return "bg-destructive/10 hover:bg-destructive/20 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/20 text-destructive focus-visible:border-destructive/40 dark:hover:bg-destructive/30"
-	case VariantOutline:
-		return "border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 aria-expanded:bg-muted aria-expanded:text-foreground"
+		return "border-destructive text-destructive hover:border-destructive hover:bg-destructive"
 	case VariantSecondary:
-		return "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground"
+		return "bg-line-soft"
 	case VariantGhost:
-		return "hover:bg-muted hover:text-foreground dark:hover:bg-muted/50 aria-expanded:bg-muted aria-expanded:text-foreground"
+		return "border-transparent text-muted-foreground"
 	case VariantLink:
-		return "text-primary underline-offset-4 hover:underline"
+		return "border-transparent text-primary normal-case tracking-normal underline-offset-4 hover:border-transparent hover:bg-transparent hover:text-primary hover:underline"
+	case VariantOutline:
+		return ""
 	default:
-		return "bg-primary text-primary-foreground hover:bg-primary/80"
+		return "border-primary bg-primary text-primary-foreground"
 	}
 }
 
@@ -394,7 +394,7 @@ func (b Props) sizeClasses() string {
 	case SizeXs:
 		return "h-6 gap-1 rounded-none px-2 text-xs has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3"
 	case SizeSm:
-		return "h-7 gap-1 rounded-none px-2.5 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5"
+		return "h-7 gap-1 rounded-none px-2.5 text-[11px] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5"
 	case SizeLg:
 		return "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2"
 	case SizeIcon:

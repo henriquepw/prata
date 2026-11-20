@@ -750,6 +750,8 @@ func Label(props ...LabelProps) templ.Component {
 				"gap-2 text-xs leading-none group-data-[disabled=true]:opacity-50 peer-disabled:opacity-50 flex items-center select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed",
 				"has-data-checked:bg-primary/5 has-data-checked:border-primary/30 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10 gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 has-[>[data-slot=field]]:has-[:focus-visible]:ring-1 *:data-[slot=field]:p-2 group/field-label peer/field-label flex w-fit",
 				"has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
+				// prata-web-ui: field labels are 11px caps in muted.
+				"text-[11px] uppercase tracking-[.1em] text-muted-foreground",
 				p.Class,
 			),
 			}
@@ -838,7 +840,7 @@ func Title(props ...TitleProps) templ.Component {
 				var templ_7745c5c3_Var30 string
 				templ_7745c5c3_Var30, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 248, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 250, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var30)
 				if templ_7745c5c3_Err != nil {
@@ -939,7 +941,7 @@ func Description(props ...DescriptionProps) templ.Component {
 				var templ_7745c5c3_Var34 string
 				templ_7745c5c3_Var34, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 265, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 267, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 				if templ_7745c5c3_Err != nil {
@@ -1040,7 +1042,7 @@ func Separator(props ...SeparatorProps) templ.Component {
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 284, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 286, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 				if templ_7745c5c3_Err != nil {
@@ -1058,7 +1060,7 @@ func Separator(props ...SeparatorProps) templ.Component {
 			var templ_7745c5c3_Var39 string
 			templ_7745c5c3_Var39, templ_7745c5c3_Err = templruntime.NewAttributeExpression(strconv.FormatBool(content != "")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 287, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 289, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var39)
 			if templ_7745c5c3_Err != nil {
@@ -1164,7 +1166,7 @@ func Error(props ...ErrorProps) templ.Component {
 				var templ_7745c5c3_Var43 string
 				templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 316, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/field/field.templ`, Line: 318, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
 				if templ_7745c5c3_Err != nil {
@@ -1179,7 +1181,7 @@ func Error(props ...ErrorProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var44 = []any{utils.CN("text-destructive text-xs font-normal", p.Class)}
+			var templ_7745c5c3_Var44 = []any{utils.CN("text-destructive text-xs font-normal before:content-['!_']", p.Class)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var44...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

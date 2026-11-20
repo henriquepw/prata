@@ -79,7 +79,7 @@ templ Header(props ...HeaderProps) {
 			id={ p.ID }
 		}
 		data-slot="table-header"
-		class={ utils.CN("[&_tr]:border-b", p.Class) }
+		class={ utils.CN("[&_tr]:border-b [&_tr]:border-line", p.Class) }
 		{ p.Attributes... }
 	>
 		{ children... }
@@ -120,6 +120,10 @@ templ Footer(props ...FooterProps) {
 	</tfoot>
 }
 
+// rowClasses: --line-faint borders and, on a clickable row (hx-get), the inverted selection of a terminal on
+// hover and focus, in --snap.
+const rowClasses = "data-[state=selected]:bg-muted border-b border-line-faint transition-colors duration-(--snap) ease-(--ease) [&[hx-get]]:cursor-pointer [&[hx-get]]:outline-none [&[hx-get]:is(:hover,:focus-visible)]:bg-foreground [&[hx-get]:is(:hover,:focus-visible)]:text-background [&[hx-get]:is(:hover,:focus-visible)_*]:text-inherit!"
+
 templ Row(props ...RowProps) {
 	{{ var p RowProps }}
 	if len(props) > 0 {
@@ -130,7 +134,7 @@ templ Row(props ...RowProps) {
 			id={ p.ID }
 		}
 		data-slot="table-row"
-		class={ utils.CN("hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors has-aria-expanded:bg-muted/50", p.Class) }
+		class={ utils.CN(rowClasses, p.Class) }
 		{ p.Attributes... }
 	>
 		{ children... }
@@ -149,7 +153,7 @@ templ Head(props ...HeadProps) {
 			id={ p.ID }
 		}
 		data-slot="table-head"
-		class={ utils.CN("text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class) }
+		class={ utils.CN("text-muted-foreground h-10 px-2 text-left align-middle text-[11px] font-normal uppercase tracking-[.1em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class) }
 		{ p.Attributes... }
 	>
 		{ children... }

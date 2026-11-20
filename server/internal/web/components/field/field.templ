@@ -229,6 +229,8 @@ templ Label(props ...LabelProps) {
 				"gap-2 text-xs leading-none group-data-[disabled=true]:opacity-50 peer-disabled:opacity-50 flex items-center select-none group-data-[disabled=true]:pointer-events-none peer-disabled:cursor-not-allowed",
 				"has-data-checked:bg-primary/5 has-data-checked:border-primary/30 dark:has-data-checked:border-primary/20 dark:has-data-checked:bg-primary/10 gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[>[data-slot=field]]:rounded-none has-[>[data-slot=field]]:border has-[>[data-slot=field]]:not-has-[:disabled,[data-disabled]]:hover:bg-muted/50 has-[>[data-slot=field]]:has-[:focus-visible]:border-ring has-[>[data-slot=field]]:has-[:focus-visible]:ring-ring/50 has-[>[data-slot=field]]:has-[:focus-visible]:ring-1 *:data-[slot=field]:p-2 group/field-label peer/field-label flex w-fit",
 				"has-[>[data-slot=field]]:w-full has-[>[data-slot=field]]:flex-col",
+				// prata-web-ui: field labels are 11px caps in muted.
+				"text-[11px] uppercase tracking-[.1em] text-muted-foreground",
 				p.Class,
 			),
 		}
@@ -317,7 +319,7 @@ templ Error(props ...ErrorProps) {
 		}
 		role="alert"
 		data-slot="field-error"
-		class={ utils.CN("text-destructive text-xs font-normal", p.Class) }
+		class={ utils.CN("text-destructive text-xs font-normal before:content-['!_']", p.Class) }
 		{ p.Attributes... }
 	>
 		{ children... }

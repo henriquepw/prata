@@ -185,7 +185,7 @@ func TestWebSignup(t *testing.T) {
 func TestStaticAssets(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 
-	for _, path := range []string{"/static/app.css", "/static/htmx.min.js"} {
+	for _, path := range []string{"/static/app.css", "/static/htmx.min.js", "/static/fonts/GeistMono-Variable.woff2"} {
 		if got := get(handler, path).Code; got != http.StatusOK {
 			t.Errorf("%s status = %d, want %d", path, got, http.StatusOK)
 		}

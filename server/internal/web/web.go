@@ -19,7 +19,7 @@ import (
 //go:generate go tool templ generate -path ../..
 //go:generate tailwindcss -i static/globals.css -o static/app.css --minify
 
-//go:embed static/app.css static/htmx.min.js
+//go:embed static/app.css static/htmx.min.js static/fonts/GeistMono-Variable.woff2
 var static embed.FS
 
 const sessionCookie = "session"

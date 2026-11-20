@@ -96,7 +96,7 @@ func document(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"/static/htmx.min.js\"></script></head><body hx-boost=\"true\" class=\"min-h-dvh antialiased\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"/static/htmx.min.js\"></script></head><body hx-boost:inherited=\"transition:true\" class=\"min-h-dvh antialiased\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

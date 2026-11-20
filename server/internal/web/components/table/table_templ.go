@@ -217,7 +217,7 @@ func Header(props ...HeaderProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var7 = []any{utils.CN("[&_tr]:border-b", p.Class)}
+			var templ_7745c5c3_Var7 = []any{utils.CN("[&_tr]:border-b [&_tr]:border-line", p.Class)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var7...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -467,6 +467,10 @@ func Footer(props ...FooterProps) templ.Component {
 	})
 }
 
+// rowClasses: --line-faint borders and, on a clickable row (hx-get), the inverted selection of a terminal on
+// hover and focus, in --snap.
+const rowClasses = "data-[state=selected]:bg-muted border-b border-line-faint transition-colors duration-(--snap) ease-(--ease) [&[hx-get]]:cursor-pointer [&[hx-get]]:outline-none [&[hx-get]:is(:hover,:focus-visible)]:bg-foreground [&[hx-get]:is(:hover,:focus-visible)]:text-background [&[hx-get]:is(:hover,:focus-visible)_*]:text-inherit!"
+
 func Row(props ...RowProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -505,7 +509,7 @@ func Row(props ...RowProps) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 130, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 134, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var18)
 				if templ_7745c5c3_Err != nil {
@@ -520,7 +524,7 @@ func Row(props ...RowProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var19 = []any{utils.CN("hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors has-aria-expanded:bg-muted/50", p.Class)}
+			var templ_7745c5c3_Var19 = []any{utils.CN(rowClasses, p.Class)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var19...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -606,7 +610,7 @@ func Head(props ...HeadProps) templ.Component {
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 149, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 153, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 				if templ_7745c5c3_Err != nil {
@@ -621,7 +625,7 @@ func Head(props ...HeadProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 = []any{utils.CN("text-foreground h-10 px-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class)}
+			var templ_7745c5c3_Var23 = []any{utils.CN("text-muted-foreground h-10 px-2 text-left align-middle text-[11px] font-normal uppercase tracking-[.1em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var23...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -707,7 +711,7 @@ func Cell(props ...CellProps) templ.Component {
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 168, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 172, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 				if templ_7745c5c3_Err != nil {
@@ -808,7 +812,7 @@ func Caption(props ...CaptionProps) templ.Component {
 				var templ_7745c5c3_Var30 string
 				templ_7745c5c3_Var30, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 185, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/table/table.templ`, Line: 189, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var30)
 				if templ_7745c5c3_Err != nil {
