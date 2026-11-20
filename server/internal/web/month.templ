@@ -63,9 +63,18 @@ func shortDay(ctx context.Context, date string) string {
 	return t.Format(strings.Trim(strings.ReplaceAll(dateLayout(ctx), "2006", ""), "/-"))
 }
 
-// monthURL is the Mês of the month offset months away from month.
-func monthURL(month time.Time, offset int) string {
-	return "/?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
+// monthURL is the Mês of month, as YYYY-MM, with the statement narrowed to category when it is not empty.
+func monthURL(month, category string) string {
+	if category == "" {
+		return "/?month=" + month
+	}
+
+	return "/?month=" + month + "&category=" + category
+}
+
+// monthOffset is month offset months away, as YYYY-MM.
+func monthOffset(month time.Time, offset int) string {
+	return month.AddDate(0, offset, 0).Format(monthLayout)
 }
 
 // monthPage is the Mês: the month bar over the boxes and the statement, which a confirmation on a row swaps.
@@ -80,11 +89,11 @@ templ monthPage(s shell, page month) {
 templ monthBar(page month) {
 	<div class="month-bar">
 		<div class="flex items-center gap-[1ch]">
-			<a href={ templ.SafeURL(monthURL(page.Month, -1)) } class="lnk" data-key="[" aria-label={ i18n.T(ctx, "month.previous") }>‹</a>
+			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, -1), page.Filter.ID)) } class="lnk" data-key="[" aria-label={ i18n.T(ctx, "month.previous") }>‹</a>
 			<span class="month-label">{ i18n.T(ctx, "month.year", i18n.T(ctx, "month."+page.Month.Month().String()), page.Month.Year()) }</span>
-			<a href={ templ.SafeURL(monthURL(page.Month, 1)) } class="lnk" data-key="]" aria-label={ i18n.T(ctx, "month.next") }>›</a>
+			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, 1), page.Filter.ID)) } class="lnk" data-key="]" aria-label={ i18n.T(ctx, "month.next") }>›</a>
 			if !page.isCurrent() {
-				<a href="/" class="lnk">{ i18n.T(ctx, "month.current") }</a>
+				<a href={ templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID)) } class="lnk">{ i18n.T(ctx, "month.current") }</a>
 			}
 		</div>
 		<span class="month-keys hide-m"><kbd>[</kbd> <kbd>]</kbd> { i18n.T(ctx, "month.switch") }</span>
@@ -106,9 +115,9 @@ templ monthContent(page month) {
 			@kpi(i18n.T(ctx, "month.projected"), page.realized()+page.Pending)
 		</div>
 		<div class="split">
-			@panel(i18n.T(ctx, "month.statement"), "", newAction("/transactions/new")) {
+			@panel(i18n.T(ctx, "month.statement"), "", statementActions(page)) {
 				if len(page.Days) == 0 && len(page.Overdue) == 0 {
-					@empty(i18n.T(ctx, "month.empty"))
+					@empty(i18n.T(ctx, utils.IfElse(page.Filter.ID == "", "month.empty", "month.empty_category")))
 				} else {
 					@table.Table(table.Props{Class: tightTable}) {
 						@table.Body() {
@@ -153,36 +162,53 @@ templ monthContent(page month) {
 					}
 				}
 			}
-			@panel(i18n.T(ctx, "nav.categories"), "", nil) {
+			@panel(i18n.T(ctx, "nav.categories"), "", allCategories(page)) {
 				if len(page.Usages) == 0 {
 					@empty(i18n.T(ctx, "categories.empty"))
 				} else {
-					<ul class="usages">
+					<div class="usages">
 						for _, usage := range page.Usages {
-							<li>
-								<div class="usage-name">{ usage.Name }</div>
-								<div class="usage-meter">
-									<div class="meter" aria-hidden="true">
-										for _, segment := range meter(usage) {
-											<i class={ segment }></i>
-										}
-									</div>
-									<b class={ templ.KV("text-destructive", usage.MonthlyLimit > 0 && usage.Used > usage.MonthlyLimit) }>{ percent(usage) }</b>
-								</div>
-								<div class="text-xs text-muted-foreground tabular-nums">
-									if usage.MonthlyLimit > 0 {
-										{ money(ctx, usage.Used) + " / " + money(ctx, usage.MonthlyLimit) }
-									} else {
-										{ money(ctx, usage.Used) } · { i18n.T(ctx, "categories.no_limit") }
+							{{ isOver := usage.MonthlyLimit > 0 && usage.Used > usage.MonthlyLimit }}
+							<a
+								href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), utils.IfElse(usage.ID == page.Filter.ID, "", usage.ID))) }
+								class="usage"
+								if usage.ID == page.Filter.ID {
+									aria-current="true"
+								}
+							>
+								@categoryName(usage.Name, usage.Color)
+								<b class={ "text-xs tabular-nums", templ.KV("text-destructive", isOver), templ.KV("text-muted-foreground", !isOver) }>{ percent(usage) }</b>
+								<span class="meter" aria-hidden="true">
+									for _, segment := range meter(usage) {
+										<i class={ segment }></i>
 									}
-								</div>
-							</li>
+								</span>
+							</a>
 						}
-					</ul>
+					</div>
 				}
 			}
 		</div>
 	</div>
+}
+
+// statementActions is the statement's filter, "■ mercado ✕", which clears it, and "+ nova".
+templ statementActions(page month) {
+	<span class="flex items-center gap-[1ch]">
+		if page.Filter.ID != "" {
+			<a href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), "")) } class="lnk flex items-center gap-[1ch]">
+				<span class={ colorClass(page.Filter.Color) } aria-hidden="true">■</span>{ page.Filter.Name } ✕
+			</a>
+		}
+		@newAction("/transactions/new")
+	</span>
+}
+
+// allCategories is "[todas]", which clears the filter, only while there is one.
+templ allCategories(page month) {
+	if page.Filter.ID != "" {
+		<a href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), "")) } class="lnk">{ i18n.T(ctx, "month.all") }</a>
+	}
 }
 
 // dayOf is a pure "YYYY-MM-DD" date at midnight UTC.
@@ -232,6 +258,7 @@ templ pendingRow(page month, p occurrence, withDate bool) {
 		@table.Cell(table.CellProps{Class: "hide-m"}) {
 			<form hx-post={ url } hx-target="#month" hx-swap="outerHTML" onclick="event.stopPropagation()" class="flex justify-end">
 				<input type="hidden" name="month" value={ page.Month.Format(monthLayout) }/>
+				<input type="hidden" name="category" value={ page.Filter.ID }/>
 				@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
 					<span>{ i18n.T(ctx, "month.confirm") }</span>
 				}
