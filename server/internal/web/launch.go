@@ -42,16 +42,17 @@ func parseLaunch(ctx context.Context, line string, categories []store.Category, 
 	for _, word := range strings.Fields(line) {
 		cents, isAmount := parseAmount(ctx, strings.TrimLeft(word, "+-−"))
 		date, err := time.Parse("2/1/2006", word+"/"+strconv.Itoa(year))
+		category, tag := prefixed(categoryNames, word), prefixed(tagNames, word)
 		switch {
 		case l.Amount == 0 && isAmount && cents > 0:
 			l.Amount = cents
 			if word[0] == '+' {
 				l.Kind = "INCOME"
 			}
-		case word[0] == '@' && prefixed(categoryNames, word) >= 0:
-			l.Category = categories[prefixed(categoryNames, word)]
-		case word[0] == '#' && prefixed(tagNames, word) >= 0:
-			l.Tag = tags[prefixed(tagNames, word)]
+		case word[0] == '@' && category >= 0:
+			l.Category = categories[category]
+		case word[0] == '#' && tag >= 0:
+			l.Tag = tags[tag]
 		case word[0] == '@' || word[0] == '#':
 			l.Unknown = append(l.Unknown, word)
 		case fold(word) == fold(i18n.T(ctx, "month.today")):
