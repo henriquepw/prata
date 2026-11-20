@@ -56,7 +56,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 						</div>
 					</div>
 					if len(transactions) == 0 {
-						<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma transação neste mês</p>
+						@empty("nenhuma transação neste mês")
 					} else {
 						@table.Table(table.Props{Class: "@max-[640px]:[&_:is(td,th)]:px-1"}) {
 							@table.Header() {
@@ -80,7 +80,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 							}
 							@table.Body() {
 								for _, transaction := range transactions {
-									@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet", "tabindex": "0", "data-flash": transaction.ID == s.Flash}}) {
+									@table.Row(sheetRow("/transactions/"+transaction.ID, transaction.ID == s.Flash)) {
 										@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 											{ formatDate(transaction.OccurredAt, s.Now.Location(), brDate) }
 										}

@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -21,31 +21,39 @@ type tagForm struct {
 
 templ tagsPage(s shell, tags []store.Tag, loc *time.Location) {
 	@layout(s) {
-		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-semibold tracking-tight">Tags</h1>
-			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/tags/new", "hx-target": "#sheet"}}) {
-				Nova tag
-			}
-		</div>
-		if len(tags) == 0 {
-			<p class="text-sm text-muted-foreground">Nenhuma tag ainda.</p>
-		} else {
-			<ul class="divide-y border">
-				for _, tag := range tags {
-					<li>
-						<button type="button" hx-get={ "/tags/" + tag.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
-							<span class="flex-1">{ tag.Name }</span>
-							<span class="tabular-nums text-muted-foreground">
-								if tag.EndAt == nil {
-									desde { formatDate(tag.StartAt, loc, brDate) }
-								} else {
-									{ formatDate(tag.StartAt, loc, brDate) } a { formatDate(*tag.EndAt, loc, brDate) }
+		@panel("Tags", "", newAction("/tags/new")) {
+			if len(tags) == 0 {
+				@empty("nenhuma tag ainda")
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head(table.HeadProps{Class: "w-full"}) {
+								Nome
+							}
+							@table.Head(table.HeadProps{Class: "text-right"}) {
+								Período
+							}
+						}
+					}
+					@table.Body() {
+						for _, tag := range tags {
+							@table.Row(sheetRow("/tags/"+tag.ID, tag.ID == s.Flash)) {
+								@table.Cell() {
+									{ "#" + tag.Name }
 								}
-							</span>
-						</button>
-					</li>
+								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
+									if tag.EndAt == nil {
+										desde { formatDate(tag.StartAt, loc, brDate) }
+									} else {
+										{ formatDate(tag.StartAt, loc, brDate) } a { formatDate(*tag.EndAt, loc, brDate) }
+									}
+								}
+							}
+						}
+					}
 				}
-			</ul>
+			}
 		}
 	}
 }

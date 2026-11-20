@@ -5,32 +5,55 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
 templ devicesPage(s shell, devices []store.Device, loc *time.Location) {
 	@layout(s) {
-		<h1 class="mb-6 text-2xl font-semibold tracking-tight">Dispositivos</h1>
-		if len(devices) == 0 {
-			<p class="text-sm text-muted-foreground">Nenhum dispositivo conectado.</p>
-		} else {
-			<ul class="divide-y border">
-				for _, device := range devices {
-					<li class="flex items-center gap-3 px-4 py-3 text-sm">
-						<div class="flex-1">
-							<div class="font-medium">{ device.Name }</div>
-							<div class="text-muted-foreground">
-								Último contato: { localTime(device.LastSeenAt, loc) } · Criado em { localTime(device.CreatedAt, loc) }
-							</div>
-						</div>
-						@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{
-							"hx-delete":  "/devices/" + device.ID,
-							"hx-confirm": "Revogar o acesso de " + device.Name + "? Ele para de sincronizar até entrar de novo.",
-						}}) {
-							Revogar
+		@panel("Dispositivos", "", nil) {
+			if len(devices) == 0 {
+				@empty("nenhum dispositivo conectado")
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head(table.HeadProps{Class: "w-full"}) {
+								Nome
+							}
+							@table.Head() {
+								Último contato
+							}
+							@table.Head(table.HeadProps{Class: "hide-m"}) {
+								Criado em
+							}
+							@table.Head()
 						}
-					</li>
+					}
+					@table.Body() {
+						for _, device := range devices {
+							@table.Row() {
+								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+									{ device.Name }
+								}
+								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+									{ localTime(device.LastSeenAt, loc) }
+								}
+								@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
+									{ localTime(device.CreatedAt, loc) }
+								}
+								@table.Cell(table.CellProps{Class: "text-right"}) {
+									@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
+										"hx-delete":  "/devices/" + device.ID,
+										"hx-confirm": "Revogar o acesso de " + device.Name + "? Ele para de sincronizar até entrar de novo.",
+									}}) {
+										Revogar
+									}
+								}
+							}
+						}
+					}
 				}
-			</ul>
+			}
 		}
 	}
 }

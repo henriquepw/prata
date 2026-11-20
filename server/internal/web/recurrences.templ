@@ -2,9 +2,9 @@ package web
 
 import (
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -25,26 +25,41 @@ type recurrenceForm struct {
 
 templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 	@layout(s) {
-		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-semibold tracking-tight">Recorrências</h1>
-			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/recurrences/new", "hx-target": "#sheet"}}) {
-				Nova recorrência
-			}
-		</div>
-		if len(recurrences) == 0 {
-			<p class="text-sm text-muted-foreground">Nenhuma recorrência ainda.</p>
-		} else {
-			<ul class="divide-y border">
-				for _, recurrence := range recurrences {
-					<li>
-						<button type="button" hx-get={ "/recurrences/" + recurrence.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
-							<span class="flex-1">{ utils.IfElse(recurrence.Description == nil, "Sem descrição", orEmpty(recurrence.Description)) }</span>
-							<span class="text-muted-foreground">todo dia { ruleDay(recurrence.Rule) }</span>
-							<span class="tabular-nums">{ money(signed(recurrence.Kind, recurrence.Amount)) }</span>
-						</button>
-					</li>
+		@panel("Recorrências", "", newAction("/recurrences/new")) {
+			if len(recurrences) == 0 {
+				@empty("nenhuma recorrência ainda")
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head(table.HeadProps{Class: "w-full"}) {
+								Descrição
+							}
+							@table.Head() {
+								Dia
+							}
+							@table.Head(table.HeadProps{Class: "text-right"}) {
+								Valor
+							}
+						}
+					}
+					@table.Body() {
+						for _, recurrence := range recurrences {
+							@table.Row(sheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
+								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+									{ utils.IfElse(recurrence.Description == nil, "Sem descrição", orEmpty(recurrence.Description)) }
+								}
+								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+									todo dia { ruleDay(recurrence.Rule) }
+								}
+								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", utils.IfElse(recurrence.Kind == "INCOME", "text-cat-green", "text-destructive"))}) {
+									{ money(signed(recurrence.Kind, recurrence.Amount)) }
+								}
+							}
+						}
+					}
 				}
-			</ul>
+			}
 		}
 	}
 }
