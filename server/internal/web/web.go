@@ -36,8 +36,8 @@ type handler struct {
 	isSignupAllowed bool
 }
 
-// New returns the web routes behind cross-origin protection. Routes wrapped in requireSession see the
-// session via sessionFrom.
+// New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
+// wrapped in requireSession, and every page without a session in visitor.
 func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed}
 	mux := http.NewServeMux()
@@ -216,7 +216,8 @@ func preferredLanguage(header string) string {
 	return preferred
 }
 
-// sessionFrom is the request's session, or visitorSession on a page without one.
+// sessionFrom is the request's session, or visitorSession on a page without one. It never fails, so a route
+// that needs a logged-in user relies on requireSession to turn visitors away.
 func sessionFrom(ctx context.Context) store.Session {
 	if session, ok := ctx.Value(sessionKey{}).(store.Session); ok {
 		return session
