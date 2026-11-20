@@ -828,9 +828,14 @@
 
   /* The boxes read as a sum: the two "=" ones get a --line border and the projected one is primary. */
   .kpis {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 1.5ch;
+  }
+
+  .kpis > * {
+    flex: 1 1 18ch;
+    min-width: 0;
   }
 
   .kpis > :nth-child(4),
@@ -937,11 +942,21 @@
     animation: flash 600ms var(--ease);
   }
 
-  /* Split: a 3fr 1fr grid of a screen's panel and the one beside it, stacked on mobile. */
+  /* Split: a screen's panel and the one beside it, 3:1, the side one wrapping below when they don't fit. */
   .split {
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 1lh 2ch;
+  }
+
+  .split > :first-child {
+    flex: 3 1 48ch;
+    min-width: 0;
+  }
+
+  .split > :nth-child(2) {
+    flex: 1 1 28ch;
+    min-width: 0;
   }
 
   /* Sheet: a dialog on the right holding a borderless panel, set apart only by a --line-soft left border. */
@@ -1022,14 +1037,6 @@
   }
 
   @container console (max-width: 640px) {
-    .split {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .kpis {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .hide-m {
       display: none;
     }
