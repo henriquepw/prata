@@ -73,7 +73,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 					}
 					@table.Body() {
 						for _, transaction := range transactions {
-							@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet"}}) {
+							@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet", "tabindex": "0"}}) {
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 									{ formatDate(transaction.OccurredAt, loc, brDate) }
 								}

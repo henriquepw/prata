@@ -508,7 +508,7 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet"}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet", "tabindex": "0"}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
