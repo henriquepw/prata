@@ -43,6 +43,44 @@ func TestWebLaunch_CreatesTheTransactionAndSwapsTheMonth(t *testing.T) {
 	}
 }
 
+func TestWebLaunch_PreviewsTheLine(t *testing.T) {
+	w := newWebClient(t)
+	w.push(newCategory(w.client), newTag(w.client))
+	tests := []struct {
+		line string
+		want []string
+	}{
+		{"", []string{"-45,90 despesa, +150 receita, @categoria, #tag, ontem ou dd/mm"}},
+		{"-45,90 padaria 18/11 @merc #viag", []string{"[despesa]", "−R$ 45,90", `"padaria"`, "Mercado", "#Viagem", "18/11/2026"}},
+		{"+150", []string{"[receita]", "R$ 150,00", "sem descrição", "sem categoria"}},
+		{"padaria @xyz", []string{"! falta o valor", "! @xyz não existe"}},
+		{"10 @m", []string{"tab", "@mercado"}},
+	}
+	for _, tt := range tests {
+		response := get(w.handler, "/launch?month=2026-11&line="+url.QueryEscape(tt.line), w.cookie)
+		body := response.Body.String()
+		for _, text := range tt.want {
+			if response.Code != http.StatusOK || !strings.Contains(body, text) || strings.Contains(body, "<html") {
+				t.Errorf("preview of %q = %d, want the fragment with %q: %s", tt.line, response.Code, text, body)
+			}
+		}
+	}
+}
+
+func TestWebLaunch_MonthHasThePromptAndItsKey(t *testing.T) {
+	w := newWebClient(t)
+	body := get(w.handler, "/", w.cookie).Body.String()
+	for _, text := range []string{`id="launch"`, `aria-describedby="launch-preview"`, `aria-live="polite"`, "Lançar", "focar", "<kbd>/</kbd> lançar"} {
+		if !strings.Contains(body, text) {
+			t.Errorf("month lacks %q: %s", text, body)
+		}
+	}
+
+	if body := get(w.handler, "/categories", w.cookie).Body.String(); strings.Contains(body, "<kbd>/</kbd> lançar") {
+		t.Errorf("categories shows the prompt's key: %s", body)
+	}
+}
+
 func TestWebLaunch_InvalidLineIs422(t *testing.T) {
 	w := newWebClient(t)
 	w.push(newCategory(w.client))

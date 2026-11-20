@@ -49,7 +49,8 @@ func (s shell) newURL() string {
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
-// outside fields and dialogs, the digits, n, [ and ] click their [data-key] and enter opens the focused row.
+// outside fields and dialogs, the digits, n, [ and ] click their [data-key], / focuses the Mês prompt and enter opens
+// the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
 const headScript = `(() => {
   const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const applyTheme = () => {
@@ -114,6 +115,20 @@ const headScript = `(() => {
     if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
     if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
     else if (/^[1-9n[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+    else if (e.key === '/' && document.getElementById('launch')) {
+      e.preventDefault()
+      document.getElementById('launch').focus()
+    }
+  })
+  addEventListener('keydown', e => {
+    if (e.target.id !== 'launch') return
+    const first = document.querySelector('.launch-suggestions b')
+    if (e.key === 'Escape') e.target.blur()
+    else if (e.key === 'Tab' && first) {
+      e.preventDefault()
+      e.target.value = e.target.value.replace(/\S*$/, first.textContent + ' ')
+      e.target.dispatchEvent(new Event('input', { bubbles: true }))
+    }
   })
 })()`
 
@@ -229,6 +244,9 @@ templ layout(s shell) {
 						<span><kbd>{ fmt.Sprintf("1-%d", len(nav)) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 						if url := s.newURL(); url != "" {
 							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
+						}
+						if s.Path == "/" {
+							<span><kbd>/</kbd> { i18n.T(ctx, "launch.submit") }</span>
 						}
 						<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
 					</div>

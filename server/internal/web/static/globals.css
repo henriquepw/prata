@@ -789,6 +789,54 @@
     gap: 1lh;
   }
 
+  /* Launch prompt: the line at 16px over its live preview and the tab completions of "@" and "#". */
+  .launch-prompt {
+    margin-bottom: 0;
+    font-size: 16px;
+  }
+
+  .launch-preview {
+    min-height: 1lh;
+    margin-top: 0.6lh;
+    font-size: 12px;
+  }
+
+  .launch-parsed {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6ch 1.2ch;
+  }
+
+  .launch-kind {
+    padding: 0 0.6ch;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--background);
+    background: var(--foreground);
+  }
+
+  .launch-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1ch;
+    margin-top: 0.4lh;
+    color: var(--muted-foreground);
+  }
+
+  .launch-suggestions kbd {
+    font: inherit;
+    color: var(--primary);
+  }
+
+  .launch-suggestions b {
+    padding: 0 0.6ch;
+    font-weight: 400;
+    color: var(--foreground);
+    background: var(--line-soft);
+  }
+
   /* The boxes read as a sum: the two "=" ones get a --line border and the projected one is primary. */
   .kpis {
     display: grid;
