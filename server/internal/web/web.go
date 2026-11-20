@@ -189,9 +189,9 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 // pt-BR otherwise.
 func visitor(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		language := i18n.Default
-		if strings.HasPrefix(strings.ToLower(preferredLanguage(r.Header.Get("Accept-Language"))), "en") {
-			language = "en"
+		language := i18n.PortugueseBR
+		if strings.HasPrefix(strings.ToLower(preferredLanguage(r.Header.Get("Accept-Language"))), i18n.English) {
+			language = i18n.English
 		}
 
 		next(w, r.WithContext(i18n.WithLanguage(r.Context(), language)))

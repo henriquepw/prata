@@ -10,10 +10,13 @@ import (
 	"fmt"
 )
 
-// Default is the Idioma of a context without one.
-const Default = "pt-BR"
+// The Idiomas, as the schema spells them. PortugueseBR is also the Idioma of a context without one.
+const (
+	PortugueseBR = "pt-BR"
+	English      = "en"
+)
 
-var dictionaries = map[string]map[string]string{"pt-BR": ptBR, "en": en}
+var dictionaries = map[string]map[string]string{PortugueseBR: ptBR, English: en}
 
 type languageKey struct{}
 
@@ -22,13 +25,13 @@ func WithLanguage(ctx context.Context, language string) context.Context {
 	return context.WithValue(ctx, languageKey{}, language)
 }
 
-// Language is the Idioma in ctx, or Default when it has none.
+// Language is the Idioma in ctx, or PortugueseBR when it has none.
 func Language(ctx context.Context) string {
 	if language, ok := ctx.Value(languageKey{}).(string); ok {
 		return language
 	}
 
-	return Default
+	return PortugueseBR
 }
 
 // T is the text of key in the Idioma of ctx, falling back to pt-BR and then to the key itself, with args filled in

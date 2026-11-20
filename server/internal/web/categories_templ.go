@@ -20,14 +20,17 @@ import (
 
 // categoryColor is a schema color, whose label is the i18n key "color." + Value, and its text color class, spelled
 // out here for Tailwind.
-type categoryColor struct{ Value, Class string }
+type categoryColor struct {
+	option
+	Class string
+}
 
 var categoryColors = []categoryColor{
-	{"GRAY", "text-cat-gray"},
-	{"RED", "text-cat-red"},
-	{"YELLOW", "text-cat-yellow"},
-	{"BLUE", "text-cat-blue"},
-	{"GREEN", "text-cat-green"},
+	{option{"GRAY"}, "text-cat-gray"},
+	{option{"RED"}, "text-cat-red"},
+	{option{"YELLOW"}, "text-cat-yellow"},
+	{option{"BLUE"}, "text-cat-blue"},
+	{option{"GREEN"}, "text-cat-green"},
 }
 
 // categoryForm is the category sheet: what the user typed and an error message per field name,
@@ -138,7 +141,7 @@ func categoriesPage(s shell, categories []store.Category) templ.Component {
 									var templ_7745c5c3_Var8 string
 									templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.name"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 44, Col: 35}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 47, Col: 35}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 									if templ_7745c5c3_Err != nil {
@@ -165,7 +168,7 @@ func categoriesPage(s shell, categories []store.Category) templ.Component {
 									var templ_7745c5c3_Var10 string
 									templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.monthly_limit"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 47, Col: 49}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 50, Col: 49}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 									if templ_7745c5c3_Err != nil {
@@ -252,7 +255,7 @@ func categoriesPage(s shell, categories []store.Category) templ.Component {
 											var templ_7745c5c3_Var15 string
 											templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.no_limit"))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 59, Col: 46}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 62, Col: 46}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 											if templ_7745c5c3_Err != nil {
@@ -262,7 +265,7 @@ func categoriesPage(s shell, categories []store.Category) templ.Component {
 											var templ_7745c5c3_Var16 string
 											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, category.MonthlyLimit))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 61, Col: 45}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 64, Col: 45}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {
@@ -376,7 +379,7 @@ func categoryName(name, color string) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 75, Col: 112}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 78, Col: 112}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -481,7 +484,7 @@ func categorySheet(form categoryForm) templ.Component {
 							var templ_7745c5c3_Var27 string
 							templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "color."+color.Value))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 93, Col: 41}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 96, Col: 41}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 							if templ_7745c5c3_Err != nil {

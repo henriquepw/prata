@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"slices"
 	"strings"
 
 	"github.com/a-h/templ"
@@ -51,7 +50,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
-	if _, ok := findColor(form.Color); !ok {
+	if _, ok := find(categoryColors, form.Color); !ok {
 		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
@@ -139,17 +138,8 @@ func listPath(r *http.Request) string {
 	return "/" + strings.Split(r.URL.Path, "/")[1]
 }
 
-func findColor(value string) (categoryColor, bool) {
-	i := slices.IndexFunc(categoryColors, func(color categoryColor) bool { return color.Value == value })
-	if i < 0 {
-		return categoryColor{}, false
-	}
-
-	return categoryColors[i], true
-}
-
 func colorClass(value string) string {
-	color, _ := findColor(value)
+	color, _ := find(categoryColors, value)
 
 	return color.Class
 }

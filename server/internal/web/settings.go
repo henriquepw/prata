@@ -30,19 +30,19 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		Currency: r.PostFormValue("currency"),
 		Errors:   map[string]string{},
 	}
-	if !isLanguage(form.Language) {
+	if _, ok := find(languages, form.Language); !ok {
 		form.Errors["language"] = i18n.T(r.Context(), "settings.error.language")
 	}
 
-	if _, ok := findDateFormat(form.DateFormat); !ok {
+	if _, ok := find(dateFormats, form.DateFormat); !ok {
 		form.Errors["date_format"] = i18n.T(r.Context(), "settings.error.date_format")
 	}
 
-	if _, ok := findNumberFormat(form.NumberFormat); !ok {
+	if _, ok := find(numberFormats, form.NumberFormat); !ok {
 		form.Errors["number_format"] = i18n.T(r.Context(), "settings.error.number_format")
 	}
 
-	if _, ok := findCurrency(form.Currency); !ok {
+	if _, ok := find(currencies, form.Currency); !ok {
 		form.Errors["currency"] = i18n.T(r.Context(), "settings.error.currency")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -15,68 +16,65 @@ import (
 // Idioma comes from visitor.
 var visitorSession = store.Session{Preferences: store.Preferences{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}, Currency: "BRL"}
 
-// language is an Idioma: its schema value and its name, written in itself.
-type language struct{ Value, Label string }
+// option is a choice of a settings or form field: its schema value.
+type option struct{ Value string }
 
-var languages = []language{{"pt-BR", "Português (Brasil)"}, {"en", "English"}}
+func (o option) value() string { return o.Value }
 
-func isLanguage(value string) bool {
-	return slices.ContainsFunc(languages, func(l language) bool { return l.Value == value })
+// find is the item of items whose schema value is value.
+func find[T interface{ value() string }](items []T, value string) (T, bool) {
+	i := slices.IndexFunc(items, func(item T) bool { return item.value() == value })
+	if i < 0 {
+		var zero T
+		return zero, false
+	}
+
+	return items[i], true
 }
+
+// language is an Idioma: its schema value and its name, written in itself.
+type language struct {
+	option
+	Label string
+}
+
+var languages = []language{{option{i18n.PortugueseBR}, "Português (Brasil)"}, {option{i18n.English}, "English"}}
 
 // dateFormat is a Formato de data: its schema value, whose label is the i18n key "date_format." + Value, and its Go
 // layout.
-type dateFormat struct{ Value, Layout string }
+type dateFormat struct {
+	option
+	Layout string
+}
 
-var dateFormats = []dateFormat{{"DD/MM/YYYY", "02/01/2006"}, {"MM/DD/YYYY", "01/02/2006"}, {"YYYY-MM-DD", "2006-01-02"}}
+var dateFormats = []dateFormat{{option{"DD/MM/YYYY"}, "02/01/2006"}, {option{"MM/DD/YYYY"}, "01/02/2006"}, {option{"YYYY-MM-DD"}, "2006-01-02"}}
 
 // numberFormat is a Formato numérico: its schema value, which is also its label, and its separators.
-type numberFormat struct{ Value, Thousands, Decimal string }
+type numberFormat struct {
+	option
+	Thousands, Decimal string
+}
 
-var numberFormats = []numberFormat{{"1.234,56", ".", ","}, {"1,234.56", ",", "."}}
+var numberFormats = []numberFormat{{option{"1.234,56"}, ".", ","}, {option{"1,234.56"}, ",", "."}}
 
 // currency is a Moeda: its schema value and its symbol.
-type currency struct{ Value, Symbol string }
-
-var currencies = []currency{{"BRL", "R$"}, {"USD", "$"}, {"EUR", "€"}}
-
-func findCurrency(value string) (currency, bool) {
-	i := slices.IndexFunc(currencies, func(c currency) bool { return c.Value == value })
-	if i < 0 {
-		return currency{}, false
-	}
-
-	return currencies[i], true
+type currency struct {
+	option
+	Symbol string
 }
+
+var currencies = []currency{{option{"BRL"}, "R$"}, {option{"USD"}, "$"}, {option{"EUR"}, "€"}}
 
 // currencySymbol is the symbol of the request's Moeda, as "R$".
 func currencySymbol(ctx context.Context) string {
-	c, _ := findCurrency(sessionFrom(ctx).Currency)
+	c, _ := find(currencies, sessionFrom(ctx).Currency)
 
 	return c.Symbol
 }
 
-func findDateFormat(value string) (dateFormat, bool) {
-	i := slices.IndexFunc(dateFormats, func(f dateFormat) bool { return f.Value == value })
-	if i < 0 {
-		return dateFormat{}, false
-	}
-
-	return dateFormats[i], true
-}
-
-func findNumberFormat(value string) (numberFormat, bool) {
-	i := slices.IndexFunc(numberFormats, func(f numberFormat) bool { return f.Value == value })
-	if i < 0 {
-		return numberFormat{}, false
-	}
-
-	return numberFormats[i], true
-}
-
 // dateLayout is the Go layout of the request's Formato de data, as "02/01/2006".
 func dateLayout(ctx context.Context) string {
-	f, _ := findDateFormat(sessionFrom(ctx).DateFormat)
+	f, _ := find(dateFormats, sessionFrom(ctx).DateFormat)
 
 	return f.Layout
 }
@@ -97,7 +95,7 @@ func money(ctx context.Context, cents int64) string {
 
 // amount writes non-negative cents in the request's Formato numérico, as "1.234,56", for display and form fields.
 func amount(ctx context.Context, cents int64) string {
-	f, _ := findNumberFormat(sessionFrom(ctx).NumberFormat)
+	f, _ := find(numberFormats, sessionFrom(ctx).NumberFormat)
 	whole := strconv.FormatInt(cents/100, 10)
 	for i := len(whole) - 3; i > 0; i -= 3 {
 		whole = whole[:i] + f.Thousands + whole[i:]
@@ -110,7 +108,7 @@ func amount(ctx context.Context, cents int64) string {
 // Thousands separators must split the whole part in groups of three, so "1,50" typed for "1.234,56" fails
 // instead of reading as 150.
 func parseAmount(ctx context.Context, s string) (int64, bool) {
-	f, _ := findNumberFormat(sessionFrom(ctx).NumberFormat)
+	f, _ := find(numberFormats, sessionFrom(ctx).NumberFormat)
 	whole, frac, _ := strings.Cut(s, f.Decimal)
 	groups := strings.Split(whole, f.Thousands)
 	if len(frac) > 2 || slices.ContainsFunc(groups[1:], func(g string) bool { return len(g) != 3 }) {
