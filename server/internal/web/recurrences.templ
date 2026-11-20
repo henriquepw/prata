@@ -60,15 +60,7 @@ templ recurrenceSheet(form recurrenceForm) {
 		@formField("description", "Descrição", form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		@formField("kind", "Tipo", form.Errors["kind"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "kind", Name: "kind", Class: "w-full", Attributes: ariaInvalid(form.Errors["kind"])}) {
-				for _, kind := range kinds {
-					@nativeselect.Option(nativeselect.OptionProps{Value: kind.Value, Selected: kind.Value == form.Kind}) {
-						{ kind.Label }
-					}
-				}
-			}
-		}
+		@kindChoice(form.Kind, form.Errors["kind"])
 		@formField("amount", "Valor", form.Errors["amount"]) {
 			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
 		}

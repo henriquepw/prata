@@ -9,17 +9,18 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
-	"github.com/henriquepw/prata/server/internal/web/components/icon"
 )
 
 // shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
-// user's email, the clock's first tick and the ticker's balance.
+// user's email, the clock's first tick and the ticker's balance. Flash is the id of the row a sheet just saved,
+// which the page marks with data-flash.
 type shell struct {
 	Title   string
 	Path    string
 	Email   string
 	Now     time.Time
 	Balance balance
+	Flash   string
 }
 
 // nav is the rail, in the order of the 1–6 shortcuts. New is the screen's "novo" sheet, when it has one, and
@@ -163,7 +164,8 @@ templ layout(s shell) {
 						<div><dt>Realizado</dt><dd>{ money(s.Balance.Realized) }</dd></div>
 						<div><dt>Projetado</dt><dd>{ money(s.Balance.Projected) }</dd></div>
 						<div>
-							<dt>Pendentes</dt><dd>
+							<dt>Pendentes</dt>
+							<dd>
 								{ strconv.Itoa(len(s.Balance.Pending)) }
 								if overdue := s.Balance.overdue(); overdue > 0 {
 									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
@@ -173,7 +175,8 @@ templ layout(s shell) {
 							</dd>
 						</div>
 						<div>
-							<dt>Sync</dt><dd>
+							<dt>Sync</dt>
+							<dd>
 								<span data-spin class="sync-dot">●</span>
 								@badge.Badge(badge.Props{Class: "bg-cat-green text-background"}) {
 									[online]
@@ -225,7 +228,7 @@ templ layout(s shell) {
 			</div>
 		</div>
 		@launcher()
-		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full border-l bg-background p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-md"></dialog>
+		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet"></dialog>
 	}
 }
 
@@ -286,23 +289,22 @@ type sheetProps struct {
 	Error     string
 }
 
-// sheet is the form swapped into the #sheet dialog: fields as children, "Excluir" on the left and
-// "Cancelar"/"Salvar" on the right. Every response, a 422 included, swaps into #sheet.
+// sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
+// fields as children, then "excluir" on the left and "cancelar" and "> salvar" on the right; while saving, the
+// submit reads "⠋ salvando". Every response, a 422 included, swaps into #sheet.
 templ sheet(p sheetProps) {
-	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="flex h-full flex-col gap-5 p-6">
-		<div class="flex items-center justify-between">
-			<h2 class="text-lg font-semibold">{ p.Title }</h2>
-			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantGhost, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Fechar", "onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
-				@icon.X()
-			}
-		</div>
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel">
+		<header class="panel-head">
+			<h2 class="panel-title">{ p.Title }</h2>
+			<button type="button" class="lnk" aria-label="Fechar" onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+		</header>
 		{ children... }
 		if p.Error != "" {
 			@field.Error() {
 				{ p.Error }
 			}
 		}
-		<div class="mt-auto flex justify-between gap-2">
+		<footer class="mt-auto flex justify-between gap-[1ch]">
 			<div>
 				if p.DeleteURL != "" {
 					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet", "hx-confirm": p.Confirm}}) {
@@ -310,16 +312,37 @@ templ sheet(p sheetProps) {
 					}
 				}
 			</div>
-			<div class="flex gap-2">
+			<div class="flex gap-[1ch]">
 				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
 					Cancelar
 				}
-				@button.Button(button.Props{Type: button.TypeSubmit}) {
-					Salvar
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {
+					<span>&gt; Salvar</span>
 				}
 			</div>
-		</div>
+		</footer>
 	</form>
+}
+
+// kindChoice is the [despesa] [receita] choice of a transaction or recurrence: radios drawn as buttons, the checked
+// one inverted.
+templ kindChoice(value, message string) {
+	@field.Field() {
+		<span id="kind-label" class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">Tipo</span>
+		<div role="radiogroup" aria-labelledby="kind-label" class="choice" { ariaInvalid(message)... }>
+			for _, kind := range kinds {
+				<label>
+					<input type="radio" name="kind" value={ kind.Value } checked?={ kind.Value == value }/>
+					<span>[{ strings.ToLower(kind.Label) }]</span>
+				</label>
+			}
+		</div>
+		if message != "" {
+			@field.Error() {
+				{ message }
+			}
+		}
+	}
 }
 
 // formField is one sheet field: label, the control as children and its error message.

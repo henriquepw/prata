@@ -23,7 +23,7 @@ func activityPhrase(a store.Activity) string {
 // activityLog is the "Log de atividade" panel: one line per op, newest first, with the time in loc, and the
 // prompt pinned to the bottom.
 templ activityLog(activity []store.Activity, loc *time.Location) {
-	@panel("Log de atividade", "log-panel") {
+	@panel("Log de atividade", "log-panel", nil) {
 		<ol class="log">
 			for _, a := range activity {
 				<li><span class="text-muted-foreground">{ "> [" + formatDate(a.CreatedAt, loc, "15:04") + "]" }</span> { a.Device } · { activityPhrase(a) }</li>

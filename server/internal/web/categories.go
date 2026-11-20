@@ -104,7 +104,8 @@ func (h handler) category(w http.ResponseWriter, r *http.Request) (store.Categor
 
 // commit is the end of every sheet submit: with field errors, or when CommitChanges rejects the changes,
 // it answers 422 with the sheet (fieldErrors["form"] set on rejection) and writes nothing; otherwise it commits
-// and asks htmx to reload the page. The sheet must render from fieldErrors, so the rejection shows up in it.
+// and asks htmx to reload the page, flashing the first change's row unless it was deleted. The sheet must render
+// from fieldErrors, so the rejection shows up in it.
 func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[string]string, sheet templ.Component, changes ...store.Change) {
 	if len(fieldErrors) > 0 {
 		render(w, r, http.StatusUnprocessableEntity, sheet)
@@ -122,6 +123,10 @@ func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[
 		fieldErrors["form"] = rejectedMessage
 		render(w, r, http.StatusUnprocessableEntity, sheet)
 		return
+	}
+
+	if changes[0].Kind != store.KindDelete {
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: "/", MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	w.Header().Set("HX-Refresh", "true")
