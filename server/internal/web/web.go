@@ -82,7 +82,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	userID, err := h.db.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if errors.Is(err, store.ErrInvalidCredentials) {
-		render(w, r, http.StatusUnprocessableEntity, loginPage(authForm{Email: email, Error: "E-mail ou senha inválidos."}))
+		render(w, r, http.StatusUnprocessableEntity, loginPage(authForm{Email: email, PasswordError: "E-mail ou senha inválidos."}))
 		return
 	}
 
@@ -97,11 +97,17 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
-	fail := func(message string) {
-		render(w, r, http.StatusUnprocessableEntity, signupPage(authForm{Email: email, Error: message}))
+	form := authForm{Email: email}
+	if !strings.Contains(email, "@") {
+		form.EmailError = "Informe um e-mail."
 	}
-	if !strings.Contains(email, "@") || password == "" {
-		fail("Informe um e-mail e uma senha.")
+
+	if password == "" {
+		form.PasswordError = "Informe uma senha."
+	}
+
+	if form.EmailError != "" || form.PasswordError != "" {
+		render(w, r, http.StatusUnprocessableEntity, signupPage(form))
 		return
 	}
 
@@ -109,9 +115,9 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 	switch {
 	case errors.Is(err, store.ErrSignupClosed):
-		fail("Cadastro fechado nesta instalação.")
+		render(w, r, http.StatusUnprocessableEntity, signupPage(authForm{Email: email, Error: "Cadastro fechado nesta instalação."}))
 	case errors.Is(err, store.ErrDuplicateID):
-		fail("Este e-mail já tem conta.")
+		render(w, r, http.StatusUnprocessableEntity, signupPage(authForm{Email: email, EmailError: "Este e-mail já tem conta."}))
 	case err != nil:
 		internalError(w, "creating account", err)
 	default:

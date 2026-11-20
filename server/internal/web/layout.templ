@@ -44,19 +44,22 @@ func (s shell) keys() [][2]string {
 }
 
 // headScript applies the theme cookie before the first paint, stores the browser time zone in the tz cookie,
-// opens the #sheet dialog once htmx swaps a form into it, ticks the status bar clock and turns the sync dot into a
-// braille spinner while any htmx request is in flight.
+// opens the #sheet dialog once htmx swaps a form into it, ticks every [data-clock] (status bar and login footer)
+// and turns the sync dot into a braille spinner while any htmx request is in flight.
 const headScript = `(() => {
   const theme = document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
   document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => e.textContent = new Date().toLocaleString('pt-BR').replace(',', ''))
+  setInterval(tick, 1000)
+  addEventListener('DOMContentLoaded', tick)
   addEventListener('htmx:after:swap', () => {
+    tick()
     const sheet = document.getElementById('sheet')
     if (sheet?.childElementCount && !sheet.open) sheet.showModal()
   })
-  setInterval(() => document.querySelectorAll('[data-clock]').forEach(e => e.textContent = new Date().toLocaleString('pt-BR').replace(',', '')), 1000)
   let requests = 0, frame = 0
   const spin = () => document.querySelectorAll('[data-spin]').forEach(e => e.textContent = !requests ? '●' : matchMedia('(prefers-reduced-motion: reduce)').matches ? '⠿' : '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[frame++ % 10])
   addEventListener('htmx:before:request', () => { requests++; spin() })
