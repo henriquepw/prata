@@ -116,8 +116,10 @@ func (s *Store) CommitOps(ctx context.Context, actor Actor, ops []Op) ([]Result,
 }
 
 func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, error) {
+	query := "SELECT seq FROM sync_operations WHERE device_id = ? AND id = ?"
+
 	var seq int64
-	err := tx.GetContext(ctx, &seq, "SELECT seq FROM sync_operations WHERE device_id = ? AND id = ?", actor.DeviceID, op.ID)
+	err := tx.GetContext(ctx, &seq, query, actor.DeviceID, op.ID)
 	if err == nil {
 		return Result{Seq: seq}, nil
 	}
@@ -210,11 +212,13 @@ func validate(actor Actor, op Op) (map[string]any, Reason) {
 
 // checkRow enforces ownership of an existing row, also across accounts, and requires one for UPDATE and DELETE.
 func checkRow(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Reason, error) {
+	query := "SELECT account_id, owner_id FROM " + tables[op.Entity].name + " WHERE id = ?"
+
 	var row struct {
 		AccountID string `db:"account_id"`
 		OwnerID   string `db:"owner_id"`
 	}
-	err := tx.GetContext(ctx, &row, "SELECT account_id, owner_id FROM "+tables[op.Entity].name+" WHERE id = ?", op.EntityID)
+	err := tx.GetContext(ctx, &row, query, op.EntityID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows) && op.Kind != KindCreate:
 		return ReasonInvalidOperation, nil
@@ -237,10 +241,17 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 		payload = json.RawMessage("{}")
 	}
 
+	query := `
+		INSERT INTO sync_operations (
+			id, account_id, device_id, owner_id, entity, entity_id,
+			kind, payload, protocol_version, created_at, received_at
+		)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		RETURNING seq
+	`
+
 	var seq int64
-	err := tx.GetContext(ctx, &seq, `INSERT INTO sync_operations
-		(id, account_id, device_id, owner_id, entity, entity_id, kind, payload, protocol_version, created_at, received_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING seq`,
+	err := tx.GetContext(ctx, &seq, query,
 		op.ID, actor.AccountID, actor.DeviceID, op.OwnerID, op.Entity, op.EntityID, op.Kind, string(payload),
 		op.ProtocolVersion, op.CreatedAt, formatTime(time.Now()))
 	if err != nil {
@@ -262,12 +273,15 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 	}
 
 	if op.Kind == KindCreate {
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("INSERT INTO %s (id, owner_id, account_id, %s) VALUES (?, ?, ?%s) ON CONFLICT (id) DO UPDATE SET %s",
-			name, strings.Join(columns, ", "), strings.Repeat(", ?", len(columns)), strings.Join(sets, ", ")),
-			append([]any{op.EntityID, op.OwnerID, actor.AccountID}, args...)...)
+		query = fmt.Sprintf(`
+			INSERT INTO %s (id, owner_id, account_id, %s)
+			VALUES (?, ?, ?%s)
+			ON CONFLICT (id) DO UPDATE SET %s
+		`, name, strings.Join(columns, ", "), strings.Repeat(", ?", len(columns)), strings.Join(sets, ", "))
+		_, err = tx.ExecContext(ctx, query, append([]any{op.EntityID, op.OwnerID, actor.AccountID}, args...)...)
 	} else {
-		_, err = tx.ExecContext(ctx, fmt.Sprintf("UPDATE %s SET %s = ? WHERE id = ?", name, strings.Join(columns, " = ?, ")),
-			append(args, op.EntityID)...)
+		query = fmt.Sprintf("UPDATE %s SET %s = ? WHERE id = ?", name, strings.Join(columns, " = ?, "))
+		_, err = tx.ExecContext(ctx, query, append(args, op.EntityID)...)
 	}
 
 	return seq, err
@@ -275,16 +289,26 @@ func record(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[str
 
 // Pull records cursor and last contact on the actor's device, then returns up to limit of the account's ops after cursor.
 func (s *Store) Pull(ctx context.Context, actor Actor, cursor int64, limit int) (Page, error) {
-	_, err := s.ExecContext(ctx, "UPDATE devices SET cursor = ?, last_seen_at = ? WHERE id = ?",
-		cursor, formatTime(time.Now()), actor.DeviceID)
+	query := "UPDATE devices SET cursor = ?, last_seen_at = ? WHERE id = ?"
+
+	_, err := s.ExecContext(ctx, query, cursor, formatTime(time.Now()), actor.DeviceID)
 	if err != nil {
 		return Page{}, fmt.Errorf("recording cursor: %w", err)
 	}
 
 	// CAST to BLOB: database/sql scans a []byte, not a TEXT string, into json.RawMessage.
+	query = `
+		SELECT
+			seq, id, entity, entity_id, kind, CAST(payload AS BLOB) AS payload,
+			protocol_version, device_id, owner_id, created_at
+		FROM sync_operations
+		WHERE account_id = ? AND seq > ?
+		ORDER BY seq
+		LIMIT ?
+	`
+
 	ops := []Op{}
-	err = s.SelectContext(ctx, &ops, `SELECT seq, id, entity, entity_id, kind, CAST(payload AS BLOB) AS payload, protocol_version, device_id, owner_id, created_at
-		FROM sync_operations WHERE account_id = ? AND seq > ? ORDER BY seq LIMIT ?`, actor.AccountID, cursor, limit+1)
+	err = s.SelectContext(ctx, &ops, query, actor.AccountID, cursor, limit+1)
 	if err != nil {
 		return Page{}, fmt.Errorf("reading ops: %w", err)
 	}
@@ -341,8 +365,10 @@ func (s *Store) Snapshot(ctx context.Context, actor Actor) (Snapshot, error) {
 	}
 	defer tx.Rollback()
 
+	query := "SELECT COALESCE(MAX(seq), 0) FROM sync_operations WHERE account_id = ?"
+
 	snapshot := Snapshot{}
-	if err := tx.GetContext(ctx, &snapshot.Cursor, "SELECT COALESCE(MAX(seq), 0) FROM sync_operations WHERE account_id = ?", actor.AccountID); err != nil {
+	if err := tx.GetContext(ctx, &snapshot.Cursor, query, actor.AccountID); err != nil {
 		return Snapshot{}, fmt.Errorf("reading max seq: %w", err)
 	}
 
@@ -350,7 +376,8 @@ func (s *Store) Snapshot(ctx context.Context, actor Actor) (Snapshot, error) {
 		rows   *[]map[string]any
 		entity string
 	}{{&snapshot.Categories, "CATEGORY"}, {&snapshot.Tags, "TAG"}, {&snapshot.Transactions, "TRANSACTION"}, {&snapshot.Recurrences, "RECURRENCE"}} {
-		if *target.rows, err = selectRows(ctx, tx, "SELECT * FROM "+tables[target.entity].name+" WHERE account_id = ? ORDER BY id", actor.AccountID); err != nil {
+		query = "SELECT * FROM " + tables[target.entity].name + " WHERE account_id = ? ORDER BY id"
+		if *target.rows, err = selectRows(ctx, tx, query, actor.AccountID); err != nil {
 			return Snapshot{}, fmt.Errorf("reading %s rows: %w", target.entity, err)
 		}
 	}
@@ -398,8 +425,16 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 	defer tx.Rollback()
 
 	// The web device is created first at signup, so rowid tells it from a revoked client device named "web".
+	query := `
+		SELECT id
+		FROM devices
+		WHERE account_id = ? AND name = 'web' AND api_key_hash IS NULL
+		ORDER BY rowid
+		LIMIT 1
+	`
+
 	actor := Actor{AccountID: session.AccountID, UserID: session.UserID}
-	err = tx.GetContext(ctx, &actor.DeviceID, "SELECT id FROM devices WHERE account_id = ? AND name = 'web' AND api_key_hash IS NULL ORDER BY rowid LIMIT 1", actor.AccountID)
+	err = tx.GetContext(ctx, &actor.DeviceID, query, actor.AccountID)
 	if err != nil {
 		return "", fmt.Errorf("finding web device: %w", err)
 	}
@@ -439,7 +474,8 @@ func changeOp(ctx context.Context, tx *sqlx.Tx, actor Actor, change Change, now 
 	case KindCreate:
 		fields["created_at"], fields["updated_at"] = now, now
 	case KindUpdate:
-		rows, err := selectRows(ctx, tx, "SELECT * FROM "+tables[change.Entity].name+" WHERE id = ?", change.EntityID)
+		query := "SELECT * FROM " + tables[change.Entity].name + " WHERE id = ?"
+		rows, err := selectRows(ctx, tx, query, change.EntityID)
 		if err != nil {
 			return nil, fmt.Errorf("reading %s %s: %w", change.Entity, change.EntityID, err)
 		}

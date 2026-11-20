@@ -20,16 +20,29 @@ type Category struct {
 
 // Categories returns the account's live categories by name.
 func (s *Store) Categories(ctx context.Context, accountID string) ([]Category, error) {
+	query := `
+		SELECT id, name, color, monthly_limit
+		FROM categories
+		WHERE account_id = ? AND deleted_at IS NULL
+		ORDER BY name, id
+	`
+
 	categories := []Category{}
-	err := s.SelectContext(ctx, &categories, "SELECT id, name, color, monthly_limit FROM categories WHERE account_id = ? AND deleted_at IS NULL ORDER BY name, id", accountID)
+	err := s.SelectContext(ctx, &categories, query, accountID)
 
 	return categories, err
 }
 
 // Category returns one live category of the account.
 func (s *Store) Category(ctx context.Context, accountID, id string) (Category, error) {
+	query := `
+		SELECT id, name, color, monthly_limit
+		FROM categories
+		WHERE account_id = ? AND id = ? AND deleted_at IS NULL
+	`
+
 	var category Category
-	err := s.GetContext(ctx, &category, "SELECT id, name, color, monthly_limit FROM categories WHERE account_id = ? AND id = ? AND deleted_at IS NULL", accountID, id)
+	err := s.GetContext(ctx, &category, query, accountID, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Category{}, ErrNotFound
 	}

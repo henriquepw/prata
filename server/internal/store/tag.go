@@ -17,16 +17,29 @@ type Tag struct {
 
 // Tags returns the account's live tags, newest start first.
 func (s *Store) Tags(ctx context.Context, accountID string) ([]Tag, error) {
+	query := `
+		SELECT id, name, start_at, end_at
+		FROM tags
+		WHERE account_id = ? AND deleted_at IS NULL
+		ORDER BY start_at DESC, name, id
+	`
+
 	tags := []Tag{}
-	err := s.SelectContext(ctx, &tags, "SELECT id, name, start_at, end_at FROM tags WHERE account_id = ? AND deleted_at IS NULL ORDER BY start_at DESC, name, id", accountID)
+	err := s.SelectContext(ctx, &tags, query, accountID)
 
 	return tags, err
 }
 
 // Tag returns one live tag of the account.
 func (s *Store) Tag(ctx context.Context, accountID, id string) (Tag, error) {
+	query := `
+		SELECT id, name, start_at, end_at
+		FROM tags
+		WHERE account_id = ? AND id = ? AND deleted_at IS NULL
+	`
+
 	var tag Tag
-	err := s.GetContext(ctx, &tag, "SELECT id, name, start_at, end_at FROM tags WHERE account_id = ? AND id = ? AND deleted_at IS NULL", accountID, id)
+	err := s.GetContext(ctx, &tag, query, accountID, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Tag{}, ErrNotFound
 	}

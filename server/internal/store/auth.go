@@ -56,8 +56,10 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	defer tx.Rollback()
 
+	query := "SELECT EXISTS (SELECT 1 FROM users)"
+
 	var hasUsers bool
-	if err := tx.GetContext(ctx, &hasUsers, "SELECT EXISTS (SELECT 1 FROM users)"); err != nil {
+	if err := tx.GetContext(ctx, &hasUsers, query); err != nil {
 		return "", fmt.Errorf("counting users: %w", err)
 	}
 
@@ -113,14 +115,25 @@ func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceNam
 		return Actor{}, "", err
 	}
 
+	query := `
+		INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at)
+		SELECT ?, user_id, account_id, ?, ?, ?
+		FROM account_users
+		WHERE user_id = ?
+		ORDER BY created_at
+		LIMIT 1
+		ON CONFLICT (id) DO UPDATE SET
+			name = excluded.name,
+			api_key_hash = excluded.api_key_hash
+		WHERE devices.user_id = excluded.user_id
+			AND devices.account_id = excluded.account_id
+			AND devices.rowid > (SELECT MIN(rowid) FROM devices WHERE account_id = excluded.account_id)
+		RETURNING account_id
+	`
+
 	key := newToken()
 	actor := Actor{UserID: userID, DeviceID: deviceID}
-	err = s.GetContext(ctx, &actor.AccountID, `INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at)
-		SELECT ?, user_id, account_id, ?, ?, ? FROM account_users WHERE user_id = ? ORDER BY created_at LIMIT 1
-		ON CONFLICT (id) DO UPDATE SET name = excluded.name, api_key_hash = excluded.api_key_hash
-		WHERE devices.user_id = excluded.user_id AND devices.account_id = excluded.account_id
-		AND devices.rowid > (SELECT MIN(rowid) FROM devices WHERE account_id = excluded.account_id) RETURNING account_id`,
-		deviceID, deviceName, hashToken(key), formatTime(time.Now()), userID)
+	err = s.GetContext(ctx, &actor.AccountID, query, deviceID, deviceName, hashToken(key), formatTime(time.Now()), userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Actor{}, "", ErrDuplicateID
 	}
@@ -134,8 +147,10 @@ func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceNam
 
 // ActorByAPIKey returns who a live API key acts as.
 func (s *Store) ActorByAPIKey(ctx context.Context, key string) (Actor, error) {
+	query := "SELECT id, user_id, account_id FROM devices WHERE api_key_hash = ?"
+
 	var actor Actor
-	err := s.GetContext(ctx, &actor, "SELECT id, user_id, account_id FROM devices WHERE api_key_hash = ?", hashToken(key))
+	err := s.GetContext(ctx, &actor, query, hashToken(key))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Actor{}, ErrInvalidAPIKey
 	}
@@ -145,7 +160,9 @@ func (s *Store) ActorByAPIKey(ctx context.Context, key string) (Actor, error) {
 
 // RevokeAPIKey deletes the device's API key hash.
 func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
-	_, err := s.ExecContext(ctx, "UPDATE devices SET api_key_hash = NULL WHERE id = ?", deviceID)
+	query := "UPDATE devices SET api_key_hash = NULL WHERE id = ?"
+
+	_, err := s.ExecContext(ctx, query, deviceID)
 
 	return err
 }
@@ -161,16 +178,28 @@ type Device struct {
 
 // Devices returns the account's devices with a live API key, newest first; the hidden web device has none.
 func (s *Store) Devices(ctx context.Context, accountID string) ([]Device, error) {
+	query := `
+		SELECT id, COALESCE(name, '') AS name, COALESCE(last_seen_at, '') AS last_seen_at, created_at
+		FROM devices
+		WHERE account_id = ? AND api_key_hash IS NOT NULL
+		ORDER BY created_at DESC, id
+	`
+
 	devices := []Device{}
-	err := s.SelectContext(ctx, &devices, `SELECT id, COALESCE(name, '') AS name, COALESCE(last_seen_at, '') AS last_seen_at, created_at
-		FROM devices WHERE account_id = ? AND api_key_hash IS NOT NULL ORDER BY created_at DESC, id`, accountID)
+	err := s.SelectContext(ctx, &devices, query, accountID)
 
 	return devices, err
 }
 
 // RevokeDevice deletes the API key hash of the account's device, or returns ErrNotFound when it has no live key.
 func (s *Store) RevokeDevice(ctx context.Context, accountID, deviceID string) error {
-	result, err := s.ExecContext(ctx, "UPDATE devices SET api_key_hash = NULL WHERE account_id = ? AND id = ? AND api_key_hash IS NOT NULL", accountID, deviceID)
+	query := `
+		UPDATE devices
+		SET api_key_hash = NULL
+		WHERE account_id = ? AND id = ? AND api_key_hash IS NOT NULL
+	`
+
+	result, err := s.ExecContext(ctx, query, accountID, deviceID)
 	if err != nil {
 		return fmt.Errorf("revoking device: %w", err)
 	}
@@ -195,9 +224,15 @@ func (s *Store) ResetPassword(ctx context.Context, email, password string) error
 	}
 	defer tx.Rollback()
 
+	query := `
+		UPDATE users
+		SET secret = ?, updated_at = ?
+		WHERE email = ? AND deleted_at IS NULL
+		RETURNING id
+	`
+
 	var userID string
-	err = tx.GetContext(ctx, &userID, "UPDATE users SET secret = ?, updated_at = ? WHERE email = ? AND deleted_at IS NULL RETURNING id",
-		hashPassword(password), formatTime(time.Now()), email)
+	err = tx.GetContext(ctx, &userID, query, hashPassword(password), formatTime(time.Now()), email)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("no user with email %s", email)
 	}
@@ -206,11 +241,13 @@ func (s *Store) ResetPassword(ctx context.Context, email, password string) error
 		return fmt.Errorf("updating password: %w", err)
 	}
 
-	if _, err := tx.ExecContext(ctx, "DELETE FROM sessions WHERE user_id = ?", userID); err != nil {
+	query = "DELETE FROM sessions WHERE user_id = ?"
+	if _, err := tx.ExecContext(ctx, query, userID); err != nil {
 		return fmt.Errorf("deleting sessions: %w", err)
 	}
 
-	if _, err := tx.ExecContext(ctx, "UPDATE devices SET api_key_hash = NULL WHERE user_id = ?", userID); err != nil {
+	query = "UPDATE devices SET api_key_hash = NULL WHERE user_id = ?"
+	if _, err := tx.ExecContext(ctx, query, userID); err != nil {
 		return fmt.Errorf("revoking api keys: %w", err)
 	}
 

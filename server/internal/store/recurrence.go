@@ -19,20 +19,28 @@ type Recurrence struct {
 	EndAt       *string `db:"end_at"`
 }
 
-const recurrenceColumns = "id, category_id, kind, amount, description, rule, start_at, end_at"
+const recurrenceSelect = `
+	SELECT id, category_id, kind, amount, description, rule, start_at, end_at
+	FROM recurrences
+	WHERE account_id = ? AND deleted_at IS NULL
+`
 
 // Recurrences returns the account's live recurrences by start date.
 func (s *Store) Recurrences(ctx context.Context, accountID string) ([]Recurrence, error) {
+	query := recurrenceSelect + "ORDER BY start_at, id"
+
 	recurrences := []Recurrence{}
-	err := s.SelectContext(ctx, &recurrences, "SELECT "+recurrenceColumns+" FROM recurrences WHERE account_id = ? AND deleted_at IS NULL ORDER BY start_at, id", accountID)
+	err := s.SelectContext(ctx, &recurrences, query, accountID)
 
 	return recurrences, err
 }
 
 // Recurrence returns one live recurrence of the account.
 func (s *Store) Recurrence(ctx context.Context, accountID, id string) (Recurrence, error) {
+	query := recurrenceSelect + "AND id = ?"
+
 	var recurrence Recurrence
-	err := s.GetContext(ctx, &recurrence, "SELECT "+recurrenceColumns+" FROM recurrences WHERE account_id = ? AND id = ? AND deleted_at IS NULL", accountID, id)
+	err := s.GetContext(ctx, &recurrence, query, accountID, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Recurrence{}, ErrNotFound
 	}
