@@ -373,6 +373,10 @@ func TestWebTicker_ConfirmAndLaunchSwapTheTickerAndTheBalanceLine(t *testing.T) 
 		}
 	}
 
+	if strings.Contains(fragment, "autofocus") {
+		t.Errorf("confirm on the row focuses the prompt: %s", fragment)
+	}
+
 	shown.Set("line", "+50")
 	fragment = w.submit(http.MethodPost, "/launch", shown).Body.String()
 	if strings.Count(fragment, "hx-swap-oob") != 2 || strings.Count(fragment, "Realizado</dt><dd>R$ 1.050,00") != 2 {

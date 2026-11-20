@@ -106,7 +106,7 @@ func (h handler) pending(ctx context.Context, accountID string, now, end time.Ti
 // each category. Overdue holds, on the current month only, the occurrences of earlier months still pending, drawn under
 // the "hoje" line, which sits before Days[TodayAt] (after the last day when TodayAt is len(Days), nowhere when it is
 // -1). Filter is the category the statement is narrowed to, empty when it shows all; the boxes never are. Flash is the
-// row to flash and Error a rejected confirmation.
+// row to flash, Error a rejected confirmation and Focus puts the prompt in focus, as after a launch.
 type month struct {
 	Month                              time.Time
 	Today                              string
@@ -117,6 +117,7 @@ type month struct {
 	Usages                             []store.CategoryUsage
 	Filter                             store.CategoryUsage
 	Flash, Error                       string
+	Focus                              bool
 }
 
 // day is one day of the statement, as YYYY-MM-DD: its pending occurrences, its transactions and their Total.
@@ -390,7 +391,7 @@ func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int,
 		return
 	}
 
-	page.Flash, page.Error = flash, message
+	page.Flash, page.Error, page.Focus = flash, message, r.URL.Path == "/launch"
 	render(w, r, status, monthSwap(shell{Email: session.Email, Balance: balance}, page))
 }
 

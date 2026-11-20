@@ -29,6 +29,10 @@ func TestWebLaunch_CreatesTheTransactionAndSwapsTheMonth(t *testing.T) {
 		t.Errorf("launch = %d, want the boxes and the statement, still filtered, with the new row flashing: %s", response.Code, fragment)
 	}
 
+	if prompt := fragment[strings.Index(fragment, `id="launch"`):]; !strings.Contains(prompt[:strings.Index(prompt, ">")], "autofocus") {
+		t.Errorf("launch answers the prompt without autofocus: %s", fragment)
+	}
+
 	ops := w.newOps()
 	if len(ops) != 1 || ops[0].Entity != "TRANSACTION" || ops[0].Kind != "CREATE" {
 		t.Fatalf("ops after launch = %+v, want one TRANSACTION CREATE", ops)
@@ -70,6 +74,10 @@ func TestWebLaunch_PreviewsTheLine(t *testing.T) {
 func TestWebLaunch_MonthHasThePromptAndItsKey(t *testing.T) {
 	w := newWebClient(t)
 	body := get(w.handler, "/", w.cookie).Body.String()
+	if strings.Contains(body, "autofocus") {
+		t.Errorf("month opens with the prompt focused: %s", body)
+	}
+
 	for _, text := range []string{`id="launch"`, `aria-describedby="launch-preview"`, `aria-live="polite"`, "Lançar", "focar", "<kbd>/</kbd> lançar"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("month lacks %q: %s", text, body)
