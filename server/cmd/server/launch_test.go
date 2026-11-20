@@ -78,13 +78,13 @@ func TestWebLaunch_MonthHasThePromptAndItsKey(t *testing.T) {
 		t.Errorf("month opens with the prompt focused: %s", body)
 	}
 
-	for _, text := range []string{`id="launch"`, `aria-describedby="launch-preview"`, `aria-live="polite"`, "Lançar", "focar", "<kbd>/</kbd> lançar"} {
+	for _, text := range []string{`id="launch"`, `aria-describedby="launch-preview"`, `aria-live="polite"`, "Lançar", "focar", "<kbd>/</kbd> lançar", "<kbd>[ ]</kbd> mês"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("month lacks %q: %s", text, body)
 		}
 	}
 
-	if body := get(w.handler, "/categories", w.cookie).Body.String(); strings.Contains(body, "<kbd>/</kbd> lançar") {
+	if body := get(w.handler, "/categories", w.cookie).Body.String(); strings.Contains(body, "<kbd>/</kbd> lançar") || strings.Contains(body, "<kbd>[ ]</kbd> mês") {
 		t.Errorf("categories shows the prompt's key: %s", body)
 	}
 }

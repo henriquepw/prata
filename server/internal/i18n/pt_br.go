@@ -39,6 +39,7 @@ var ptBR = map[string]string{
 	"layout.sign_out":      "[sair]",
 	"keybar.navigate":      "navegar",
 	"keybar.new":           "novo",
+	"keybar.month":         "mês",
 	"keybar.commands":      "comandos",
 	"keybar.close":         "fechar",
 	"keybar.save":          "salvar",

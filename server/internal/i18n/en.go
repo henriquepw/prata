@@ -39,6 +39,7 @@ var en = map[string]string{
 	"layout.sign_out":      "[sign out]",
 	"keybar.navigate":      "navigate",
 	"keybar.new":           "new",
+	"keybar.month":         "month",
 	"keybar.commands":      "commands",
 	"keybar.close":         "close",
 	"keybar.save":          "save",
