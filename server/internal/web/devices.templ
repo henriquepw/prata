@@ -53,13 +53,11 @@ templ devicesPanel(devices []store.Device, loc *time.Location) {
 							@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
 								{ localTime(ctx, device.CreatedAt, loc) }
 							}
-							@table.Cell(table.CellProps{Class: "text-right"}) {
-								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
-									"hx-delete":  "/devices/" + device.ID,
-									"hx-confirm": i18n.T(ctx, "devices.confirm_revoke", device.Name),
-								}}) {
+							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
+								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
 									{ i18n.T(ctx, "devices.revoke") }
 								}
+								@confirmInline(i18n.T(ctx, "devices.confirm_revoke", device.Name), i18n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID})
 							}
 						}
 					}

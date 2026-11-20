@@ -3,7 +3,6 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -66,14 +65,10 @@ templ tagSheet(form tagForm) {
 		Confirm:   i18n.T(ctx, "tags.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("name", i18n.T(ctx, "field.name"), form.Errors["name"]) {
-			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
-		}
-		@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
-			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
-		}
-		@formField("end_at", i18n.T(ctx, "field.end"), form.Errors["end_at"]) {
-			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
-		}
+		@nameField(form.Name, form.Errors["name"])
+		<div class="grid grid-cols-2 gap-[2ch]">
+			@dateField("start_at", i18n.T(ctx, "field.start"), form.StartAt, form.Errors["start_at"])
+			@endField(form.EndAt, form.Errors["end_at"])
+		</div>
 	}
 }

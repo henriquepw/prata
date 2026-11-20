@@ -8,7 +8,6 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
-	"github.com/henriquepw/prata/server/internal/web/components/field"
 )
 
 // shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
@@ -48,9 +47,9 @@ func (s shell) newURL() string {
 // headScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
-// runs the shortcuts: ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by
-// every word, moves the selection with ↑↓ and runs it with enter; outside fields and dialogs, the digits, n, [ and ]
-// click their [data-key] and enter opens the focused row.
+// runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
+// which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
+// outside fields and dialogs, the digits, n, [ and ] click their [data-key] and enter opens the focused row.
 const headScript = `(() => {
   const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const applyTheme = () => {
@@ -95,6 +94,7 @@ const headScript = `(() => {
     filter('')
   }, true)
   addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
+  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
   addEventListener('keydown', e => {
     const launcher = document.getElementById('launcher')
     if (!launcher) return
@@ -142,7 +142,8 @@ templ document(title string) {
 }
 
 // layout is the console chrome around an authenticated page: status bar, ticker, rail (or the mobile nav row),
-// main and keybar. Only main scrolls.
+// main and keybar. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
+// dialog's: ctrl enter salvar for the sheet and esc fechar.
 templ layout(s shell) {
 	@document(s.Title) {
 		<div class="console-frame">
@@ -151,7 +152,7 @@ templ layout(s shell) {
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
 					<div class="sbar-right">
 						<time data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.search") }</button>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.commands") }</button>
 					</div>
 				</header>
 				<div class="ticker">
@@ -161,7 +162,7 @@ templ layout(s shell) {
 						<div>
 							<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 							<dd>
-								{ strconv.Itoa(len(s.Balance.Pending)) }
+								<a href="/" class="lnk">{ strconv.Itoa(len(s.Balance.Pending)) }</a>
 								if overdue := s.Balance.overdue(); overdue > 0 {
 									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 										{ i18n.Plural(ctx, "layout.overdue", overdue) }
@@ -182,6 +183,21 @@ templ layout(s shell) {
 						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
 					</div>
 				</div>
+				<dl aria-label={ i18n.T(ctx, "layout.balance") } class="mbal">
+					<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
+					<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
+					<div>
+						<dt>{ i18n.T(ctx, "layout.pending") }</dt>
+						<dd>
+							{ strconv.Itoa(len(s.Balance.Pending)) }
+							if overdue := s.Balance.overdue(); overdue > 0 {
+								@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+									{ fmt.Sprintf("[%d]", overdue) }
+								}
+							}
+						</dd>
+					</div>
+				</dl>
 				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range nav {
 						<a
@@ -189,7 +205,7 @@ templ layout(s shell) {
 							if item.Href == s.Path {
 								aria-current="page"
 							}
-						>{ fmt.Sprintf("[%d]%s", i+1, string([]rune(i18n.T(ctx, item.Label))[:3])) }</a>
+						><span class="text-primary">{ strconv.Itoa(i + 1) }</span>{ i18n.T(ctx, item.Label) }</a>
 					}
 				</nav>
 				<div class="console-body">
@@ -209,12 +225,17 @@ templ layout(s shell) {
 					</main>
 				</div>
 				<footer class="keybar">
-					<span><kbd>{ fmt.Sprintf("1-%d", len(nav)) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
-					if url := s.newURL(); url != "" {
-						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
-					}
-					<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
-					<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
+					<div class="keys">
+						<span><kbd>{ fmt.Sprintf("1-%d", len(nav)) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
+						if url := s.newURL(); url != "" {
+							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
+						}
+						<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
+					</div>
+					<div class="keys-open">
+						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
+						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
+					</div>
 				</footer>
 			</div>
 		</div>
@@ -280,15 +301,7 @@ templ currencyPrefix() {
 
 // formField is one sheet field: label, the control as children and its error message.
 templ formField(id, label, message string) {
-	@field.Field() {
-		@field.Label(field.LabelProps{For: id}) {
-			{ label }
-		}
+	@hintField(id, label, "", message) {
 		{ children... }
-		if message != "" {
-			@field.Error() {
-				{ message }
-			}
-		}
 	}
 }

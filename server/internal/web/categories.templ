@@ -1,10 +1,11 @@
 package web
 
 import (
+	"strings"
+
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
-	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -86,21 +87,17 @@ templ categorySheet(form categoryForm) {
 		Confirm:   i18n.T(ctx, "categories.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("name", i18n.T(ctx, "field.name"), form.Errors["name"]) {
-			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
-		}
-		@formField("color", i18n.T(ctx, "categories.color"), form.Errors["color"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "color", Name: "color", Class: "w-full", Attributes: ariaInvalid(form.Errors["color"])}) {
-				for _, color := range categoryColors {
-					@nativeselect.Option(nativeselect.OptionProps{Value: color.Value, Selected: color.Value == form.Color}) {
-						{ i18n.T(ctx, "color."+color.Value) }
-					}
+		@nameField(form.Name, form.Errors["name"])
+		@choiceField("color", i18n.T(ctx, "categories.color"), form.Errors["color"]) {
+			for _, color := range categoryColors {
+				@choiceOption("color", color.Value, color.Value == form.Color) {
+					<span class={ color.Class } aria-hidden="true">■</span> { strings.ToLower(i18n.T(ctx, "color."+color.Value)) }
 				}
 			}
 		}
-		@formField("monthly_limit", i18n.T(ctx, "categories.monthly_limit_field"), form.Errors["monthly_limit"]) {
+		@hintField("monthly_limit", i18n.T(ctx, "categories.monthly_limit"), i18n.T(ctx, "categories.monthly_limit_hint"), form.Errors["monthly_limit"]) {
 			@currencyPrefix() {
-				@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+				@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["monthly_limit"])})
 			}
 		}
 	}

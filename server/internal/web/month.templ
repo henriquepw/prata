@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"maps"
 	"strconv"
 	"strings"
 	"time"
@@ -69,15 +68,6 @@ func monthURL(month time.Time, offset int) string {
 	return "/?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
 }
 
-// focusedAmount is the attributes of a sheet's amount input: focused when the sheet opens, with the decimal keyboard,
-// and invalid with message.
-func focusedAmount(message string) templ.Attributes {
-	attributes := templ.Attributes{"autofocus": true, "inputmode": "decimal"}
-	maps.Copy(attributes, ariaInvalid(message))
-
-	return attributes
-}
-
 // monthPage is the Mês: the month bar over the boxes and the statement, which a confirmation on a row swaps.
 templ monthPage(s shell, page month) {
 	@layout(s) {
@@ -140,7 +130,7 @@ templ monthContent(page month) {
 								for _, t := range d.Transactions {
 									@table.Row(sheetRow("/transactions/"+t.ID, t.ID == page.Flash)) {
 										@table.Cell(table.CellProps{Class: "w-full whitespace-normal"}) {
-											{ orEmpty(t.Description) }
+											@description(t.Description)
 										}
 										@table.Cell(table.CellProps{Class: "hide-m"}) {
 											@categoryName(t.CategoryName, t.CategoryColor)
@@ -221,7 +211,7 @@ templ pendingRow(page month, p occurrence, withDate bool) {
 			if withDate {
 				<span class="tabular-nums">{ shortDay(ctx, p.Date) }</span>
 			}
-			{ orEmpty(p.Recurrence.Description) }
+			@description(p.Recurrence.Description)
 			if p.Overdue {
 				@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 					{ i18n.T(ctx, "month.overdue") }
@@ -264,7 +254,7 @@ templ occurrenceSheet(form occurrenceForm) {
 		Error:  form.Errors["form"],
 	}) {
 		<p class="flex flex-wrap items-center gap-[1ch] text-xs text-muted-foreground">
-			{ utils.IfElse(orEmpty(form.Recurrence.Description) == "", i18n.T(ctx, "recurrences.no_description"), orEmpty(form.Recurrence.Description)) }
+			@description(form.Recurrence.Description)
 			· { i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)) }
 			for _, category := range form.Categories {
 				if category.ID == orEmpty(form.Recurrence.CategoryID) {
@@ -273,21 +263,12 @@ templ occurrenceSheet(form occurrenceForm) {
 			}
 		</p>
 		@kindChoice(form.Kind, form.Errors["kind"])
-		@formField("amount", i18n.T(ctx, "field.amount"), form.Errors["amount"]) {
-			@currencyPrefix() {
-				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Required: true, Class: "tabular-nums", Attributes: focusedAmount(form.Errors["amount"])})
-			}
-			if form.Errors["amount"] == "" {
-				<p class="text-[11px] text-muted-foreground">{ i18n.T(ctx, "occurrence.hint") }</p>
-			}
-		}
+		@amountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"])
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
-			@formField("occurred_at", i18n.T(ctx, "field.date"), form.Errors["occurred_at"]) {
-				@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
-			}
+			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
 			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
 				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
 					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {

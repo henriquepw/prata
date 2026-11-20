@@ -48,7 +48,7 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 						for _, recurrence := range recurrences {
 							@table.Row(sheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
 								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-									{ utils.IfElse(recurrence.Description == nil, i18n.T(ctx, "recurrences.no_description"), orEmpty(recurrence.Description)) }
+									@description(recurrence.Description)
 								}
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 									{ i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
@@ -73,35 +73,33 @@ templ recurrenceSheet(form recurrenceForm) {
 		Confirm:   i18n.T(ctx, "recurrences.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
+		@kindChoice(form.Kind, form.Errors["kind"])
+		@amountField(form.Amount, "", form.Errors["amount"])
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		@kindChoice(form.Kind, form.Errors["kind"])
-		@formField("amount", i18n.T(ctx, "field.amount"), form.Errors["amount"]) {
-			@currencyPrefix() {
-				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
+		<div class="grid grid-cols-2 gap-[2ch]">
+			@hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
+				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: templ.Attributes{"min": 1, "max": 31, "aria-invalid": utils.IfElse(form.Errors["day"] == "", "false", "true")}})
 			}
-		}
-		@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
-				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-					{ i18n.T(ctx, "field.no_category") }
-				}
-				for _, category := range form.Categories {
-					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
-						{ category.Name }
+			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
+				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
+					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
+						{ i18n.T(ctx, "field.no_category") }
+					}
+					for _, category := range form.Categories {
+						@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
+							{ category.Name }
+						}
 					}
 				}
 			}
-		}
-		@formField("day", i18n.T(ctx, "recurrences.day_field"), form.Errors["day"]) {
-			@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"])})
-		}
-		@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
-			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
-		}
-		@formField("end_at", i18n.T(ctx, "field.end"), form.Errors["end_at"]) {
-			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
-		}
+		</div>
+		<div class="grid grid-cols-2 gap-[2ch]">
+			@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
+				@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
+			}
+			@endField(form.EndAt, form.Errors["end_at"])
+		</div>
 	}
 }
