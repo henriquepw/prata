@@ -26,7 +26,6 @@ var ptBR = map[string]string{
 	"nav.settings":    "Configurações",
 
 	// Status bar, ticker and keybar.
-	"layout.commands":      "[ctrl k] comandos",
 	"layout.balance":       "Saldo",
 	"layout.realized":      "Realizado",
 	"layout.projected":     "Projetado",

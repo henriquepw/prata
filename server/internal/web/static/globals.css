@@ -279,7 +279,7 @@
     animation-delay: calc(var(--i, sibling-index() - 1) * 30ms);
   }
 
-  /* Text action ([tema], [sair], [ctrl k]): muted caps that invert on hover. */
+  /* Text action ([tema], [sair]): muted caps that invert on hover. */
   .lnk {
     color: var(--muted-foreground);
     text-transform: uppercase;

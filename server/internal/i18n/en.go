@@ -26,7 +26,6 @@ var en = map[string]string{
 	"nav.settings":    "Settings",
 
 	// Status bar, ticker and keybar.
-	"layout.commands":      "[ctrl k] commands",
 	"layout.balance":       "Balance",
 	"layout.realized":      "Realized",
 	"layout.projected":     "Projected",

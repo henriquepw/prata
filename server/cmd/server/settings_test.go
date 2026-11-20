@@ -183,7 +183,7 @@ func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/settings", withLanguage(settingsForm("DD/MM/YYYY", "1.234,56"), "en"))
 	w.assertSelected("en")
 	w.assertBody("/",
-		`<html lang="en">`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] commands",
+		`<html lang="en">`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]",
 		"Go to month", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
 		"<kbd>1-6</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
 	w.assertBody("/?month=2026-11", "November 2026", "<kbd>n</kbd> new")

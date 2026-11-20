@@ -135,9 +135,6 @@ const headScript = `(() => {
 // cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
 const cycleTheme = "cycleTheme()"
 
-// openLauncher opens the ctrl+k launcher, the <dialog id="launcher"> rendered in the layout once it exists.
-const openLauncher = "document.getElementById('launcher')?.showModal()"
-
 templ document(title string) {
 	<!DOCTYPE html>
 	<html lang={ i18n.Language(ctx) }>
@@ -164,10 +161,9 @@ templ layout(s shell) {
 		<div class="console-frame">
 			<div class="console">
 				<header class="sbar">
-					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
+					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
 					<div class="sbar-right">
 						<time data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.commands") }</button>
 					</div>
 				</header>
 				<div class="ticker">
