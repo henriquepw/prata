@@ -48,6 +48,9 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.HandleFunc("GET /signup", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, signupPage(authForm{})) }))
 	mux.HandleFunc("POST /signup", visitor(h.signup))
 	mux.HandleFunc("POST /logout", h.logout)
+	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
+		render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
+	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home))
 	mux.Handle("GET /launch", h.requireSession(h.launchPreview))
 	mux.Handle("POST /launch", h.requireSession(h.launch))

@@ -42,6 +42,14 @@ const figlet = `██████╗ ██████╗  █████╗ 
 ██║     ██║  ██║██║  ██║   ██║   ██║  ██║
 ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝`
 
+// figlet404 is 404 in the ANSI Shadow font.
+const figlet404 = `██╗  ██╗ ██████╗ ██╗  ██╗
+██║  ██║██╔═████╗██║  ██║
+███████║██║██╔██║███████║
+╚════██║████╔╝██║╚════██║
+     ██║╚██████╔╝     ██║
+     ╚═╝ ╚═════╝      ╚═╝`
+
 // authScript draws the ASCII particle field in a diagonal band, sized to the window on every frame and
 // still with reduced motion. It stops once a page change detaches it. The footer clock ticks from headScript.
 const authScript = `(() => {
@@ -121,6 +129,35 @@ templ authPage(title, action string, form authForm) {
 					<div class="mt-4 flex flex-col gap-2 text-xs text-muted-foreground">
 						{ children... }
 					</div>
+				</section>
+			</div>
+			<footer class="login-foot">
+				<span>prata v1</span>
+				@online()
+				<span data-clock={ sessionFrom(ctx).DateFormat }></span>
+			</footer>
+			@templ.Raw("<script>" + authScript + "</script>")
+		</main>
+	}
+}
+
+// notFoundPage is the console entrance for a path with no route: the particle field behind the 404 figlet and a
+// panel logging the missing path, with the way back home.
+templ notFoundPage(path string) {
+	@document(i18n.T(ctx, "notfound.title")) {
+		<main class="login">
+			<pre class="login-particles" data-particles aria-hidden="true"></pre>
+			<div class="login-center">
+				<pre class="login-figlet" role="img" aria-label="404">{ figlet404 }</pre>
+				<section class="panel login-panel">
+					<header class="panel-head">
+						<h1 class="panel-title">{ i18n.T(ctx, "notfound.title") }</h1>
+					</header>
+					<p class="mb-4 text-xs break-all"><span class="text-primary">&gt;</span> GET { path }</p>
+					<p class="mb-4 text-xs text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "notfound.text") }</p>
+					@button.Button(button.Props{Href: "/"}) {
+						{ "> " + i18n.T(ctx, "notfound.back") }
+					}
 				</section>
 			</div>
 			<footer class="login-foot">

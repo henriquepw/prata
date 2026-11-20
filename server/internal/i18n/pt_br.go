@@ -16,6 +16,11 @@ var ptBR = map[string]string{
 	"auth.error.closed":      "Cadastro fechado nesta instalação.",
 	"auth.error.taken":       "Este e-mail já tem conta.",
 
+	// Page not found.
+	"notfound.title": "Página não encontrada",
+	"notfound.text":  "nada mora neste endereço.",
+	"notfound.back":  "voltar ao início",
+
 	// Rail, mobile nav and screen titles.
 	"nav.label":       "Telas",
 	"nav.month":       "Mês",

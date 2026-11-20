@@ -16,6 +16,11 @@ var en = map[string]string{
 	"auth.error.closed":      "Sign-up is closed on this server.",
 	"auth.error.taken":       "This email already has an account.",
 
+	// Page not found.
+	"notfound.title": "Page not found",
+	"notfound.text":  "nothing lives at this address.",
+	"notfound.back":  "back home",
+
 	// Rail, mobile nav and screen titles.
 	"nav.label":       "Screens",
 	"nav.month":       "Month",
