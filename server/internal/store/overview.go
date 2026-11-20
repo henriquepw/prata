@@ -22,6 +22,21 @@ func (s *Store) RealizedBalance(ctx context.Context, accountID string) (int64, e
 	return balance, err
 }
 
+// BalanceBefore is INCOME minus OUTCOME of the account's live transactions with occurred_at before before, RFC 3339
+// in UTC, in cents.
+func (s *Store) BalanceBefore(ctx context.Context, accountID, before string) (int64, error) {
+	query := `
+		SELECT COALESCE(SUM(CASE kind WHEN 'INCOME' THEN amount ELSE -amount END), 0)
+		FROM transactions
+		WHERE account_id = ? AND deleted_at IS NULL AND occurred_at < ?
+	`
+
+	var balance int64
+	err := s.GetContext(ctx, &balance, query, accountID, before)
+
+	return balance, err
+}
+
 // CategoryUsages returns the account's live categories by name with their OUTCOME total over occurred_at in
 // [from, to), RFC 3339 in UTC.
 func (s *Store) CategoryUsages(ctx context.Context, accountID, from, to string) ([]CategoryUsage, error) {
