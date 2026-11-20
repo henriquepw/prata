@@ -1,12 +1,12 @@
 package web
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // authForm is the login or signup form with what the user typed and the errors to show: one per field
@@ -100,7 +100,7 @@ templ authPage(title, action string, form authForm) {
 					</header>
 					<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
 						@formField("email", "E-mail", form.EmailError) {
-							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: templ.Attributes{"autocomplete": "email", "aria-invalid": strconv.FormatBool(form.EmailError != "")}})
+							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
 						}
 						@formField("password", "Senha", form.PasswordError) {
 							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
@@ -121,7 +121,7 @@ templ authPage(title, action string, form authForm) {
 			</div>
 			<footer class="login-foot">
 				<span>prata v1</span>
-				<span><span class="text-cat-green">●</span> <span class="bg-cat-green px-[.5ch] text-background">[online]</span></span>
+				@online()
 				<span data-clock></span>
 			</footer>
 			@templ.Raw("<script>" + authScript + "</script>")

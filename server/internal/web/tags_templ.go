@@ -10,8 +10,6 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"time"
-
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
@@ -28,7 +26,7 @@ type tagForm struct {
 	Errors  map[string]string
 }
 
-func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
+func tagsPage(s shell, tags []store.Tag) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -45,6 +43,7 @@ func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
+		loc := s.Now.Location()
 		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -207,7 +206,7 @@ func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
 										var templ_7745c5c3_Var12 string
 										templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("#" + tag.Name)
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 43, Col: 25}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 42, Col: 25}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 										if templ_7745c5c3_Err != nil {
@@ -239,7 +238,7 @@ func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
 											var templ_7745c5c3_Var14 string
 											templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, brDate))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 47, Col: 54}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 46, Col: 54}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 											if templ_7745c5c3_Err != nil {
@@ -249,7 +248,7 @@ func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
 											var templ_7745c5c3_Var15 string
 											templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(tag.StartAt, loc, brDate))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 49, Col: 48}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 48}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 											if templ_7745c5c3_Err != nil {
@@ -262,7 +261,7 @@ func tagsPage(s shell, tags []store.Tag, loc *time.Location) templ.Component {
 											var templ_7745c5c3_Var16 string
 											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(formatDate(*tag.EndAt, loc, brDate))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 49, Col: 90}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 90}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {

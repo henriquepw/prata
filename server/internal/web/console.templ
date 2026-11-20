@@ -1,7 +1,11 @@
 package web
 
 import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
@@ -70,4 +74,83 @@ templ empty(text string) {
 // sheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
 func sheetRow(url string, flash bool) table.RowProps {
 	return table.RowProps{Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet", "tabindex": "0", "data-flash": flash}}
+}
+
+// online is the server status of the ticker and the login footer, "● [online]"; the dot turns into the braille
+// spinner, in CSS, while any htmx request is in flight.
+templ online() {
+	<span class="inline-flex items-center gap-[1ch]">
+		<span class="sync-dot" aria-hidden="true"></span>
+		@badge.Badge(badge.Props{Class: "bg-cat-green text-background"}) {
+			[online]
+		}
+	</span>
+}
+
+const closeSheet = "this.closest('dialog').close()"
+
+// sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir" asking Confirm first;
+// Error is a form-level message, such as a rejected commit.
+type sheetProps struct {
+	Title     string
+	Action    string
+	DeleteURL string
+	Confirm   string
+	Error     string
+}
+
+// sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
+// fields as children, then "excluir" on the left and "cancelar" and "> salvar" on the right; while saving, the
+// submit reads "⠋ salvando". Every response, a 422 included, swaps into #sheet.
+templ sheet(p sheetProps) {
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel">
+		<header class="panel-head">
+			<h2 class="panel-title">{ p.Title }</h2>
+			<button type="button" class="lnk" aria-label="Fechar" onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+		</header>
+		{ children... }
+		if p.Error != "" {
+			@field.Error() {
+				{ p.Error }
+			}
+		}
+		<footer class="mt-auto flex justify-between gap-[1ch]">
+			<div>
+				if p.DeleteURL != "" {
+					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet", "hx-confirm": p.Confirm}}) {
+						Excluir
+					}
+				}
+			</div>
+			<div class="flex gap-[1ch]">
+				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+					Cancelar
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {
+					<span>&gt; Salvar</span>
+				}
+			</div>
+		</footer>
+	</form>
+}
+
+// kindChoice is the [despesa] [receita] choice of a transaction or recurrence: radios drawn as buttons, the checked
+// one inverted.
+templ kindChoice(value, message string) {
+	@field.Field() {
+		<span id="kind-label" class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">Tipo</span>
+		<div role="radiogroup" aria-labelledby="kind-label" class="choice" { ariaInvalid(message)... }>
+			for _, kind := range kinds {
+				<label>
+					<input type="radio" name="kind" value={ kind.Value } checked?={ kind.Value == value }/>
+					<span>[{ strings.ToLower(kind.Label) }]</span>
+				</label>
+			}
+		</div>
+		if message != "" {
+			@field.Error() {
+				{ message }
+			}
+		}
+	}
 }

@@ -79,7 +79,7 @@ func TestWebCategories_WritesReachDevicePull(t *testing.T) {
 	}
 
 	page := get(w.handler, "/categories", w.cookie)
-	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Mercado") || !strings.Contains(page.Body.String(), "bg-cat-green") {
+	if page.Code != http.StatusOK || !strings.Contains(page.Body.String(), "Mercado") || !strings.Contains(page.Body.String(), `"text-cat-green" aria-hidden="true">■`) {
 		t.Errorf("list = %d, want Mercado with a green dot: %s", page.Code, page.Body)
 	}
 

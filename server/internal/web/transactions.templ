@@ -58,7 +58,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 					if len(transactions) == 0 {
 						@empty("nenhuma transação neste mês")
 					} else {
-						@table.Table(table.Props{Class: "@max-[640px]:[&_:is(td,th)]:px-1"}) {
+						@table.Table(table.Props{Class: tightTable}) {
 							@table.Header() {
 								@table.Row() {
 									@table.Head() {
@@ -88,17 +88,14 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 											{ orEmpty(transaction.Description) }
 										}
 										@table.Cell(table.CellProps{Class: "hide-m"}) {
-											<span class="flex items-center gap-[1ch]">
-												<span class={ "inline-block size-[.7em] shrink-0", colorClass(transaction.CategoryColor) } aria-hidden="true"></span>
-												{ transaction.CategoryName }
-											</span>
+											@categoryName(transaction.CategoryName, transaction.CategoryColor)
 										}
 										@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
 											if transaction.TagName != "" {
 												{ "#" + transaction.TagName }
 											}
 										}
-										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", utils.IfElse(transaction.Kind == "INCOME", "text-cat-green", "text-destructive"))}) {
+										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(transaction.Kind))}) {
 											{ money(signed(transaction.Kind, transaction.Amount)) }
 										}
 									}

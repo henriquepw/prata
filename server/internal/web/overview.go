@@ -204,6 +204,15 @@ func totals(transactions []store.Transaction) (income, outcome int64) {
 	return income, outcome
 }
 
+// kindClass is the color of an amount of kind: cat-green for INCOME, destructive for OUTCOME.
+func kindClass(kind string) string {
+	if kind == "INCOME" {
+		return "text-cat-green"
+	}
+
+	return "text-destructive"
+}
+
 // signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.
 func signed(kind string, amount int64) int64 {
 	if kind == "INCOME" {

@@ -20,7 +20,7 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, devicesPage(s, devices, location(r)))
+	render(w, r, http.StatusOK, devicesPage(s, devices))
 }
 
 func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {

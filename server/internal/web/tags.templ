@@ -1,8 +1,6 @@
 package web
 
 import (
-	"time"
-
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
@@ -19,7 +17,8 @@ type tagForm struct {
 	Errors  map[string]string
 }
 
-templ tagsPage(s shell, tags []store.Tag, loc *time.Location) {
+templ tagsPage(s shell, tags []store.Tag) {
+	{{ loc := s.Now.Location() }}
 	@layout(s) {
 		@panel("Tags", "", newAction("/tags/new")) {
 			if len(tags) == 0 {

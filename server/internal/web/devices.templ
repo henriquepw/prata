@@ -1,14 +1,13 @@
 package web
 
 import (
-	"time"
-
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
-templ devicesPage(s shell, devices []store.Device, loc *time.Location) {
+templ devicesPage(s shell, devices []store.Device) {
+	{{ loc := s.Now.Location() }}
 	@layout(s) {
 		@panel("Dispositivos", "", nil) {
 			if len(devices) == 0 {

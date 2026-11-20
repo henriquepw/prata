@@ -8,15 +8,15 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// categoryColor is a schema color with its label and dot class, spelled out here for Tailwind.
+// categoryColor is a schema color with its label and text color class, spelled out here for Tailwind.
 type categoryColor struct{ Value, Label, Class string }
 
 var categoryColors = []categoryColor{
-	{"GRAY", "Cinza", "bg-cat-gray"},
-	{"RED", "Vermelho", "bg-cat-red"},
-	{"YELLOW", "Amarelo", "bg-cat-yellow"},
-	{"BLUE", "Azul", "bg-cat-blue"},
-	{"GREEN", "Verde", "bg-cat-green"},
+	{"GRAY", "Cinza", "text-cat-gray"},
+	{"RED", "Vermelho", "text-cat-red"},
+	{"YELLOW", "Amarelo", "text-cat-yellow"},
+	{"BLUE", "Azul", "text-cat-blue"},
+	{"GREEN", "Verde", "text-cat-green"},
 }
 
 // categoryForm is the category sheet: what the user typed and an error message per field name,
@@ -50,10 +50,7 @@ templ categoriesPage(s shell, categories []store.Category) {
 						for _, category := range categories {
 							@table.Row(sheetRow("/categories/"+category.ID, category.ID == s.Flash)) {
 								@table.Cell() {
-									<span class="flex items-center gap-[1ch]">
-										<span class={ "inline-block size-[.7em] shrink-0", colorClass(category.Color) } aria-hidden="true"></span>
-										{ category.Name }
-									</span>
+									@categoryName(category.Name, category.Color)
 								}
 								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
 									if category.MonthlyLimit == 0 {
@@ -69,6 +66,11 @@ templ categoriesPage(s shell, categories []store.Category) {
 			}
 		}
 	}
+}
+
+// categoryName is a category's name after its "■" in the category color.
+templ categoryName(name, color string) {
+	<span class="flex items-center gap-[1ch]"><span class={ colorClass(color) } aria-hidden="true">■</span>{ name }</span>
 }
 
 templ categorySheet(form categoryForm) {
