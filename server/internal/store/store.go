@@ -10,10 +10,10 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-var migrations = []migration{{
-	version: 1,
-	files:   []string{"domain.sql", "server.sql"},
-}}
+var migrations = []migration{
+	{version: 1, files: []string{"domain.sql", "server.sql"}},
+	{version: 2, files: []string{"server_preferences.sql"}},
+}
 
 type migration struct {
 	version int
