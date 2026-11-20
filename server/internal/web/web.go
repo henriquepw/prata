@@ -41,10 +41,10 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed}
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
-	mux.HandleFunc("GET /login", func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, loginPage(authForm{})) })
-	mux.HandleFunc("POST /login", h.login)
-	mux.HandleFunc("GET /signup", func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, signupPage(authForm{})) })
-	mux.HandleFunc("POST /signup", h.signup)
+	mux.HandleFunc("GET /login", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, loginPage(authForm{})) }))
+	mux.HandleFunc("POST /login", visitor(h.login))
+	mux.HandleFunc("GET /signup", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, signupPage(authForm{})) }))
+	mux.HandleFunc("POST /signup", visitor(h.signup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.Handle("GET /{$}", h.requireSession(h.home))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
@@ -88,7 +88,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	userID, err := h.db.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if errors.Is(err, store.ErrInvalidCredentials) {
-		render(w, r, http.StatusUnprocessableEntity, loginPage(authForm{Email: email, PasswordError: "E-mail ou senha inválidos."}))
+		render(w, r, http.StatusUnprocessableEntity, loginPage(authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}))
 		return
 	}
 
@@ -105,21 +105,21 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	password := r.PostFormValue("password")
 	form := authForm{Email: email}
 	if !strings.Contains(email, "@") {
-		form.EmailError = "Informe um e-mail."
+		form.EmailError = i18n.T(r.Context(), "auth.error.email")
 	}
 
 	if password == "" {
-		form.PasswordError = "Informe uma senha."
+		form.PasswordError = i18n.T(r.Context(), "auth.error.password")
 	}
 
 	if form.EmailError == "" && form.PasswordError == "" {
-		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
+		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: i18n.Language(r.Context())}
 		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 		switch {
 		case errors.Is(err, store.ErrSignupClosed):
-			form.Error = "Cadastro fechado nesta instalação."
+			form.Error = i18n.T(r.Context(), "auth.error.closed")
 		case errors.Is(err, store.ErrDuplicateID):
-			form.EmailError = "Este e-mail já tem conta."
+			form.EmailError = i18n.T(r.Context(), "auth.error.taken")
 		case err != nil:
 			internalError(w, "creating account", err)
 			return
@@ -183,6 +183,19 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 		ctx = i18n.WithLanguage(ctx, session.Language)
 		next(w, r.WithContext(ctx))
 	})
+}
+
+// visitor serves a page without a session in the browser's Idioma: en when its preferred language, the first in
+// Accept-Language, is English, and pt-BR otherwise.
+func visitor(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		language := i18n.Default
+		if strings.HasPrefix(strings.ToLower(r.Header.Get("Accept-Language")), "en") {
+			language = "en"
+		}
+
+		next(w, r.WithContext(i18n.WithLanguage(r.Context(), language)))
+	}
 }
 
 func sessionFrom(ctx context.Context) store.Session {

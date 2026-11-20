@@ -2,6 +2,20 @@ package i18n
 
 // ptBR has every key: the texts in pt-BR.
 var ptBR = map[string]string{
+	// Login and signup.
+	"auth.sign_in":           "Entrar",
+	"auth.sign_up":           "Criar conta",
+	"auth.email":             "E-mail",
+	"auth.password":          "Senha",
+	"auth.no_account":        "Ainda não tem conta?",
+	"auth.has_account":       "Já tem conta?",
+	"auth.app_note":          "Já usa o Prata no app? Crie a conta pelo app para preservar os dados dele; criar aqui começa uma conta vazia.",
+	"auth.error.credentials": "E-mail ou senha inválidos.",
+	"auth.error.email":       "Informe um e-mail.",
+	"auth.error.password":    "Informe uma senha.",
+	"auth.error.closed":      "Cadastro fechado nesta instalação.",
+	"auth.error.taken":       "Este e-mail já tem conta.",
+
 	// Rail, mobile nav and screen titles.
 	"nav.label":        "Telas",
 	"nav.overview":     "Visão geral",
