@@ -11,7 +11,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
-	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -305,18 +304,7 @@ templ occurrenceSheet(form occurrenceForm) {
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
 			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
-			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
-				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
-					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-						{ i18n.T(ctx, "field.no_category") }
-					}
-					for _, category := range form.Categories {
-						@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
-							{ category.Name }
-						}
-					}
-				}
-			}
+			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>
 	}
 }

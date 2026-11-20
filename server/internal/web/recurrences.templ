@@ -4,7 +4,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
-	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -82,18 +81,7 @@ templ recurrenceSheet(form recurrenceForm) {
 			@hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
 				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
 			}
-			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
-				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
-					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-						{ i18n.T(ctx, "field.no_category") }
-					}
-					for _, category := range form.Categories {
-						@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
-							{ category.Name }
-						}
-					}
-				}
-			}
+			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>
 		<div class="grid grid-cols-2 gap-[2ch]">
 			@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {

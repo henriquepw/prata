@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
@@ -200,6 +202,22 @@ templ amountField(value, hint, message string) {
 templ nameField(value, message string) {
 	@formField("name", i18n.T(ctx, "field.name"), message) {
 		@input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: ariaInvalid(message, templ.Attributes{"autofocus": true})})
+	}
+}
+
+// categoryField is the category of an entry, picked from categories after "sem categoria", with selected picked.
+templ categoryField(categories []store.Category, selected, message string) {
+	@formField("category_id", i18n.T(ctx, "field.category"), message) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(message)}) {
+			@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: selected == ""}) {
+				{ i18n.T(ctx, "field.no_category") }
+			}
+			for _, category := range categories {
+				@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == selected}) {
+					{ category.Name }
+				}
+			}
+		}
 	}
 }
 
