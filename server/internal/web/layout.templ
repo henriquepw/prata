@@ -171,48 +171,13 @@ templ layout(s shell) {
 					</div>
 				</header>
 				<div class="ticker">
-					<dl>
-						<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
-						<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
-						<div>
-							<dt>{ i18n.T(ctx, "layout.pending") }</dt>
-							<dd>
-								<a href="/" class="lnk">{ strconv.Itoa(len(s.Balance.Pending)) }</a>
-								if overdue := s.Balance.overdue(); overdue > 0 {
-									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-										{ i18n.Plural(ctx, "layout.overdue", overdue) }
-									}
-								}
-							</dd>
-						</div>
-						<div>
-							<dt>{ i18n.T(ctx, "layout.sync") }</dt>
-							<dd>
-								@online()
-							</dd>
-						</div>
-						<div class="ticker-user"><dt>{ i18n.T(ctx, "layout.user") }</dt><dd>{ s.Email }</dd></div>
-					</dl>
+					@ticker(s, false)
 					<div>
 						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
 						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
 					</div>
 				</div>
-				<dl aria-label={ i18n.T(ctx, "layout.balance") } class="mbal">
-					<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
-					<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
-					<div>
-						<dt>{ i18n.T(ctx, "layout.pending") }</dt>
-						<dd>
-							{ strconv.Itoa(len(s.Balance.Pending)) }
-							if overdue := s.Balance.overdue(); overdue > 0 {
-								@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-									{ fmt.Sprintf("[%d]", overdue) }
-								}
-							}
-						</dd>
-					</div>
-				</dl>
+				@balanceLine(s.Balance, false)
 				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range nav {
 						<a
@@ -260,6 +225,64 @@ templ layout(s shell) {
 		@launcher()
 		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet"></dialog>
 	}
+}
+
+// ticker is the account in the status line: realized, projected, pending, sync and user. With oob it swaps the one on
+// screen, as a write in place does.
+templ ticker(s shell, oob bool) {
+	<dl
+		id="ticker"
+		if oob {
+			hx-swap-oob="true"
+		}
+	>
+		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
+		<div>
+			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
+			<dd>
+				<a href="/" class="lnk">{ strconv.Itoa(len(s.Balance.Pending)) }</a>
+				if overdue := s.Balance.overdue(); overdue > 0 {
+					@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+						{ i18n.Plural(ctx, "layout.overdue", overdue) }
+					}
+				}
+			</dd>
+		</div>
+		<div>
+			<dt>{ i18n.T(ctx, "layout.sync") }</dt>
+			<dd>
+				@online()
+			</dd>
+		</div>
+		<div class="ticker-user"><dt>{ i18n.T(ctx, "layout.user") }</dt><dd>{ s.Email }</dd></div>
+	</dl>
+}
+
+// balanceLine is the ticker's balance on mobile. With oob it swaps the one on screen, as a write in place does.
+templ balanceLine(b balance, oob bool) {
+	<dl
+		id="mbal"
+		if oob {
+			hx-swap-oob="true"
+		}
+		aria-label={ i18n.T(ctx, "layout.balance") }
+		class="mbal"
+	>
+		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, b.Realized) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, b.Projected) }</dd></div>
+		<div>
+			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
+			<dd>
+				{ strconv.Itoa(len(b.Pending)) }
+				if overdue := b.overdue(); overdue > 0 {
+					@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+						{ fmt.Sprintf("[%d]", overdue) }
+					}
+				}
+			</dd>
+		</div>
+	</dl>
 }
 
 // launcher is the ctrl+k dialog: a prompt over the numbered commands, the first one selected. headScript filters,

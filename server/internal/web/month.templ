@@ -85,6 +85,13 @@ templ monthPage(s shell, page month) {
 	}
 }
 
+// monthSwap is the answer of a write in place: the month, with the ticker and the balance line out of band.
+templ monthSwap(s shell, page month) {
+	@monthContent(page)
+	@ticker(s, true)
+	@balanceLine(s.Balance, true)
+}
+
 // monthBar is "‹ novembro de 2026 ›", with "[mês atual]" away from it and the [ ] keys on the right.
 templ monthBar(page month) {
 	<div class="month-bar">

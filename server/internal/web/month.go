@@ -375,17 +375,23 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 }
 
 // renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
-// its error.
+// its error, along with the ticker it changed.
 func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
-	now := time.Now().In(location(r))
-	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, now, shownMonth(r, now), r.FormValue("category"))
+	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
+	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now), r.FormValue("category"))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return
 	}
 
+	balance, err := h.balance(r.Context(), session.AccountID, now)
+	if err != nil {
+		internalError(w, "reading balance", err)
+		return
+	}
+
 	page.Flash, page.Error = flash, message
-	render(w, r, status, monthContent(page))
+	render(w, r, status, monthSwap(shell{Email: session.Email, Balance: balance}, page))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

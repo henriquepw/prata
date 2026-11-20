@@ -357,6 +357,28 @@ func TestWebMonth_ConfirmAlreadyConfirmed(t *testing.T) {
 	}
 }
 
+func TestWebTicker_ConfirmAndLaunchSwapTheTickerAndTheBalanceLine(t *testing.T) {
+	w := newWebClient(t)
+	now := time.Now().UTC()
+	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	salary := ulid.Make().String()
+	w.push(monthlyRecurrence(w.client, salary, "INCOME", 100000, "Salário", "1", month, ""))
+	shown := url.Values{"month": {month.Format("2006-01")}}
+
+	fragment := w.submit(http.MethodPost, "/recurrences/"+salary+"/occurrences/"+month.Format(time.DateOnly), shown).Body.String()
+	for _, text := range []string{`id="ticker" hx-swap-oob="true"`, `id="mbal" hx-swap-oob="true"`, "Realizado</dt><dd>R$ 1.000,00", `<a href="/" class="lnk">0</a>`, "Pendentes</dt><dd>0"} {
+		if !strings.Contains(fragment, text) {
+			t.Errorf("confirm on the row lacks %q: %s", text, fragment)
+		}
+	}
+
+	shown.Set("line", "+50")
+	fragment = w.submit(http.MethodPost, "/launch", shown).Body.String()
+	if strings.Count(fragment, "hx-swap-oob") != 2 || strings.Count(fragment, "Realizado</dt><dd>R$ 1.050,00") != 2 {
+		t.Errorf("launch lacks the ticker and the balance line at R$ 1.050,00: %s", fragment)
+	}
+}
+
 func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 	w := newWebClient(t)
 	now := time.Now().UTC()
@@ -380,7 +402,7 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 		}
 	}
 
-	start := strings.Index(body, `<dl aria-label="Saldo"`)
+	start := strings.Index(body, `aria-label="Saldo"`)
 	line := body[max(start, 0):]
 	line = line[:strings.Index(line, "</dl>")+1]
 	for _, text := range []string{"Realizado", "R$ 5.000,00", "Projetado", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2]"} {
