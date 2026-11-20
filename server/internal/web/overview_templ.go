@@ -96,11 +96,11 @@ func homePage(s shell, page overview) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = balanceCard("Saldo realizado", page.Realized).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = balanceCard("Saldo realizado", s.Balance.Realized).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = balanceCard("Saldo projetado", page.Projected).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = balanceCard("Saldo projetado", s.Balance.Projected).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -234,7 +234,7 @@ func homePage(s shell, page overview) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if len(page.Pending) == 0 {
+			if len(s.Balance.Pending) == 0 {
 				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<p class=\"text-sm text-muted-foreground\">Nenhuma ocorrência pendente.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -244,7 +244,7 @@ func homePage(s shell, page overview) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				for _, pending := range page.Pending {
+				for _, pending := range s.Balance.Pending {
 					{
 						templ_7745c5c3_ElementWriter := templ_7745c5c3_Buffer
 						templ_7745c5c3_Buffer := templ.GetBuffer()

@@ -203,13 +203,17 @@ func redirect(w http.ResponseWriter, r *http.Request, url string) {
 	http.Redirect(w, r, url, http.StatusSeeOther)
 }
 
-func newShell(r *http.Request, title string) shell {
-	theme := "system"
-	if cookie, err := r.Cookie("theme"); err == nil {
-		theme = cookie.Value
+// shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
+// now in the user's time zone.
+func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
+	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
+	balance, err := h.balance(r.Context(), session.AccountID, now)
+	if err != nil {
+		internalError(w, "reading balance", err)
+		return shell{}, false
 	}
 
-	return shell{Title: title, Path: r.URL.Path, Theme: theme}
+	return shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}, true
 }
 
 // location is the browser time zone from the tz cookie, or UTC when it is missing or unknown.

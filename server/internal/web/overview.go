@@ -2,6 +2,7 @@ package web
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
@@ -12,13 +13,18 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// overview is the home page: balances, this month's category usage and the pending occurrences, Error holding
-// a rejected confirmation.
+// overview is the home page's own content: this month's category usage and Error holding a rejected confirmation.
+// The balances and the pending occurrences come from the shell's balance.
 type overview struct {
+	Usages []store.CategoryUsage
+	Error  string
+}
+
+// balance is what the ticker and the overview show: the realized balance, the occurrences still pending up to the
+// end of this month and the projected balance, which is the realized one plus every pending occurrence.
+type balance struct {
 	Realized, Projected int64
-	Usages              []store.CategoryUsage
 	Pending             []occurrence
-	Error               string
 }
 
 // occurrence is a pending occurrence of a recurrence, Overdue when its date is before today.
@@ -28,49 +34,42 @@ type occurrence struct {
 	Overdue    bool
 }
 
-func (h handler) home(w http.ResponseWriter, r *http.Request) {
-	h.renderOverview(w, r, http.StatusOK, "")
-}
-
-// renderOverview reads the overview in the user's time zone: usage over this month as [from, to) in UTC, and
-// the occurrences from each live recurrence's start_at to the end of this month, minus the confirmed ones.
-func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
-	ctx, accountID := r.Context(), sessionFrom(r.Context()).AccountID
-	now := time.Now().In(location(r))
-	month, from, to := monthWindow(now)
-	page := overview{Error: message}
-
-	realized, err := h.db.RealizedBalance(ctx, accountID)
-	if err != nil {
-		internalError(w, "reading realized balance", err)
-		return
+func (b balance) overdue() int {
+	count := 0
+	for _, pending := range b.Pending {
+		if pending.Overdue {
+			count++
+		}
 	}
 
-	page.Usages, err = h.db.CategoryUsages(ctx, accountID, from, to)
+	return count
+}
+
+// balance reads the realized balance and the occurrences from each live recurrence's start_at to the end of now's
+// month, minus the confirmed ones, in now's location.
+func (h handler) balance(ctx context.Context, accountID string, now time.Time) (balance, error) {
+	realized, err := h.db.RealizedBalance(ctx, accountID)
 	if err != nil {
-		internalError(w, "reading category usage", err)
-		return
+		return balance{}, fmt.Errorf("reading realized balance: %w", err)
 	}
 
 	recurrences, err := h.db.Recurrences(ctx, accountID)
 	if err != nil {
-		internalError(w, "listing recurrences", err)
-		return
+		return balance{}, fmt.Errorf("listing recurrences: %w", err)
 	}
 
 	confirmed, err := h.db.ConfirmedOccurrences(ctx, accountID)
 	if err != nil {
-		internalError(w, "listing confirmed occurrences", err)
-		return
+		return balance{}, fmt.Errorf("listing confirmed occurrences: %w", err)
 	}
 
+	month, _, _ := monthWindow(now)
 	today, end := now.Format(time.DateOnly), month.AddDate(0, 1, -1).Format(time.DateOnly)
-	page.Realized, page.Projected = realized, realized
+	b := balance{Realized: realized, Projected: realized}
 	for _, rec := range recurrences {
 		dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, rec.StartAt, end)
 		if err != nil {
-			internalError(w, "expanding recurrence", err)
-			return
+			return balance{}, fmt.Errorf("expanding recurrence: %w", err)
 		}
 
 		for _, date := range dates {
@@ -78,13 +77,36 @@ func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status i
 				continue
 			}
 
-			page.Pending = append(page.Pending, occurrence{Recurrence: rec, Date: date, Overdue: date < today})
-			page.Projected += signed(rec.Kind, rec.Amount)
+			b.Pending = append(b.Pending, occurrence{Recurrence: rec, Date: date, Overdue: date < today})
+			b.Projected += signed(rec.Kind, rec.Amount)
 		}
 	}
 
-	slices.SortStableFunc(page.Pending, func(a, b occurrence) int { return cmp.Compare(a.Date, b.Date) })
-	render(w, r, status, homePage(newShell(r, "Visão geral"), page))
+	slices.SortStableFunc(b.Pending, func(a, b occurrence) int { return cmp.Compare(a.Date, b.Date) })
+
+	return b, nil
+}
+
+func (h handler) home(w http.ResponseWriter, r *http.Request) {
+	h.renderOverview(w, r, http.StatusOK, "")
+}
+
+// renderOverview reads the overview in the user's time zone: the shell's balance and the usage over this month as
+// [from, to) in UTC.
+func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
+	s, ok := h.shell(w, r, "Visão geral")
+	if !ok {
+		return
+	}
+
+	_, from, to := monthWindow(s.Now)
+	usages, err := h.db.CategoryUsages(r.Context(), sessionFrom(r.Context()).AccountID, from, to)
+	if err != nil {
+		internalError(w, "reading category usage", err)
+		return
+	}
+
+	render(w, r, status, homePage(s, overview{Usages: usages, Error: message}))
 }
 
 // confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC,

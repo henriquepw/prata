@@ -21,7 +21,12 @@ func (h handler) categories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categoriesPage(newShell(r, "Categorias"), categories))
+	s, ok := h.shell(w, r, "Categorias")
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, categoriesPage(s, categories))
 }
 
 func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {

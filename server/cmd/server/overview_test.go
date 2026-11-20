@@ -159,3 +159,27 @@ func TestWebOverview_ConfirmAlreadyConfirmed(t *testing.T) {
 		}
 	}
 }
+
+func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
+	w := newWebClient(t)
+	now := time.Now().UTC()
+	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
+	w.push(newCategory(w.client),
+		transactionAt(w.client, "INCOME", 500000, month.AddDate(0, -1, 0)),
+		w.op("RECURRENCE", ulid.Make().String(), "CREATE", map[string]any{
+			"kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:1", "start_at": month.AddDate(0, -2, 0).Format(time.DateOnly),
+			"end_at": month.AddDate(0, 0, -1).Format(time.DateOnly), "created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+		}),
+		w.op("RECURRENCE", ulid.Make().String(), "CREATE", map[string]any{
+			"kind": "INCOME", "amount": 100000, "rule": "MONTHLY:31", "start_at": month.Format(time.DateOnly),
+			"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
+		}),
+	)
+
+	body := get(w.handler, "/categories", w.cookie).Body.String()
+	for _, text := range []string{"R$ 5.000,00", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2 atrasada]", newSignup().Email} {
+		if !strings.Contains(body, text) {
+			t.Errorf("categories ticker lacks %q: %s", text, body)
+		}
+	}
+}

@@ -22,6 +22,7 @@ var ErrInvalidSession = errors.New("invalid session")
 // Session is who a web session acts as and when it expires.
 type Session struct {
 	UserID    string
+	Email     string
 	AccountID string
 	ExpiresAt time.Time
 }
@@ -66,11 +67,12 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	var row struct {
 		ID        string `db:"id"`
 		UserID    string `db:"user_id"`
+		Email     string `db:"email"`
 		AccountID string `db:"account_id"`
 		ExpiresAt string `db:"expires_at"`
 	}
-	err := s.GetContext(ctx, &row, `SELECT s.id, s.user_id, a.account_id, s.expires_at
-		FROM sessions s JOIN account_users a ON a.user_id = s.user_id
+	err := s.GetContext(ctx, &row, `SELECT s.id, s.user_id, u.email, a.account_id, s.expires_at
+		FROM sessions s JOIN users u ON u.id = s.user_id JOIN account_users a ON a.user_id = s.user_id
 		WHERE s.token_hash = ? ORDER BY a.created_at LIMIT 1`, hashToken(token))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Session{}, ErrInvalidSession
@@ -100,7 +102,7 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 		}
 	}
 
-	return Session{UserID: row.UserID, AccountID: row.AccountID, ExpiresAt: expiresAt.UTC()}, nil
+	return Session{UserID: row.UserID, Email: row.Email, AccountID: row.AccountID, ExpiresAt: expiresAt.UTC()}, nil
 }
 
 // DeleteSession deletes only the session of this token.

@@ -17,7 +17,12 @@ func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, tagsPage(newShell(r, "Tags"), tags, location(r)))
+	s, ok := h.shell(w, r, "Tags")
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, tagsPage(s, tags, location(r)))
 }
 
 func (h handler) editTag(w http.ResponseWriter, r *http.Request) {

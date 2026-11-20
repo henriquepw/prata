@@ -277,6 +277,279 @@
     animation-delay: calc(var(--i, sibling-index() - 1) * 30ms);
   }
 
+  /* Text action ([tema], [sair], [ctrl k]): muted caps that invert on hover. */
+  .lnk {
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 0.3ch;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background-color var(--snap) var(--ease),
+      color var(--snap) var(--ease);
+  }
+
+  .lnk:hover {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  /* Console chrome: status bar, ticker, rail (or the mobile nav row), main and keybar. Only main scrolls. */
+  .console-frame {
+    position: relative;
+    height: 100dvh;
+    width: min(100%, 1440px);
+    margin-inline: auto;
+    background: var(--background);
+  }
+
+  .console {
+    container: console / inline-size;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    font-size: 13px;
+  }
+
+  .sbar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2ch;
+    padding: 0.6lh 2ch;
+    border-bottom: 1px solid var(--line-soft);
+    white-space: nowrap;
+  }
+
+  .sbar-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .sbar-brand {
+    font-weight: 700;
+  }
+
+  .sbar-brand::before {
+    content: "▌";
+    color: var(--primary);
+  }
+
+  .sbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cursor {
+    color: var(--primary);
+    animation: blink 1s steps(1) infinite;
+  }
+
+  .ticker {
+    display: flex;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .ticker dl {
+    display: contents;
+  }
+
+  .ticker dl > div,
+  .ticker > div {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    padding: 0.4lh 2ch;
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .ticker dt {
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .ticker dd {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ticker .ticker-user {
+    flex: 1;
+    justify-content: flex-end;
+    border-right: 0;
+  }
+
+  .sync-dot {
+    display: inline-block;
+    width: 1ch;
+    color: var(--cat-green);
+  }
+
+  .console-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .console-body > main {
+    flex: 1;
+    min-width: 0;
+    overflow: auto;
+    padding: 1.5lh 2ch 2lh;
+  }
+
+  .rail {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    width: 22ch;
+    padding: 1lh 0;
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .rail a {
+    display: grid;
+    grid-template-columns: 4ch 1fr;
+    padding: 0.55lh 2ch;
+    border-left: 3px solid transparent;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .rail a[aria-current] {
+    border-left-color: var(--primary);
+    background: var(--line-soft);
+  }
+
+  .mnav {
+    display: none;
+    gap: 1ch;
+    padding: 0.5lh 2ch;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  .mnav a {
+    padding: 0 0.6ch;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .mnav a[aria-current] {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  .rail a,
+  .mnav a {
+    transition:
+      background-color var(--snap) var(--ease),
+      color var(--snap) var(--ease);
+  }
+
+  .rail a:hover,
+  .mnav a:hover {
+    background: var(--foreground);
+    color: var(--background);
+  }
+
+  .rail a:hover * {
+    color: inherit;
+  }
+
+  .keybar {
+    display: flex;
+    align-items: center;
+    padding: 0.4lh 2ch;
+    border-top: 1px solid var(--line-soft);
+    overflow: hidden;
+    white-space: nowrap;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .keybar span + span::before {
+    content: "│";
+    margin-inline: 1.5ch;
+    color: var(--line-strong);
+  }
+
+  .keybar kbd {
+    font: inherit;
+    color: var(--primary);
+  }
+
+  @container console (max-width: 640px) {
+    .rail,
+    .ticker,
+    .keybar,
+    .sbar-right time {
+      display: none;
+    }
+
+    .mnav {
+      display: flex;
+    }
+
+    .console-body > main {
+      padding-inline: 1.5ch;
+    }
+  }
+
+  /* Above 1440px the console becomes a centered window: --line borders, a darker outside and a 5px marker where
+     the status bar line, carried across the viewport, crosses each border. */
+  @media (min-width: 1441px) {
+    body:has(.console-frame) {
+      overflow: hidden;
+      background: color-mix(in oklab, var(--background) 90%, black);
+    }
+
+    .console-frame {
+      border-inline: 1px solid var(--line);
+    }
+
+    .sbar::before {
+      content: "";
+      position: absolute;
+      z-index: 5;
+      bottom: -2px;
+      left: -3px;
+      width: 5px;
+      height: 5px;
+      background: var(--line-strong);
+      box-shadow: 1439px 0 0 var(--line-strong);
+    }
+
+    .sbar::after {
+      content: "";
+      position: absolute;
+      left: -100vw;
+      right: -100vw;
+      bottom: 0;
+      border-bottom: 1px solid var(--line-soft);
+      pointer-events: none;
+    }
+  }
+
   /* Segmented meter: 20 <i> of the category color in --c, .on filled and .over past the limit. */
   .meter {
     display: flex;
@@ -336,6 +609,12 @@ dialog.sheet[open] {
   }
   80% {
     transform: translate(41px, 11px);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
   }
 }
 

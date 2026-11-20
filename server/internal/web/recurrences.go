@@ -30,7 +30,12 @@ func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, recurrencesPage(newShell(r, "Recorrências"), recurrences))
+	s, ok := h.shell(w, r, "Recorrências")
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
 }
 
 func (h handler) newRecurrence(w http.ResponseWriter, r *http.Request) {

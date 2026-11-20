@@ -38,8 +38,8 @@ templ homePage(s shell, page overview) {
 			<p role="alert" class="mb-6 border border-destructive px-3 py-2 text-sm text-destructive">{ page.Error }</p>
 		}
 		<div class="mb-8 grid gap-4 sm:grid-cols-2">
-			@balanceCard("Saldo realizado", page.Realized)
-			@balanceCard("Saldo projetado", page.Projected)
+			@balanceCard("Saldo realizado", s.Balance.Realized)
+			@balanceCard("Saldo projetado", s.Balance.Projected)
 		</div>
 		<h2 class="mb-3 font-semibold">Uso por categoria</h2>
 		if len(page.Usages) == 0 {
@@ -68,11 +68,11 @@ templ homePage(s shell, page overview) {
 			</ul>
 		}
 		<h2 class="mb-3 font-semibold">Pendentes</h2>
-		if len(page.Pending) == 0 {
+		if len(s.Balance.Pending) == 0 {
 			<p class="text-sm text-muted-foreground">Nenhuma ocorrência pendente.</p>
 		} else {
 			<ul class="divide-y border">
-				for _, pending := range page.Pending {
+				for _, pending := range s.Balance.Pending {
 					<li class={ "flex items-center gap-3 px-4 py-3 text-sm", templ.KV("text-destructive", pending.Overdue) }>
 						<span class="tabular-nums">{ shortDate(pending.Date) }</span>
 						<span class="flex-1">{ orEmpty(pending.Recurrence.Description) }</span>

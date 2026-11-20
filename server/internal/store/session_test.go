@@ -56,7 +56,7 @@ func TestAuthenticate(t *testing.T) {
 	}
 }
 
-func TestSessionByToken_ResolvesUserAndAccount(t *testing.T) {
+func TestSessionByToken_ResolvesUserEmailAndAccount(t *testing.T) {
 	db := openWithUser(t)
 	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
 	token, err := db.CreateSession(context.Background(), ownerID, now)
@@ -69,7 +69,7 @@ func TestSessionByToken_ResolvesUserAndAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := store.Session{UserID: ownerID, AccountID: accountID, ExpiresAt: now.Add(30 * 24 * time.Hour)}
+	want := store.Session{UserID: ownerID, Email: "ana@example.com", AccountID: accountID, ExpiresAt: now.Add(30 * 24 * time.Hour)}
 	if session != want {
 		t.Errorf("session = %+v, want %+v", session, want)
 	}
