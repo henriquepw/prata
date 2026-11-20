@@ -75,7 +75,7 @@ func TestWebOverview(t *testing.T) {
 
 			page := get(w.handler, "/", w.cookie, tz)
 			body := page.Body.String()
-			for _, text := range []string{"R$ 4.750,00", "R$ 5.650,00", "Mercado", "R$ 30,00 de R$ 500,00",
+			for _, text := range []string{"R$ 4.750,00", "R$ 5.650,00", "Mercado", "R$ 30,00 / R$ 500,00", "6%", "R$ 0,00", "−R$ 30,00",
 				month.AddDate(0, -1, 0).Format("02/01/2006"), lastDay.Format("02/01/2006")} {
 				if !strings.Contains(body, text) {
 					t.Errorf("overview lacks %q: %s", text, body)
@@ -86,7 +86,7 @@ func TestWebOverview(t *testing.T) {
 				t.Errorf("overview still lists the confirmed occurrence %s", oldest.Format("02/01/2006"))
 			}
 
-			if got := strings.Count(body, ">atrasada<"); got != 1 {
+			if got := strings.Count(body, "[atrasada]"); got != 1 {
 				t.Errorf("overview has %d overdue badges, want 1: %s", got, body)
 			}
 		})

@@ -657,6 +657,93 @@
     background: var(--destructive);
   }
 
+  /* Overview: the KPI strip, Pendentes and Uso por categoria in the main column, the activity log down the right. */
+  .overview {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(32ch, 0.4fr);
+    grid-template-rows: auto auto 1fr;
+    gap: 1lh 2ch;
+  }
+
+  .overview > .log-panel {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5ch;
+  }
+
+  .usages {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(22ch, 1fr));
+    gap: 1lh 3ch;
+  }
+
+  .usage-name {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .usage-meter {
+    display: flex;
+    align-items: center;
+    gap: 1ch;
+    margin-block: 0.3lh;
+  }
+
+  .usage-meter > .meter {
+    flex: 1;
+  }
+
+  /* Activity log: the panel's list fills its height, so the prompt sits at the bottom. */
+  .log-panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .log {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    line-height: 1.75;
+  }
+
+  .log-prompt {
+    margin-top: auto;
+  }
+
+  /* Busy submit: while its form's htmx request is in flight, a braille spinner runs before the label. */
+  .htmx-request [type="submit"]::before {
+    content: "⠋ ";
+    animation: braille 0.8s steps(1) infinite;
+  }
+
+  @container console (max-width: 640px) {
+    .overview {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+    }
+
+    .overview > .log-panel {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hide-m {
+      display: none;
+    }
+  }
+
   /* Login and signup: the particle field behind the figlet, the panel and a footer pinned to the bottom. */
   .login {
     position: relative;
@@ -772,6 +859,36 @@ dialog.sheet[open] {
 @keyframes blink {
   50% {
     opacity: 0;
+  }
+}
+
+@keyframes braille {
+  10% {
+    content: "⠙ ";
+  }
+  20% {
+    content: "⠹ ";
+  }
+  30% {
+    content: "⠸ ";
+  }
+  40% {
+    content: "⠼ ";
+  }
+  50% {
+    content: "⠴ ";
+  }
+  60% {
+    content: "⠦ ";
+  }
+  70% {
+    content: "⠧ ";
+  }
+  80% {
+    content: "⠇ ";
+  }
+  90% {
+    content: "⠏ ";
   }
 }
 
