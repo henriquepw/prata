@@ -32,7 +32,7 @@ func TestAuthPages_FollowTheBrowserLanguage(t *testing.T) {
 		"/login":  {`<html lang="pt-BR">`, "Entrar", "Senha", "&gt; entrar", "Ainda não tem conta?"},
 		"/signup": {`<html lang="pt-BR">`, "Criar conta", "&gt; criar conta", "Já usa o Prata no app?", "Já tem conta?"},
 	}
-	for language, pages := range map[string]map[string][]string{"en-US,en;q=0.9": english, "fr": portuguese, "": portuguese} {
+	for language, pages := range map[string]map[string][]string{"en-US,en;q=0.9": english, "fr;q=0.1, en;q=0.9": english, "en;q=0.5, fr": portuguese, "fr": portuguese, "": portuguese} {
 		for path, texts := range pages {
 			body := browse(handler, http.MethodGet, path, language, nil).Body.String()
 			for _, text := range texts {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 	_ "time/tzdata"
@@ -185,17 +186,35 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 	})
 }
 
-// visitor serves a page without a session in the browser's Idioma: en when its preferred language, the first in
-// Accept-Language, is English, and pt-BR otherwise.
+// visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and
+// pt-BR otherwise.
 func visitor(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		language := i18n.Default
-		if strings.HasPrefix(strings.ToLower(r.Header.Get("Accept-Language")), "en") {
+		if strings.HasPrefix(strings.ToLower(preferredLanguage(r.Header.Get("Accept-Language"))), "en") {
 			language = "en"
 		}
 
 		next(w, r.WithContext(i18n.WithLanguage(r.Context(), language)))
 	}
+}
+
+// preferredLanguage is the tag of the Accept-Language entry with the highest q weight, the first one on a tie.
+func preferredLanguage(header string) string {
+	preferred, best := "", 0.0
+	for _, entry := range strings.Split(header, ",") {
+		tag, params, _ := strings.Cut(entry, ";")
+		weight := 1.0
+		if q, ok := strings.CutPrefix(strings.TrimSpace(params), "q="); ok {
+			weight, _ = strconv.ParseFloat(q, 64)
+		}
+
+		if weight > best {
+			preferred, best = strings.TrimSpace(tag), weight
+		}
+	}
+
+	return preferred
 }
 
 func sessionFrom(ctx context.Context) store.Session {
