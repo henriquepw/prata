@@ -31,7 +31,7 @@ var (
 )
 
 // Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup. Language,
-// the Idioma of the signup page, only comes from the web; empty keeps the database default.
+// the Idioma of the signup page, only comes from the web; empty is pt-BR.
 type Signup struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
@@ -83,8 +83,8 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	now := formatTime(time.Now())
 	statements := []statement{
 		{
-			"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), now, now},
+			"INSERT INTO users (id, email, secret, language, created_at, updated_at) VALUES (?, ?, ?, COALESCE(NULLIF(?, ''), 'pt-BR'), ?, ?)",
+			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), signup.Language, now, now},
 		},
 		{
 			"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
@@ -98,10 +98,6 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 			"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
 			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now},
 		},
-	}
-
-	if signup.Language != "" {
-		statements = append(statements, statement{"UPDATE users SET language = ? WHERE id = ?", []any{signup.Language, signup.OwnerID}})
 	}
 
 	var key string
