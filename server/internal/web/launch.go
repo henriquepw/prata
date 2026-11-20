@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
@@ -159,15 +158,5 @@ func (h handler) launch(w http.ResponseWriter, r *http.Request) {
 		"kind": l.Kind, "amount": l.Amount, "description": orNil(l.Description), "occurred_at": occurredAt,
 		"category_id": orNil(l.Category.ID), "tag_id": orNil(l.Tag.ID),
 	}}
-	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), change)
-	if err == nil && reason != "" {
-		err = fmt.Errorf("rejected: %s", reason)
-	}
-
-	if err != nil {
-		internalError(w, "launching transaction", err)
-		return
-	}
-
-	h.renderMonth(w, r, http.StatusOK, change.EntityID, "")
+	h.createInMonth(w, r, change, nil)
 }

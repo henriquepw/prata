@@ -11,6 +11,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/henriquepw/prata/shared/recurrence"
 	"github.com/oklog/ulid/v2"
 )
@@ -349,30 +350,35 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session := sessionFrom(r.Context())
-	reason, err := h.db.CommitChanges(r.Context(), session, change)
+	h.createInMonth(w, r, change, func() (string, error) {
+		confirmed, err := h.db.ConfirmedOccurrences(r.Context(), sessionFrom(r.Context()).AccountID)
+		if err != nil || !slices.Contains(confirmed[form.Recurrence.ID], form.Date) {
+			return "", err
+		}
+
+		return i18n.T(r.Context(), "month.error.confirmed"), nil
+	})
+}
+
+// createInMonth commits change, a new transaction, and answers the month on screen with its row flashing. A rejection
+// answers 409 with the message conflict reads, or 500 when conflict is nil or reads none.
+func (h handler) createInMonth(w http.ResponseWriter, r *http.Request, change store.Change, conflict func() (string, error)) {
+	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), change)
+	message := ""
+	if err == nil && reason != "" && conflict != nil {
+		message, err = conflict()
+	}
+
+	if err == nil && reason != "" && message == "" {
+		err = fmt.Errorf("rejected: %s", reason)
+	}
+
 	if err != nil {
-		internalError(w, "confirming occurrence", err)
+		internalError(w, "creating transaction", err)
 		return
 	}
 
-	status, message := http.StatusOK, ""
-	if reason != "" {
-		confirmed, err := h.db.ConfirmedOccurrences(r.Context(), session.AccountID)
-		if err != nil {
-			internalError(w, "listing confirmed occurrences", err)
-			return
-		}
-
-		if !slices.Contains(confirmed[form.Recurrence.ID], form.Date) {
-			internalError(w, "confirming occurrence", fmt.Errorf("rejected: %s", reason))
-			return
-		}
-
-		status, message = http.StatusConflict, i18n.T(r.Context(), "month.error.confirmed")
-	}
-
-	h.renderMonth(w, r, status, change.EntityID, message)
+	h.renderMonth(w, r, utils.IfElse(message == "", http.StatusOK, http.StatusConflict), change.EntityID, message)
 }
 
 // renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
