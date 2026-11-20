@@ -206,6 +206,17 @@ var ptBR = map[string]string{
 	"weekday.Friday":         "sex",
 	"weekday.Saturday":       "sáb",
 
+	// Mês: the launch prompt.
+	"launch.title":       "Lançar",
+	"launch.focus":       "focar",
+	"launch.submit":      "lançar",
+	"launch.input":       "Lançar transação",
+	"launch.placeholder": "-45,90 padaria ontem @mercado #casa",
+	"launch.hint":        "-45,90 despesa, +150 receita, @categoria, #tag, ontem ou dd/mm",
+	"launch.yesterday":   "ontem",
+	"launch.no_amount":   "falta o valor",
+	"launch.unknown":     "%s não existe",
+
 	// Confirmar ocorrência sheet.
 	"occurrence.title": "Confirmar ocorrência",
 	"occurrence.hint":  "veio diferente? ajuste antes de confirmar",

@@ -206,6 +206,17 @@ var en = map[string]string{
 	"weekday.Friday":         "fri",
 	"weekday.Saturday":       "sat",
 
+	// Mês: the launch prompt.
+	"launch.title":       "Add",
+	"launch.focus":       "focus",
+	"launch.submit":      "add",
+	"launch.input":       "Add a transaction",
+	"launch.placeholder": "-45.90 bakery yesterday @groceries #home",
+	"launch.hint":        "-45.90 expense, +150 income, @category, #tag, yesterday or dd/mm",
+	"launch.yesterday":   "yesterday",
+	"launch.no_amount":   "missing the amount",
+	"launch.unknown":     "%s doesn't exist",
+
 	// Confirmar ocorrência sheet.
 	"occurrence.title": "Confirm occurrence",
 	"occurrence.hint":  "came out different? adjust it before confirming",
