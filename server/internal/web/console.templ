@@ -255,7 +255,7 @@ templ dateField(id, label, value, message string) {
 // with the checked one inverted.
 templ choiceField(name, label, message string) {
 	@field.Field() {
-		<span id={ name + "-label" } class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">{ label }</span>
+		<span id={ name + "-label" } class="text-[11px] uppercase tracking-widest text-muted-foreground">{ label }</span>
 		<div role="radiogroup" aria-labelledby={ name + "-label" } class="choice" { ariaInvalid(message)... }>
 			{ children... }
 		</div>
@@ -267,8 +267,10 @@ templ choiceField(name, label, message string) {
 templ choiceOption(name, value string, checked bool) {
 	<label>
 		<input type="radio" name={ name } value={ value } checked?={ checked }/>
-		<span>[{ children... }
-]</span>
+		<span>
+			[{ children... }
+			]
+		</span>
 	</label>
 }
 

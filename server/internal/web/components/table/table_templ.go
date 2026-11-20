@@ -625,7 +625,7 @@ func Head(props ...HeadProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var23 = []any{utils.CN("text-muted-foreground h-10 px-2 text-left align-middle text-[11px] font-normal uppercase tracking-[.1em] whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class)}
+			var templ_7745c5c3_Var23 = []any{utils.CN("text-muted-foreground h-10 px-2 text-left align-middle text-[11px] font-normal uppercase tracking-widest whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&:has([data-slot=checkbox])]:pr-0", p.Class)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var23...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
