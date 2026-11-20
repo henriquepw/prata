@@ -40,8 +40,8 @@ func TestWebLists_RowsOpenTheSheetAndFlashOnce(t *testing.T) {
 		w := newWebClient(t)
 		flash := flashCookie(w.submit(http.MethodPost, list.path, list.form))
 		id := w.newOps()[0].EntityID
-		if flash == nil || flash.Value != id {
-			t.Fatalf("%s create sets flash cookie %v, want the saved row's id", list.path, flash)
+		if flash == nil || flash.Value != id || flash.Path != list.path {
+			t.Fatalf("%s create sets flash cookie %v, want the saved row's id for that list only", list.path, flash)
 		}
 
 		body := get(w.handler, list.path, w.cookie, flash).Body.String()

@@ -255,8 +255,8 @@ func TestWebTransactions_FlashesTheSavedRowOnce(t *testing.T) {
 	w := newWebClient(t)
 	response := w.submit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""))
 	flash := flashCookie(response)
-	if response.Header().Get("HX-Refresh") != "true" || flash == nil || flash.Value != w.newOps()[0].EntityID {
-		t.Fatalf("create = %d with flash cookie %v, want HX-Refresh and the saved row's id in it", response.Code, flash)
+	if response.Header().Get("HX-Refresh") != "true" || flash == nil || flash.Value != w.newOps()[0].EntityID || flash.Path != "/transactions" {
+		t.Fatalf("create = %d with flash cookie %v, want HX-Refresh and the saved row's id in it, for /transactions only", response.Code, flash)
 	}
 
 	page := get(w.handler, "/transactions?month=2026-07", w.cookie, flash)
@@ -264,8 +264,8 @@ func TestWebTransactions_FlashesTheSavedRowOnce(t *testing.T) {
 		t.Errorf("page after saving marks %d rows to flash, want 1: %s", got, page.Body)
 	}
 
-	if cleared := flashCookie(page); cleared == nil || cleared.MaxAge >= 0 {
-		t.Errorf("page after saving sets flash cookie %v, want it cleared", cleared)
+	if cleared := flashCookie(page); cleared == nil || cleared.MaxAge >= 0 || cleared.Path != "/transactions" {
+		t.Errorf("page after saving sets flash cookie %v, want it cleared at /transactions", cleared)
 	}
 
 	if body := get(w.handler, "/transactions?month=2026-07", w.cookie).Body.String(); strings.Contains(body, "data-flash") {

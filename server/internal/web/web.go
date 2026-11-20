@@ -24,7 +24,7 @@ var static embed.FS
 
 const sessionCookie = "session"
 
-// flashCookie holds the id of the row a sheet just saved, for the next page to flash once.
+// flashCookie holds the id of the row a sheet just saved, scoped to its list's path for that page to flash once.
 const flashCookie = "flash"
 
 type sessionKey struct{}
@@ -225,7 +225,7 @@ func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (sh
 	s := shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
 	if cookie, err := r.Cookie(flashCookie); err == nil {
 		s.Flash = cookie.Value
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: "/", MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: r.URL.Path, MaxAge: -1})
 	}
 
 	return s, true
