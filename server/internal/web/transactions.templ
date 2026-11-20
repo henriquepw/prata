@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/button"
-	"github.com/henriquepw/prata/server/internal/web/components/icon"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
@@ -33,68 +31,85 @@ func monthURL(month time.Time, offset int) string {
 	return "/transactions?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
 }
 
-templ transactionsPage(s shell, month time.Time, transactions []store.Transaction, loc *time.Location) {
+// transactionsPage lays the month's KPI strip over the Transações panel and, on its right, the activity log.
+templ transactionsPage(s shell, month time.Time, transactions []store.Transaction, activity []store.Activity) {
+	{{ income, outcome := totals(transactions) }}
+	{{ label := monthNames[month.Month()-1] + " de " + strconv.Itoa(month.Year()) }}
 	@layout(s) {
-		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-semibold tracking-tight">Transações</h1>
-			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/transactions/new", "hx-target": "#sheet"}}) {
-				Nova transação
-			}
-		</div>
-		<div class="mb-6 flex items-center gap-2">
-			@button.Button(button.Props{Href: monthURL(month, -1), Variant: button.VariantOutline, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Mês anterior"}}) {
-				@icon.ChevronLeft()
-			}
-			<span class="font-medium">{ monthNames[month.Month()-1] } de { strconv.Itoa(month.Year()) }</span>
-			@button.Button(button.Props{Href: monthURL(month, 1), Variant: button.VariantOutline, Size: button.SizeIconSm, Attributes: templ.Attributes{"aria-label": "Próximo mês"}}) {
-				@icon.ChevronRight()
-			}
-		</div>
-		if len(transactions) == 0 {
-			<p class="text-sm text-muted-foreground">Nenhuma transação neste mês.</p>
-		} else {
-			<div class="border">
-				@table.Table() {
-					@table.Header() {
-						@table.Row() {
-							@table.Head() {
-								Data
-							}
-							@table.Head() {
-								Descrição
-							}
-							@table.Head() {
-								Categoria
-							}
-							@table.Head(table.HeadProps{Class: "text-right"}) {
-								Valor
-							}
-						}
-					}
-					@table.Body() {
-						for _, transaction := range transactions {
-							@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet", "tabindex": "0"}}) {
-								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-									{ formatDate(transaction.OccurredAt, loc, brDate) }
+		<div class="transactions">
+			<div class="kpis kpis-3">
+				@kpi("Entradas", income)
+				@kpi("Saídas", -outcome)
+				@kpi("Saldo do mês", income-outcome)
+			</div>
+			<div class="transactions-grid">
+				@panel("Transações", "", newAction("/transactions/new")) {
+					<div class="month-bar">
+						<div class="flex items-center gap-[1ch]">
+							<a href={ templ.SafeURL(monthURL(month, -1)) } class="lnk" aria-label="Mês anterior">‹</a>
+							<span class="uppercase tracking-[.08em]" data-decode aria-label={ label }>{ label }</span>
+							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label="Próximo mês">›</a>
+						</div>
+						<div class="hide-m text-xs tabular-nums">
+							<span class="text-muted-foreground">entradas</span> { money(income) }
+							<span class="text-muted-foreground">· saídas</span> { money(-outcome) }
+						</div>
+					</div>
+					if len(transactions) == 0 {
+						<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma transação neste mês</p>
+					} else {
+						@table.Table(table.Props{Class: "@max-[640px]:[&_:is(td,th)]:px-1"}) {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() {
+										Data
+									}
+									@table.Head(table.HeadProps{Class: "w-full"}) {
+										Descrição
+									}
+									@table.Head(table.HeadProps{Class: "hide-m"}) {
+										Categoria
+									}
+									@table.Head(table.HeadProps{Class: "hide-m"}) {
+										Tags
+									}
+									@table.Head(table.HeadProps{Class: "text-right"}) {
+										Valor
+									}
 								}
-								@table.Cell() {
-									{ orEmpty(transaction.Description) }
-								}
-								@table.Cell() {
-									<span class="flex items-center gap-2">
-										<span class={ "inline-block size-2.5 shrink-0 rounded-full", colorClass(transaction.CategoryColor) }></span>
-										{ transaction.CategoryName }
-									</span>
-								}
-								@table.Cell(table.CellProps{Class: "text-right tabular-nums"}) {
-									{ money(signed(transaction.Kind, transaction.Amount)) }
+							}
+							@table.Body() {
+								for _, transaction := range transactions {
+									@table.Row(table.RowProps{Attributes: templ.Attributes{"hx-get": "/transactions/" + transaction.ID, "hx-target": "#sheet", "tabindex": "0", "data-flash": transaction.ID == s.Flash}}) {
+										@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+											{ formatDate(transaction.OccurredAt, s.Now.Location(), brDate) }
+										}
+										@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+											{ orEmpty(transaction.Description) }
+										}
+										@table.Cell(table.CellProps{Class: "hide-m"}) {
+											<span class="flex items-center gap-[1ch]">
+												<span class={ "inline-block size-[.7em] shrink-0", colorClass(transaction.CategoryColor) } aria-hidden="true"></span>
+												{ transaction.CategoryName }
+											</span>
+										}
+										@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+											if transaction.TagName != "" {
+												{ "#" + transaction.TagName }
+											}
+										}
+										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", utils.IfElse(transaction.Kind == "INCOME", "text-cat-green", "text-destructive"))}) {
+											{ money(signed(transaction.Kind, transaction.Amount)) }
+										}
+									}
 								}
 							}
 						}
 					}
 				}
+				@activityLog(activity, s.Now.Location())
 			</div>
-		}
+		</div>
 	}
 }
 
@@ -106,36 +121,30 @@ templ transactionSheet(form transactionForm) {
 		Confirm:   "Excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
 		Error:     form.Errors["form"],
 	}) {
-		@formField("kind", "Tipo", form.Errors["kind"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "kind", Name: "kind", Class: "w-full", Attributes: ariaInvalid(form.Errors["kind"])}) {
-				for _, kind := range kinds {
-					@nativeselect.Option(nativeselect.OptionProps{Value: kind.Value, Selected: kind.Value == form.Kind}) {
-						{ kind.Label }
-					}
-				}
-			}
+		@formField("description", "Descrição", form.Errors["description"]) {
+			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		@formField("amount", "Valor", form.Errors["amount"]) {
 			@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: "0,00", Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
 		}
-		@formField("occurred_at", "Data", form.Errors["occurred_at"]) {
-			@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
-		}
-		@formField("description", "Descrição", form.Errors["description"]) {
-			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
-		}
-		@formField("category_id", "Categoria", form.Errors["category_id"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
-				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-					Sem categoria
-				}
-				for _, category := range form.Categories {
-					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
-						{ category.Name }
+		<div class="grid grid-cols-2 gap-[2ch]">
+			@formField("occurred_at", "Data", form.Errors["occurred_at"]) {
+				@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
+			}
+			@formField("category_id", "Categoria", form.Errors["category_id"]) {
+				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
+					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
+						Sem categoria
+					}
+					for _, category := range form.Categories {
+						@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
+							{ category.Name }
+						}
 					}
 				}
 			}
-		}
+		</div>
+		@kindChoice(form.Kind, form.Errors["kind"])
 		@formField("tag_id", "Tag", form.Errors["tag_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}) {
 				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {

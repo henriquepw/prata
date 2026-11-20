@@ -8,13 +8,15 @@ import (
 )
 
 // Transaction is a live transaction as the web shows it, with its live category ("Sem categoria" and GRAY
-// when it has none or it was deleted); Amount is in cents and OccurredAt is RFC 3339 in UTC.
+// when it has none or it was deleted) and the name of its live tag (empty without one); Amount is in cents and
+// OccurredAt is RFC 3339 in UTC.
 type Transaction struct {
 	ID            string  `db:"id"`
 	CategoryID    *string `db:"category_id"`
 	CategoryName  string  `db:"category_name"`
 	CategoryColor string  `db:"category_color"`
 	TagID         *string `db:"tag_id"`
+	TagName       string  `db:"tag_name"`
 	Kind          string  `db:"kind"`
 	Amount        int64   `db:"amount"`
 	Description   *string `db:"description"`
@@ -22,8 +24,10 @@ type Transaction struct {
 }
 
 const transactionSelect = `SELECT t.id, c.id AS category_id, COALESCE(c.name, 'Sem categoria') AS category_name,
-	COALESCE(c.color, 'GRAY') AS category_color, t.tag_id, t.kind, t.amount, t.description, t.occurred_at
+	COALESCE(c.color, 'GRAY') AS category_color, t.tag_id, COALESCE(g.name, '') AS tag_name, t.kind, t.amount, t.description,
+	t.occurred_at
 	FROM transactions t LEFT JOIN categories c ON c.id = t.category_id AND c.deleted_at IS NULL
+	LEFT JOIN tags g ON g.id = t.tag_id AND g.deleted_at IS NULL
 	WHERE t.account_id = ? AND t.deleted_at IS NULL`
 
 // Transactions returns the account's live transactions with occurred_at in [from, to), RFC 3339 in UTC, newest first.

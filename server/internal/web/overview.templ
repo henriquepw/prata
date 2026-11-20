@@ -75,7 +75,7 @@ templ homePage(s shell, page overview) {
 				@kpi("Entradas "+monthNames[page.Month.Month()-1][:3], page.Income)
 				@kpi("Saídas "+monthNames[page.Month.Month()-1][:3], -page.Outcome)
 			</div>
-			@panel("Pendentes", "") {
+			@panel("Pendentes", "", nil) {
 				if page.Error != "" {
 					<p role="alert" class="mb-[1lh] text-destructive">! { page.Error }</p>
 				}
@@ -138,7 +138,7 @@ templ homePage(s shell, page overview) {
 					}
 				}
 			}
-			@panel("Uso por categoria", "") {
+			@panel("Uso por categoria", "", nil) {
 				if len(page.Usages) == 0 {
 					<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma categoria ainda</p>
 				} else {

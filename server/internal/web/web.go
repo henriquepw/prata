@@ -24,6 +24,9 @@ var static embed.FS
 
 const sessionCookie = "session"
 
+// flashCookie holds the id of the row a sheet just saved, for the next page to flash once.
+const flashCookie = "flash"
+
 type sessionKey struct{}
 
 type handler struct {
@@ -210,7 +213,7 @@ func redirect(w http.ResponseWriter, r *http.Request, url string) {
 }
 
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
-// now in the user's time zone.
+// now in the user's time zone, and takes the row to flash out of its cookie.
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
 	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
 	balance, err := h.balance(r.Context(), session.AccountID, now)
@@ -219,7 +222,13 @@ func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (sh
 		return shell{}, false
 	}
 
-	return shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}, true
+	s := shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
+	if cookie, err := r.Cookie(flashCookie); err == nil {
+		s.Flash = cookie.Value
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: "/", MaxAge: -1})
+	}
+
+	return s, true
 }
 
 // location is the browser time zone from the tz cookie, or UTC when it is missing or unknown.

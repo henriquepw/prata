@@ -594,7 +594,7 @@ func homePage(s shell, page overview) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = panel("Pendentes", "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = panel("Pendentes", "", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -787,7 +787,7 @@ func homePage(s shell, page overview) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = panel("Uso por categoria", "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = panel("Uso por categoria", "", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var28), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
