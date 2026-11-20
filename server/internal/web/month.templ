@@ -205,7 +205,8 @@ templ statementActions(page month) {
 	<span class="flex items-center gap-[1ch]">
 		if page.Filter.ID != "" {
 			<a href={ templ.SafeURL(monthURL(page.Month.Format(monthLayout), "")) } class="lnk flex items-center gap-[1ch]">
-				<span class={ colorClass(page.Filter.Color) } aria-hidden="true">■</span>{ page.Filter.Name } ✕
+				@categoryName(page.Filter.Name, page.Filter.Color)
+				✕
 			</a>
 		}
 		@newAction("/transactions/new")

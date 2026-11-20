@@ -11,7 +11,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
@@ -192,7 +191,7 @@ templ fieldNote(hint, message string) {
 templ amountField(value, hint, message string) {
 	@hintField("amount", i18n.T(ctx, "field.amount"), hint, message) {
 		@currencyPrefix() {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: templ.Attributes{"inputmode": "decimal", "autocomplete": "off", "autofocus": true, "aria-invalid": utils.IfElse(message == "", "false", "true")}})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "decimal", "autocomplete": "off", "autofocus": true})})
 		}
 	}
 }
@@ -200,7 +199,7 @@ templ amountField(value, hint, message string) {
 // nameField is the required name of a category or tag, focused when the sheet opens.
 templ nameField(value, message string) {
 	@formField("name", i18n.T(ctx, "field.name"), message) {
-		@input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: templ.Attributes{"autofocus": true, "aria-invalid": utils.IfElse(message == "", "false", "true")}})
+		@input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: ariaInvalid(message, templ.Attributes{"autofocus": true})})
 	}
 }
 

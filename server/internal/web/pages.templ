@@ -1,6 +1,7 @@
 package web
 
 import (
+	"maps"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -19,13 +20,18 @@ type authForm struct {
 	Error         string
 }
 
-// ariaInvalid marks a control invalid when its field has an error message.
-func ariaInvalid(message string) templ.Attributes {
-	if message == "" {
-		return nil
+// ariaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
+func ariaInvalid(message string, attributes ...templ.Attributes) templ.Attributes {
+	all := templ.Attributes{}
+	for _, a := range attributes {
+		maps.Copy(all, a)
 	}
 
-	return templ.Attributes{"aria-invalid": "true"}
+	if message != "" {
+		all["aria-invalid"] = "true"
+	}
+
+	return all
 }
 
 // figlet is PRATA in the ANSI Shadow font.

@@ -80,7 +80,7 @@ templ recurrenceSheet(form recurrenceForm) {
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
 			@hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
-				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: templ.Attributes{"min": 1, "max": 31, "aria-invalid": utils.IfElse(form.Errors["day"] == "", "false", "true")}})
+				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
 			}
 			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
 				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {

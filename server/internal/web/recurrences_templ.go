@@ -421,7 +421,7 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: templ.Attributes{"min": 1, "max": 31, "aria-invalid": utils.IfElse(form.Errors["day"] == "", "false", "true")}}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

@@ -25,7 +25,7 @@ func TestWebLaunch_CreatesTheTransactionAndSwapsTheMonth(t *testing.T) {
 	response := w.submit(http.MethodPost, "/launch", form, tz)
 	fragment := response.Body.String()
 	if response.Code != http.StatusOK || strings.Contains(fragment, "<html") || strings.Count(fragment, "data-flash") != 1 ||
-		!strings.Contains(fragment, "padaria") || !strings.Contains(fragment, "= Projetado") || !strings.Contains(fragment, "Mercado ✕") {
+		!strings.Contains(fragment, "padaria") || !strings.Contains(fragment, "= Projetado") || !strings.Contains(fragment, "Mercado</span> ✕</a>") {
 		t.Errorf("launch = %d, want the boxes and the statement, still filtered, with the new row flashing: %s", response.Code, fragment)
 	}
 
