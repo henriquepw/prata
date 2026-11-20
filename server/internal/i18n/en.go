@@ -119,7 +119,7 @@ var en = map[string]string{
 	"field.tag":           "Tag",
 	"field.no_tag":        "No tag",
 	"field.start":         "Start",
-	"field.end":           "End (optional)",
+	"field.end":           "End",
 	"form.error.name":     "Enter a name.",
 	"form.error.amount":   "Enter an amount greater than zero.",
 	"form.error.kind":     "Choose the kind.",
@@ -130,14 +130,22 @@ var en = map[string]string{
 	"form.error.end":      "Enter an end on or after the start.",
 	"form.error.rejected": "Could not save. Reload the page and try again.",
 
+	// Hints, quick dates and inline confirmations of the sheets.
+	"field.no_description": "no description",
+	"field.end_hint":       "empty = no end",
+	"date.today":           "today",
+	"date.yesterday":       "yesterday",
+	"sheet.confirm_delete": "yes, delete",
+	"confirm.no":           "no",
+
 	// Categories.
 	"categories.empty":               "no categories yet",
 	"categories.monthly_limit":       "Monthly limit",
-	"categories.monthly_limit_field": "Monthly limit (0 = no limit)",
+	"categories.monthly_limit_hint":  "empty = no limit",
 	"categories.no_limit":            "no limit",
 	"categories.new":                 "New category",
 	"categories.edit":                "Edit category",
-	"categories.confirm_delete":      "Delete this category? Its transactions will show as No category.",
+	"categories.confirm_delete":      "delete this category? Its transactions will show as no category.",
 	"categories.color":               "Color",
 	"categories.error.color":         "Choose a color.",
 	"categories.error.monthly_limit": "Enter a limit of zero or more.",
@@ -154,17 +162,16 @@ var en = map[string]string{
 	"tags.between":        "%s to %s",
 	"tags.new":            "New tag",
 	"tags.edit":           "Edit tag",
-	"tags.confirm_delete": "Delete this tag? Its transactions will show without a tag.",
+	"tags.confirm_delete": "delete this tag? Its transactions will show without a tag.",
 
 	// Recurrences.
 	"recurrences.empty":          "no recurrences yet",
 	"recurrences.day":            "Day",
-	"recurrences.no_description": "No description",
 	"recurrences.every_month":    "day %s of every month",
 	"recurrences.new":            "New recurrence",
 	"recurrences.edit":           "Edit recurrence",
-	"recurrences.confirm_delete": "Delete this recurrence? It stops generating pending occurrences; the confirmed transactions stay.",
-	"recurrences.day_field":      "Day of the month (1 to 31)",
+	"recurrences.confirm_delete": "delete this recurrence? It stops generating pending occurrences; the confirmed transactions stay.",
+	"recurrences.day_hint":       "1 to 31; 31 falls on the last day",
 	"recurrences.error.day":      "Enter a day from 1 to 31.",
 
 	// Transactions.
@@ -176,7 +183,7 @@ var en = map[string]string{
 	"transactions.empty":          "no transactions this month",
 	"transactions.new":            "New transaction",
 	"transactions.edit":           "Edit transaction",
-	"transactions.confirm_delete": "Delete this transaction? It disappears from the lists and balances on every device.",
+	"transactions.confirm_delete": "delete this transaction? It disappears from the lists and balances on every device.",
 
 	// Activity log: entity and op kind, as in `transaction "Uber" created`.
 	"activity.title":              "Activity log",
@@ -208,5 +215,6 @@ var en = map[string]string{
 	"devices.created_at":     "Created at",
 	"devices.never":          "never",
 	"devices.revoke":         "Revoke",
-	"devices.confirm_revoke": "Revoke the access of %s? It stops syncing until it signs in again.",
+	"devices.confirm_revoke": "revoke %s?",
+	"devices.revoke_yes":     "yes, revoke",
 }

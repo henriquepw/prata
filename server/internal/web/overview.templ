@@ -103,7 +103,7 @@ templ homePage(s shell, page overview) {
 										{ shortDate(ctx, pending.Date) }
 									}
 									@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-										{ orEmpty(pending.Recurrence.Description) }
+										@description(pending.Recurrence.Description)
 										if pending.Overdue {
 											@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 												{ i18n.T(ctx, "overview.overdue") }

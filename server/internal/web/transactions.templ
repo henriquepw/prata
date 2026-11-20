@@ -86,7 +86,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 											{ formatDate(transaction.OccurredAt, s.Now.Location(), dateLayout(ctx)) }
 										}
 										@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-											{ orEmpty(transaction.Description) }
+											@description(transaction.Description)
 										}
 										@table.Cell(table.CellProps{Class: "hide-m"}) {
 											@categoryName(transaction.CategoryName, transaction.CategoryColor)
@@ -119,18 +119,13 @@ templ transactionSheet(form transactionForm) {
 		Confirm:   i18n.T(ctx, "transactions.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
+		@kindChoice(form.Kind, form.Errors["kind"])
+		@amountField(form.Amount, form.Errors["amount"])
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		@formField("amount", i18n.T(ctx, "field.amount"), form.Errors["amount"]) {
-			@currencyPrefix() {
-				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
-			}
-		}
 		<div class="grid grid-cols-2 gap-[2ch]">
-			@formField("occurred_at", i18n.T(ctx, "field.date"), form.Errors["occurred_at"]) {
-				@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
-			}
+			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
 			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
 				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
 					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
@@ -144,7 +139,6 @@ templ transactionSheet(form transactionForm) {
 				}
 			}
 		</div>
-		@kindChoice(form.Kind, form.Errors["kind"])
 		@formField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}) {
 				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {

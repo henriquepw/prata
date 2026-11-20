@@ -119,7 +119,7 @@ var ptBR = map[string]string{
 	"field.tag":           "Tag",
 	"field.no_tag":        "Sem tag",
 	"field.start":         "Início",
-	"field.end":           "Fim (opcional)",
+	"field.end":           "Fim",
 	"form.error.name":     "Informe um nome.",
 	"form.error.amount":   "Informe um valor maior que zero.",
 	"form.error.kind":     "Escolha o tipo.",
@@ -130,14 +130,22 @@ var ptBR = map[string]string{
 	"form.error.end":      "Informe um fim igual ou depois do início.",
 	"form.error.rejected": "Não foi possível salvar. Recarregue a página e tente de novo.",
 
+	// Hints, quick dates and inline confirmations of the sheets.
+	"field.no_description": "sem descrição",
+	"field.end_hint":       "vazio = sem fim",
+	"date.today":           "hoje",
+	"date.yesterday":       "ontem",
+	"sheet.confirm_delete": "sim, excluir",
+	"confirm.no":           "não",
+
 	// Categories.
 	"categories.empty":               "nenhuma categoria ainda",
 	"categories.monthly_limit":       "Limite mensal",
-	"categories.monthly_limit_field": "Limite mensal (0 = sem limite)",
+	"categories.monthly_limit_hint":  "vazio = sem limite",
 	"categories.no_limit":            "sem limite",
 	"categories.new":                 "Nova categoria",
 	"categories.edit":                "Editar categoria",
-	"categories.confirm_delete":      "Excluir esta categoria? As transações dela passam a aparecer como Sem categoria.",
+	"categories.confirm_delete":      "excluir esta categoria? As transações dela passam a aparecer como sem categoria.",
 	"categories.color":               "Cor",
 	"categories.error.color":         "Escolha uma cor.",
 	"categories.error.monthly_limit": "Informe um limite maior ou igual a zero.",
@@ -154,17 +162,16 @@ var ptBR = map[string]string{
 	"tags.between":        "%s a %s",
 	"tags.new":            "Nova tag",
 	"tags.edit":           "Editar tag",
-	"tags.confirm_delete": "Excluir esta tag? As transações dela passam a aparecer sem tag.",
+	"tags.confirm_delete": "excluir esta tag? As transações dela passam a aparecer sem tag.",
 
 	// Recurrences.
 	"recurrences.empty":          "nenhuma recorrência ainda",
 	"recurrences.day":            "Dia",
-	"recurrences.no_description": "Sem descrição",
 	"recurrences.every_month":    "todo dia %s",
 	"recurrences.new":            "Nova recorrência",
 	"recurrences.edit":           "Editar recorrência",
-	"recurrences.confirm_delete": "Excluir esta recorrência? Ela para de gerar pendentes; as transações já confirmadas continuam.",
-	"recurrences.day_field":      "Dia do mês (1 a 31)",
+	"recurrences.confirm_delete": "excluir esta recorrência? Ela para de gerar pendentes; as transações já confirmadas continuam.",
+	"recurrences.day_hint":       "de 1 a 31; 31 cai no último dia",
 	"recurrences.error.day":      "Informe um dia de 1 a 31.",
 
 	// Transactions.
@@ -176,7 +183,7 @@ var ptBR = map[string]string{
 	"transactions.empty":          "nenhuma transação neste mês",
 	"transactions.new":            "Nova transação",
 	"transactions.edit":           "Editar transação",
-	"transactions.confirm_delete": "Excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
+	"transactions.confirm_delete": "excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
 
 	// Activity log: entity and op kind, as in `transação "Uber" criada`.
 	"activity.title":              "Log de atividade",
@@ -208,5 +215,6 @@ var ptBR = map[string]string{
 	"devices.created_at":     "Criado em",
 	"devices.never":          "nunca",
 	"devices.revoke":         "Revogar",
-	"devices.confirm_revoke": "Revogar o acesso de %s? Ele para de sincronizar até entrar de novo.",
+	"devices.confirm_revoke": "revogar %s?",
+	"devices.revoke_yes":     "sim, revogar",
 }

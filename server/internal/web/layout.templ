@@ -8,7 +8,6 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
-	"github.com/henriquepw/prata/server/internal/web/components/field"
 )
 
 // shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
@@ -281,15 +280,7 @@ templ currencyPrefix() {
 
 // formField is one sheet field: label, the control as children and its error message.
 templ formField(id, label, message string) {
-	@field.Field() {
-		@field.Label(field.LabelProps{For: id}) {
-			{ label }
-		}
+	@hintField(id, label, "", message) {
 		{ children... }
-		if message != "" {
-			@field.Error() {
-				{ message }
-			}
-		}
 	}
 }

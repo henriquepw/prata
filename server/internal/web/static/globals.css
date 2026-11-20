@@ -809,9 +809,10 @@
     margin-bottom: 0;
   }
 
-  /* Short choice ([despesa] [receita]): radios drawn as buttons, the checked one inverted. */
+  /* Short choice ([despesa] [receita], [■ verde]): radios drawn as buttons that wrap, the checked one inverted. */
   .choice {
     display: flex;
+    flex-wrap: wrap;
     gap: 1ch;
   }
 
@@ -820,7 +821,7 @@
     opacity: 0;
   }
 
-  .choice span {
+  .choice input + span {
     display: block;
     padding: 0.25rem 1.4ch;
     border: 1px solid var(--line);
@@ -833,7 +834,7 @@
       color var(--snap) var(--ease);
   }
 
-  .choice span:hover,
+  .choice input + span:hover,
   .choice input:checked + span {
     border-color: var(--foreground);
     background: var(--foreground);
@@ -845,7 +846,7 @@
     outline-offset: 2px;
   }
 
-  .choice[aria-invalid="true"] span {
+  .choice[aria-invalid="true"] input + span {
     border-color: var(--destructive);
   }
 

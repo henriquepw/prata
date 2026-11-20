@@ -26,8 +26,8 @@ func TestWebEnglish_Categories(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	id := w.newOps()[0].EntityID
 	w.assertBody("/categories", "Mercado", "Name", "Monthly limit", "no limit")
-	w.assertBody("/categories/"+id, "Edit category", "Color", "Green", "Monthly limit (0 = no limit)", "Cancel", "Delete",
-		"Delete this category? Its transactions will show as No category.", "&gt; Save", `data-busy="saving"`, `aria-label="Close"`)
+	w.assertBody("/categories/"+id, "Edit category", "Color", "green", "Monthly limit", "empty = no limit", "Cancel", "Delete",
+		"delete this category? Its transactions will show as no category.", "yes, delete", "no", "&gt; Save", `data-busy="saving"`, `aria-label="Close"`)
 	w.assertBody("/categories/new", "New category")
 }
 
@@ -40,7 +40,8 @@ func TestWebEnglish_Tags(t *testing.T) {
 	id := w.newOps()[0].EntityID
 	w.mustSubmit(http.MethodPost, "/tags", tagForm("Natal", "2026-12-01", "2026-12-31"), tz)
 	w.assertBody("/tags", "#Viagem", "Name", "Period", "since 01/07/2026", "01/12/2026 to 31/12/2026")
-	w.assertBody("/tags/"+id, "Edit tag", "Start", "End (optional)", "Delete this tag? Its transactions will show without a tag.")
+	w.assertBody("/tags/"+id, "Edit tag", "Start", "[today]", "[yesterday]", "End", "empty = no end",
+		"delete this tag? Its transactions will show without a tag.")
 	w.assertBody("/tags/new", "New tag")
 }
 
@@ -51,10 +52,10 @@ func TestWebEnglish_Recurrences(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("Aluguel", "OUTCOME", "1.500", "", "5", "2026-01-01", ""))
 	id := w.newOps()[0].EntityID
 	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("", "INCOME", "10", "", "31", "2026-01-01", ""))
-	w.assertBody("/recurrences", "Aluguel", "No description", "Description", "Day", "Amount", "day 5 of every month")
+	w.assertBody("/recurrences", "Aluguel", "no description", "Description", "Day", "Amount", "day 5 of every month")
 	w.assertBody("/recurrences/"+id, "Edit recurrence", "Description", "Kind", "Amount", "Category", "No category",
-		"Day of the month (1 to 31)", "Start", "End (optional)",
-		"Delete this recurrence? It stops generating pending occurrences; the confirmed transactions stay.")
+		"1 to 31; 31 falls on the last day", "Start", "End", "empty = no end",
+		"delete this recurrence? It stops generating pending occurrences; the confirmed transactions stay.")
 	w.assertBody("/recurrences/new", "New recurrence")
 }
 
@@ -71,8 +72,8 @@ func TestWebEnglish_Transactions(t *testing.T) {
 	w.assertBody("/transactions?month=2026-07", "Feira", "Date", "Description", "Category", "Tags", "Amount",
 		`<span class="text-muted-foreground">income</span>`, `<span class="text-muted-foreground">· expenses</span>`,
 		"category &#34;Mercado&#34; created", "tag &#34;Viagem&#34; created", "transaction &#34;Feira&#34; created")
-	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "No category", "Tag", "No tag",
-		"Delete this transaction? It disappears from the lists and balances on every device.")
+	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "No category", "Tag", "No tag", "[today]", "[yesterday]",
+		"delete this transaction? It disappears from the lists and balances on every device.")
 	w.assertBody("/transactions/new", "New transaction")
 }
 
@@ -128,7 +129,7 @@ func TestWebTicker_OverdueCountIsPluralInEachLanguage(t *testing.T) {
 func TestWebEnglish_Devices(t *testing.T) {
 	w := newEnglishClient(t)
 	w.assertBody("/devices", "Devices", "Name", "Last seen", "Created at", "Revoke",
-		"Revoke the access of laptop? It stops syncing until it signs in again.")
+		"revoke laptop?", "yes, revoke")
 }
 
 func TestWebEnglish_ValidationErrorsAre422InEnglish(t *testing.T) {
