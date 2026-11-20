@@ -48,7 +48,7 @@ func (s shell) newURL() string {
 // headScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
-// runs the shortcuts: ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by
+// runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by
 // every word, moves the selection with ↑↓ and runs it with enter; outside fields and dialogs, 1–7 and n click their
 // [data-key] and enter opens the focused row.
 const headScript = `(() => {
@@ -95,6 +95,7 @@ const headScript = `(() => {
     filter('')
   }, true)
   addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
+  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
   addEventListener('keydown', e => {
     const launcher = document.getElementById('launcher')
     if (!launcher) return
