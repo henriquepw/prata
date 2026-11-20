@@ -10,9 +10,9 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"strconv"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -59,7 +59,7 @@ func transactionsPage(s shell, month time.Time, transactions []store.Transaction
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
 		income, outcome := totals(transactions)
-		label := monthNames[month.Month()-1] + " de " + strconv.Itoa(month.Year())
+		label := i18n.T(ctx, "month.year", i18n.T(ctx, "month."+month.Month().String()), month.Year())
 		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)

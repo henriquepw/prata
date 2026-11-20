@@ -22,7 +22,7 @@ func (h handler) categories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, ok := h.shell(w, r, "Categorias")
+	s, ok := h.shell(w, r, "nav.categories")
 	if !ok {
 		return
 	}

@@ -98,7 +98,7 @@ func (h handler) home(w http.ResponseWriter, r *http.Request) {
 // renderOverview reads the overview in the user's time zone: the shell's balance, this month's totals and usage
 // over [from, to) in UTC, and the activity log.
 func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
-	s, ok := h.shell(w, r, "Visão geral")
+	s, ok := h.shell(w, r, "nav.overview")
 	if !ok {
 		return
 	}

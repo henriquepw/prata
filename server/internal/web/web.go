@@ -12,6 +12,7 @@ import (
 	_ "time/tzdata"
 
 	"github.com/a-h/templ"
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
@@ -179,6 +180,7 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 		setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
 		ctx := context.WithValue(r.Context(), sessionKey{}, session)
 		ctx = context.WithValue(ctx, prefsKey{}, prefs{session.Preferences, session.Currency})
+		ctx = i18n.WithLanguage(ctx, session.Language)
 		next(w, r.WithContext(ctx))
 	})
 }
@@ -218,7 +220,8 @@ func redirect(w http.ResponseWriter, r *http.Request, url string) {
 }
 
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
-// now in the user's time zone, and takes the row to flash out of its cookie.
+// now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
+// name, as "nav.settings".
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
 	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
 	balance, err := h.balance(r.Context(), session.AccountID, now)
@@ -227,7 +230,7 @@ func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (sh
 		return shell{}, false
 	}
 
-	s := shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
+	s := shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
 	if cookie, err := r.Cookie(flashCookie); err == nil {
 		s.Flash = cookie.Value
 		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: r.URL.Path, MaxAge: -1})

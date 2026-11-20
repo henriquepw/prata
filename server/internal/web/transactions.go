@@ -13,8 +13,6 @@ import (
 
 const monthLayout = "2006-01"
 
-var monthNames = []string{"janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"}
-
 // monthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
 func monthWindow(t time.Time) (month time.Time, from, to string) {
 	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
@@ -44,7 +42,7 @@ func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, ok := h.shell(w, r, "Transações")
+	s, ok := h.shell(w, r, "nav.transactions")
 	if !ok {
 		return
 	}

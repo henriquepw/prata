@@ -17,7 +17,7 @@ func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, ok := h.shell(w, r, "Tags")
+	s, ok := h.shell(w, r, "nav.tags")
 	if !ok {
 		return
 	}

@@ -11,14 +11,8 @@ import (
 
 // Form helpers shared by the sheets: entries, dates, optional fields and the live options of a select.
 
-// kind is a transaction or recurrence kind with its label.
-type kind struct{ Value, Label string }
-
-var kinds = []kind{{"OUTCOME", "Despesa"}, {"INCOME", "Receita"}}
-
-func isKind(value string) bool {
-	return slices.ContainsFunc(kinds, func(k kind) bool { return k.Value == value })
-}
+// kinds are the transaction and recurrence kinds; each one's label is the i18n key "kind." + kind.
+var kinds = []string{"OUTCOME", "INCOME"}
 
 // parseEntry reads the amount in cents, typed in the request's Formato numérico, and checks the kind every
 // transaction and recurrence has, setting their field errors.
@@ -28,7 +22,7 @@ func parseEntry(ctx context.Context, errs map[string]string, typed, kind string)
 		errs["amount"] = "Informe um valor maior que zero."
 	}
 
-	if !isKind(kind) {
+	if !slices.Contains(kinds, kind) {
 		errs["kind"] = "Escolha o tipo."
 	}
 

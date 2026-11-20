@@ -30,14 +30,20 @@ func prefsFrom(ctx context.Context) prefs {
 	return defaultPrefs
 }
 
-// dateFormat is a Formato de data: its schema value, its label and its Go layout.
-type dateFormat struct{ Value, Label, Layout string }
+// language is an Idioma: its schema value and its name, written in itself.
+type language struct{ Value, Label string }
 
-var dateFormats = []dateFormat{
-	{"DD/MM/YYYY", "DD/MM/AAAA", "02/01/2006"},
-	{"MM/DD/YYYY", "MM/DD/AAAA", "01/02/2006"},
-	{"YYYY-MM-DD", "AAAA-MM-DD", "2006-01-02"},
+var languages = []language{{"pt-BR", "Português (Brasil)"}, {"en", "English"}}
+
+func isLanguage(value string) bool {
+	return slices.ContainsFunc(languages, func(l language) bool { return l.Value == value })
 }
+
+// dateFormat is a Formato de data: its schema value, whose label is the i18n key "date_format." + Value, and its Go
+// layout.
+type dateFormat struct{ Value, Layout string }
+
+var dateFormats = []dateFormat{{"DD/MM/YYYY", "02/01/2006"}, {"MM/DD/YYYY", "01/02/2006"}, {"YYYY-MM-DD", "2006-01-02"}}
 
 // numberFormat is a Formato numérico: its schema value, which is also its label, and its separators.
 type numberFormat struct{ Value, Thousands, Decimal string }

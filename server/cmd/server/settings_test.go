@@ -9,7 +9,14 @@ import (
 )
 
 func settingsForm(dateFormat, numberFormat string) url.Values {
-	return url.Values{"date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}}
+	return url.Values{"language": {"pt-BR"}, "date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}}
+}
+
+// withLanguage sets the form's Idioma.
+func withLanguage(form url.Values, language string) url.Values {
+	form.Set("language", language)
+
+	return form
 }
 
 // assertSelected checks /settings shows each value as the selected option.
@@ -43,7 +50,8 @@ func TestWebSettings_InvalidValueIs422AndSavesNothing(t *testing.T) {
 	for name, form := range map[string]url.Values{
 		"unknown date format":   settingsForm("DD.MM.YYYY", "1,234.56"),
 		"unknown number format": settingsForm("MM/DD/YYYY", "1 234,56"),
-		"unknown currency":      {"date_format": {"MM/DD/YYYY"}, "number_format": {"1,234.56"}, "currency": {"JPY"}},
+		"unknown currency":      {"language": {"pt-BR"}, "date_format": {"MM/DD/YYYY"}, "number_format": {"1,234.56"}, "currency": {"JPY"}},
+		"unknown language":      withLanguage(settingsForm("MM/DD/YYYY", "1,234.56"), "fr"),
 	} {
 		t.Run(name, func(t *testing.T) {
 			response := w.submit(http.MethodPost, "/settings", form)
@@ -52,7 +60,7 @@ func TestWebSettings_InvalidValueIs422AndSavesNothing(t *testing.T) {
 				t.Errorf("POST /settings = %d, want %d with the form flagging the field: %s", response.Code, http.StatusUnprocessableEntity, body)
 			}
 
-			w.assertSelected("DD/MM/YYYY", "1.234,56", "BRL")
+			w.assertSelected("pt-BR", "DD/MM/YYYY", "1.234,56", "BRL")
 		})
 	}
 }
@@ -164,4 +172,28 @@ func TestWebSettings_InLauncherAndNav(t *testing.T) {
 			t.Errorf("home lacks %q: %s", text, body)
 		}
 	}
+}
+
+func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
+	w := newWebClient(t)
+	w.assertBody("/", `<html lang="pt-BR">`)
+	w.mustSubmit(http.MethodPost, "/tags", tagForm("Despesa", "2026-07-01", ""))
+
+	w.mustSubmit(http.MethodPost, "/settings", withLanguage(settingsForm("DD/MM/YYYY", "1.234,56"), "en"))
+	w.assertSelected("en")
+
+	loc, err := time.LoadLocation("America/Sao_Paulo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	w.assertBody("/",
+		`<html lang="en">`, "Overview", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] search",
+		"Go to overview", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
+		"<kbd>1-7</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", time.Now().In(loc).Format("Jan")+"</div>")
+	w.assertBody("/transactions?month=2026-11", "November 2026", "<kbd>n</kbd> new")
+	w.assertBody("/transactions/new", "[expense]", "[income]")
+	w.assertBody("/settings", "Settings", "Preferences", "Language", "Date format", "Number format", "DD/MM/YYYY",
+		"Account", "Currency", "recorded amounts are not converted", "&gt; Save")
+	w.assertBody("/tags", "Despesa")
 }

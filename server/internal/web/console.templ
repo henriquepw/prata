@@ -3,6 +3,7 @@ package web
 import (
 	"strings"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
@@ -138,12 +139,12 @@ templ sheet(p sheetProps) {
 // one inverted.
 templ kindChoice(value, message string) {
 	@field.Field() {
-		<span id="kind-label" class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">Tipo</span>
+		<span id="kind-label" class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">{ i18n.T(ctx, "kind.label") }</span>
 		<div role="radiogroup" aria-labelledby="kind-label" class="choice" { ariaInvalid(message)... }>
 			for _, kind := range kinds {
 				<label>
-					<input type="radio" name="kind" value={ kind.Value } checked?={ kind.Value == value }/>
-					<span>[{ strings.ToLower(kind.Label) }]</span>
+					<input type="radio" name="kind" value={ kind } checked?={ kind == value }/>
+					<span>[{ strings.ToLower(i18n.T(ctx, "kind."+kind)) }]</span>
 				</label>
 			}
 		</div>

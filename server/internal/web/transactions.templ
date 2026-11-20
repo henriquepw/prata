@@ -1,9 +1,9 @@
 package web
 
 import (
-	"strconv"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -34,7 +34,7 @@ func monthURL(month time.Time, offset int) string {
 // transactionsPage lays the month's KPI strip over the Transações panel and, on its right, the activity log.
 templ transactionsPage(s shell, month time.Time, transactions []store.Transaction, activity []store.Activity) {
 	{{ income, outcome := totals(transactions) }}
-	{{ label := monthNames[month.Month()-1] + " de " + strconv.Itoa(month.Year()) }}
+	{{ label := i18n.T(ctx, "month.year", i18n.T(ctx, "month."+month.Month().String()), month.Year()) }}
 	@layout(s) {
 		<div class="transactions">
 			<div class="kpis kpis-3">

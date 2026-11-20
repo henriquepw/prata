@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 )
@@ -22,16 +23,16 @@ type shell struct {
 	Flash   string
 }
 
-// nav is the rail, in the order of the 1–7 shortcuts. NewURL is the screen's "novo" sheet, when it has one, and
-// NewLabel its launcher command.
+// nav is the rail, in the order of the 1–7 shortcuts. Label is the i18n key of the screen's name, which is also
+// its title; NewURL is the screen's "novo" sheet, when it has one, and NewLabel the key of its launcher command.
 var nav = []struct{ Href, Label, NewURL, NewLabel string }{
-	{"/", "Visão geral", "", ""},
-	{"/transactions", "Transações", "/transactions/new", "Nova transação"},
-	{"/categories", "Categorias", "/categories/new", "Nova categoria"},
-	{"/tags", "Tags", "/tags/new", "Nova tag"},
-	{"/recurrences", "Recorrências", "/recurrences/new", "Nova recorrência"},
-	{"/devices", "Dispositivos", "", ""},
-	{"/settings", "Configurações", "", ""},
+	{"/", "nav.overview", "", ""},
+	{"/transactions", "nav.transactions", "/transactions/new", "launcher.new_transaction"},
+	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
+	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
+	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
+	{"/devices", "nav.devices", "", ""},
+	{"/settings", "nav.settings", "", ""},
 }
 
 // newURL is the URL of the current screen's "novo" sheet, empty where there is none.
@@ -125,7 +126,7 @@ const openLauncher = "document.getElementById('launcher')?.showModal()"
 
 templ document(title string) {
 	<!DOCTYPE html>
-	<html lang="pt-BR">
+	<html lang={ i18n.Language(ctx) }>
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -151,49 +152,49 @@ templ layout(s shell) {
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
 					<div class="sbar-right">
 						<time data-clock={ prefsFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>[ctrl k] buscar</button>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.search") }</button>
 					</div>
 				</header>
 				<div class="ticker">
 					<dl>
-						<div><dt>Realizado</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
-						<div><dt>Projetado</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
+						<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, s.Balance.Realized) }</dd></div>
+						<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, s.Balance.Projected) }</dd></div>
 						<div>
-							<dt>Pendentes</dt>
+							<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 							<dd>
 								{ strconv.Itoa(len(s.Balance.Pending)) }
 								if overdue := s.Balance.overdue(); overdue > 0 {
 									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-										{ fmt.Sprintf("[%d atrasada]", overdue) }
+										{ i18n.Plural(ctx, "layout.overdue", overdue) }
 									}
 								}
 							</dd>
 						</div>
 						<div>
-							<dt>Sync</dt>
+							<dt>{ i18n.T(ctx, "layout.sync") }</dt>
 							<dd>
 								@online()
 							</dd>
 						</div>
-						<div class="ticker-user"><dt>Usuário</dt><dd>{ s.Email }</dd></div>
+						<div class="ticker-user"><dt>{ i18n.T(ctx, "layout.user") }</dt><dd>{ s.Email }</dd></div>
 					</dl>
 					<div>
-						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>[tema]</button>
-						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">[sair]</button></form>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
+						<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
 					</div>
 				</div>
-				<nav class="mnav" aria-label="Telas">
+				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range nav {
 						<a
 							href={ templ.SafeURL(item.Href) }
 							if item.Href == s.Path {
 								aria-current="page"
 							}
-						>{ fmt.Sprintf("[%d]%s", i+1, string([]rune(item.Label)[:3])) }</a>
+						>{ fmt.Sprintf("[%d]%s", i+1, string([]rune(i18n.T(ctx, item.Label))[:3])) }</a>
 					}
 				</nav>
 				<div class="console-body">
-					<nav class="rail" aria-label="Telas">
+					<nav class="rail" aria-label={ i18n.T(ctx, "nav.label") }>
 						for i, item := range nav {
 							<a
 								href={ templ.SafeURL(item.Href) }
@@ -201,7 +202,7 @@ templ layout(s shell) {
 								if item.Href == s.Path {
 									aria-current="page"
 								}
-							><span class="text-muted-foreground">{ fmt.Sprintf("%02d", i+1) }</span>{ item.Label }</a>
+							><span class="text-muted-foreground">{ fmt.Sprintf("%02d", i+1) }</span>{ i18n.T(ctx, item.Label) }</a>
 						}
 					</nav>
 					<main>
@@ -209,12 +210,12 @@ templ layout(s shell) {
 					</main>
 				</div>
 				<footer class="keybar">
-					<span><kbd>1-7</kbd> navegar</span>
+					<span><kbd>1-7</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 					if url := s.newURL(); url != "" {
-						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> novo</button></span>
+						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
 					}
-					<span><kbd>ctrl k</kbd> comandos</span>
-					<span><kbd>esc</kbd> fechar</span>
+					<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
+					<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
 				</footer>
 			</div>
 		</div>
@@ -227,15 +228,15 @@ templ layout(s shell) {
 // selects and runs them.
 templ launcher() {
 	{{ n := len(nav) }}
-	<dialog id="launcher" aria-label="Comandos" class="launcher">
+	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher">
 		<div class="panel">
 			<div class="panel-head">
-				<h2 class="panel-title">Comandos</h2>
+				<h2 class="panel-title">{ i18n.T(ctx, "launcher.title") }</h2>
 				<kbd class="text-muted-foreground">esc</kbd>
 			</div>
 			<label class="prompt">
 				<span class="text-primary">&gt;</span>
-				<input type="text" autocomplete="off" spellcheck="false" placeholder="digite um comando" aria-label="Comando" aria-controls="launcher-options"/>
+				<input type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
 			</label>
 			<div id="launcher-options" role="listbox">
 				for i, item := range nav {
@@ -246,7 +247,7 @@ templ launcher() {
 							aria-selected="true"
 						}
 					>
-						<span><span class="option-n">{ fmt.Sprintf("%02d", i+1) }</span> Ir para { strings.ToLower(item.Label) }</span>
+						<span><span class="option-n">{ fmt.Sprintf("%02d", i+1) }</span> { i18n.T(ctx, "launcher.go_to", strings.ToLower(i18n.T(ctx, item.Label))) }</span>
 						<kbd>{ strconv.Itoa(i + 1) }</kbd>
 					</a>
 				}
@@ -254,18 +255,18 @@ templ launcher() {
 					if item.NewURL != "" {
 						{{ n++ }}
 						<button type="button" role="option" hx-get={ item.NewURL } hx-target="#sheet">
-							<span><span class="option-n">{ fmt.Sprintf("%02d", n) }</span> { item.NewLabel }</span>
+							<span><span class="option-n">{ fmt.Sprintf("%02d", n) }</span> { i18n.T(ctx, item.NewLabel) }</span>
 						</button>
 					}
 				}
 				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> Alternar tema</span>
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> { i18n.T(ctx, "launcher.toggle_theme") }</span>
 				</button>
 				<button type="submit" role="option" form="logout">
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> Sair</span>
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> { i18n.T(ctx, "launcher.sign_out") }</span>
 				</button>
 			</div>
-			<p class="launcher-empty text-muted-foreground">¯\_(ツ)_/¯ nenhum comando</p>
+			<p class="launcher-empty text-muted-foreground">¯\_(ツ)_/¯ { i18n.T(ctx, "launcher.empty") }</p>
 		</div>
 	</dialog>
 }

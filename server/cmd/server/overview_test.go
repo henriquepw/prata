@@ -177,7 +177,7 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 	)
 
 	body := get(w.handler, "/categories", w.cookie).Body.String()
-	for _, text := range []string{"R$ 5.000,00", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2 atrasada]", newSignup().Email} {
+	for _, text := range []string{"R$ 5.000,00", "R$ 5.800,00", "Pendentes</dt><dd>3", "[2 atrasadas]", newSignup().Email} {
 		if !strings.Contains(body, text) {
 			t.Errorf("categories ticker lacks %q: %s", text, body)
 		}

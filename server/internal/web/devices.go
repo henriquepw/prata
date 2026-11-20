@@ -16,7 +16,7 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, ok := h.shell(w, r, "Dispositivos")
+	s, ok := h.shell(w, r, "nav.devices")
 	if !ok {
 		return
 	}

@@ -31,7 +31,7 @@ func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, ok := h.shell(w, r, "Recorrências")
+	s, ok := h.shell(w, r, "nav.recurrences")
 	if !ok {
 		return
 	}
