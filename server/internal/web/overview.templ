@@ -67,32 +67,32 @@ templ homePage(s shell, page overview) {
 	@layout(s) {
 		<div class="overview">
 			<div class="kpis">
-				@kpi("Saldo realizado", s.Balance.Realized)
-				@kpi("Saldo projetado", s.Balance.Projected)
-				@kpi("Entradas "+month, page.Income)
-				@kpi("Saídas "+month, -page.Outcome)
+				@kpi(i18n.T(ctx, "overview.realized"), s.Balance.Realized)
+				@kpi(i18n.T(ctx, "overview.projected"), s.Balance.Projected)
+				@kpi(i18n.T(ctx, "overview.income", month), page.Income)
+				@kpi(i18n.T(ctx, "overview.outcome", month), -page.Outcome)
 			</div>
-			@panel("Pendentes", "", nil) {
+			@panel(i18n.T(ctx, "layout.pending"), "", nil) {
 				if page.Error != "" {
 					<p role="alert" class="mb-[1lh] text-destructive">! { page.Error }</p>
 				}
 				if len(s.Balance.Pending) == 0 {
-					@empty("nenhuma ocorrência pendente")
+					@empty(i18n.T(ctx, "overview.no_pending"))
 				} else {
 					@table.Table(table.Props{Class: tightTable}) {
 						@table.Header() {
 							@table.Row() {
 								@table.Head() {
-									Data
+									{ i18n.T(ctx, "field.date") }
 								}
 								@table.Head(table.HeadProps{Class: "w-full"}) {
-									Descrição
+									{ i18n.T(ctx, "field.description") }
 								}
 								@table.Head(table.HeadProps{Class: "text-right"}) {
-									Valor
+									{ i18n.T(ctx, "field.amount") }
 								}
 								@table.Head() {
-									<span class="sr-only">Ação</span>
+									<span class="sr-only">{ i18n.T(ctx, "overview.action") }</span>
 								}
 							}
 						}
@@ -106,11 +106,11 @@ templ homePage(s shell, page overview) {
 										{ orEmpty(pending.Recurrence.Description) }
 										if pending.Overdue {
 											@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-												[atrasada]
+												{ i18n.T(ctx, "overview.overdue") }
 											}
 										} else {
 											@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-												[pendente]
+												{ i18n.T(ctx, "overview.pending") }
 											}
 										}
 									}
@@ -120,7 +120,7 @@ templ homePage(s shell, page overview) {
 									@table.Cell(table.CellProps{Class: "text-right"}) {
 										<form method="post" action={ templ.SafeURL("/recurrences/" + pending.Recurrence.ID + "/occurrences/" + pending.Date) }>
 											@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Size: button.SizeSm}) {
-												confirmar
+												{ i18n.T(ctx, "overview.confirm") }
 											}
 										</form>
 									}
@@ -130,9 +130,9 @@ templ homePage(s shell, page overview) {
 					}
 				}
 			}
-			@panel("Uso por categoria", "", nil) {
+			@panel(i18n.T(ctx, "overview.usage"), "", nil) {
 				if len(page.Usages) == 0 {
-					@empty("nenhuma categoria ainda")
+					@empty(i18n.T(ctx, "categories.empty"))
 				} else {
 					<ul class="usages">
 						for _, usage := range page.Usages {
@@ -150,7 +150,7 @@ templ homePage(s shell, page overview) {
 									if usage.MonthlyLimit > 0 {
 										{ money(ctx, usage.Used) + " / " + money(ctx, usage.MonthlyLimit) }
 									} else {
-										{ money(ctx, usage.Used) } · sem limite
+										{ money(ctx, usage.Used) } · { i18n.T(ctx, "categories.no_limit") }
 									}
 								</div>
 							</li>

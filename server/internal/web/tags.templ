@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
@@ -20,18 +21,18 @@ type tagForm struct {
 templ tagsPage(s shell, tags []store.Tag) {
 	{{ loc := s.Now.Location() }}
 	@layout(s) {
-		@panel("Tags", "", newAction("/tags/new")) {
+		@panel(i18n.T(ctx, "nav.tags"), "", newAction("/tags/new")) {
 			if len(tags) == 0 {
-				@empty("nenhuma tag ainda")
+				@empty(i18n.T(ctx, "tags.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
 						@table.Row() {
 							@table.Head(table.HeadProps{Class: "w-full"}) {
-								Nome
+								{ i18n.T(ctx, "field.name") }
 							}
 							@table.Head(table.HeadProps{Class: "text-right"}) {
-								Período
+								{ i18n.T(ctx, "tags.period") }
 							}
 						}
 					}
@@ -43,9 +44,9 @@ templ tagsPage(s shell, tags []store.Tag) {
 								}
 								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
 									if tag.EndAt == nil {
-										desde { formatDate(tag.StartAt, loc, dateLayout(ctx)) }
+										{ i18n.T(ctx, "tags.since", formatDate(tag.StartAt, loc, dateLayout(ctx))) }
 									} else {
-										{ formatDate(tag.StartAt, loc, dateLayout(ctx)) } a { formatDate(*tag.EndAt, loc, dateLayout(ctx)) }
+										{ i18n.T(ctx, "tags.between", formatDate(tag.StartAt, loc, dateLayout(ctx)), formatDate(*tag.EndAt, loc, dateLayout(ctx))) }
 									}
 								}
 							}
@@ -59,19 +60,19 @@ templ tagsPage(s shell, tags []store.Tag) {
 
 templ tagSheet(form tagForm) {
 	@sheet(sheetProps{
-		Title:     utils.IfElse(form.ID == "", "Nova tag", "Editar tag"),
+		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "tags.new", "tags.edit")),
 		Action:    utils.IfElse(form.ID == "", "/tags", "/tags/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/tags/"+form.ID),
-		Confirm:   "Excluir esta tag? As transações dela passam a aparecer sem tag.",
+		Confirm:   i18n.T(ctx, "tags.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("name", "Nome", form.Errors["name"]) {
+		@formField("name", i18n.T(ctx, "field.name"), form.Errors["name"]) {
 			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
 		}
-		@formField("start_at", "Início", form.Errors["start_at"]) {
+		@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
 			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
 		}
-		@formField("end_at", "Fim (opcional)", form.Errors["end_at"]) {
+		@formField("end_at", i18n.T(ctx, "field.end"), form.Errors["end_at"]) {
 			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
 		}
 	}

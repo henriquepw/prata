@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
@@ -86,20 +87,20 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 	}
 	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	if form.CategoryID != "" && !hasCategory(categories, form.CategoryID) {
-		form.Errors["category_id"] = "Escolha uma categoria."
+		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
 	}
 
 	day, err := strconv.Atoi(form.Day)
 	if err != nil || day < 1 || day > 31 {
-		form.Errors["day"] = "Informe um dia de 1 a 31."
+		form.Errors["day"] = i18n.T(r.Context(), "recurrences.error.day")
 	}
 
 	if !isDate(form.StartAt) {
-		form.Errors["start_at"] = "Informe o início."
+		form.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
 	}
 
 	if form.EndAt != "" && (!isDate(form.EndAt) || form.EndAt < form.StartAt) {
-		form.Errors["end_at"] = "Informe um fim igual ou depois do início."
+		form.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
 	}
 
 	change := store.Change{Entity: "RECURRENCE", EntityID: form.ID, Kind: store.KindUpdate, Fields: map[string]any{

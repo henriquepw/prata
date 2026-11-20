@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
@@ -45,20 +46,20 @@ func (h handler) saveTag(w http.ResponseWriter, r *http.Request) {
 		Errors:  map[string]string{},
 	}
 	if form.Name == "" {
-		form.Errors["name"] = "Informe um nome."
+		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
 	loc := location(r)
 	startAt, ok := parseDate(form.StartAt, loc)
 	if !ok {
-		form.Errors["start_at"] = "Informe o início."
+		form.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
 	}
 
 	var endAt any
 	if form.EndAt != "" {
 		end, ok := parseDate(form.EndAt, loc)
 		if !ok || (startAt != "" && end < startAt) {
-			form.Errors["end_at"] = "Informe um fim igual ou depois do início."
+			form.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
 		}
 
 		endAt = end

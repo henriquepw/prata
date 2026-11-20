@@ -63,7 +63,7 @@ templ decoded(text string) {
 // newAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.
 templ newAction(url string) {
 	@button.Button(button.Props{Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet"}}) {
-		+ nova [n]
+		{ i18n.T(ctx, "list.new") }
 	}
 }
 
@@ -107,7 +107,7 @@ templ sheet(p sheetProps) {
 	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel">
 		<header class="panel-head">
 			<h2 class="panel-title">{ p.Title }</h2>
-			<button type="button" class="lnk" aria-label="Fechar" onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
 		{ children... }
 		if p.Error != "" {
@@ -119,16 +119,16 @@ templ sheet(p sheetProps) {
 			<div>
 				if p.DeleteURL != "" {
 					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet", "hx-confirm": p.Confirm}}) {
-						Excluir
+						{ i18n.T(ctx, "sheet.delete") }
 					}
 				}
 			</div>
 			<div class="flex gap-[1ch]">
 				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
-					Cancelar
+					{ i18n.T(ctx, "sheet.cancel") }
 				}
-				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {
-					<span>&gt; Salvar</span>
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.saving")}}) {
+					<span>&gt; { i18n.T(ctx, "form.save") }</span>
 				}
 			</div>
 		</footer>

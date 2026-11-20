@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -44,7 +45,7 @@ func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
 // "nunca" when it is empty.
 func localTime(ctx context.Context, value string, loc *time.Location) string {
 	if value == "" {
-		return "nunca"
+		return i18n.T(ctx, "devices.never")
 	}
 
 	return formatDate(value, loc, dateLayout(ctx)+" 15:04")

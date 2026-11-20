@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/shared/recurrence"
 	"github.com/oklog/ulid/v2"
@@ -188,7 +189,7 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderOverview(w, r, http.StatusConflict, "Ocorrência já confirmada.")
+	h.renderOverview(w, r, http.StatusConflict, i18n.T(r.Context(), "overview.error.confirmed"))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

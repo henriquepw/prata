@@ -1,6 +1,7 @@
 package web
 
 import (
+	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -38,43 +39,43 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 	@layout(s) {
 		<div class="transactions">
 			<div class="kpis kpis-3">
-				@kpi("Entradas", income)
-				@kpi("Saídas", -outcome)
-				@kpi("Saldo do mês", income-outcome)
+				@kpi(i18n.T(ctx, "transactions.income"), income)
+				@kpi(i18n.T(ctx, "transactions.outcome"), -outcome)
+				@kpi(i18n.T(ctx, "transactions.balance"), income-outcome)
 			</div>
 			<div class="transactions-grid">
-				@panel("Transações", "", newAction("/transactions/new")) {
+				@panel(i18n.T(ctx, "nav.transactions"), "", newAction("/transactions/new")) {
 					<div class="month-bar">
 						<div class="flex items-center gap-[1ch]">
-							<a href={ templ.SafeURL(monthURL(month, -1)) } class="lnk" aria-label="Mês anterior">‹</a>
+							<a href={ templ.SafeURL(monthURL(month, -1)) } class="lnk" aria-label={ i18n.T(ctx, "transactions.previous_month") }>‹</a>
 							<span class="uppercase tracking-[.08em]">{ label }</span>
-							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label="Próximo mês">›</a>
+							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label={ i18n.T(ctx, "transactions.next_month") }>›</a>
 						</div>
 						<div class="hide-m text-xs tabular-nums">
-							<span class="text-muted-foreground">entradas</span> { money(ctx, income) }
-							<span class="text-muted-foreground">· saídas</span> { money(ctx, -outcome) }
+							<span class="text-muted-foreground">{ strings.ToLower(i18n.T(ctx, "transactions.income")) }</span> { money(ctx, income) }
+							<span class="text-muted-foreground">· { strings.ToLower(i18n.T(ctx, "transactions.outcome")) }</span> { money(ctx, -outcome) }
 						</div>
 					</div>
 					if len(transactions) == 0 {
-						@empty("nenhuma transação neste mês")
+						@empty(i18n.T(ctx, "transactions.empty"))
 					} else {
 						@table.Table(table.Props{Class: tightTable}) {
 							@table.Header() {
 								@table.Row() {
 									@table.Head() {
-										Data
+										{ i18n.T(ctx, "field.date") }
 									}
 									@table.Head(table.HeadProps{Class: "w-full"}) {
-										Descrição
+										{ i18n.T(ctx, "field.description") }
 									}
 									@table.Head(table.HeadProps{Class: "hide-m"}) {
-										Categoria
+										{ i18n.T(ctx, "field.category") }
 									}
 									@table.Head(table.HeadProps{Class: "hide-m"}) {
-										Tags
+										{ i18n.T(ctx, "nav.tags") }
 									}
 									@table.Head(table.HeadProps{Class: "text-right"}) {
-										Valor
+										{ i18n.T(ctx, "field.amount") }
 									}
 								}
 							}
@@ -112,28 +113,28 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 
 templ transactionSheet(form transactionForm) {
 	@sheet(sheetProps{
-		Title:     utils.IfElse(form.ID == "", "Nova transação", "Editar transação"),
+		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
 		Action:    utils.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/transactions/"+form.ID),
-		Confirm:   "Excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
+		Confirm:   i18n.T(ctx, "transactions.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("description", "Descrição", form.Errors["description"]) {
+		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		@formField("amount", "Valor", form.Errors["amount"]) {
+		@formField("amount", i18n.T(ctx, "field.amount"), form.Errors["amount"]) {
 			@currencyPrefix() {
 				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["amount"])})
 			}
 		}
 		<div class="grid grid-cols-2 gap-[2ch]">
-			@formField("occurred_at", "Data", form.Errors["occurred_at"]) {
+			@formField("occurred_at", i18n.T(ctx, "field.date"), form.Errors["occurred_at"]) {
 				@input.Input(input.Props{ID: "occurred_at", Name: "occurred_at", Type: "date", Value: form.OccurredAt, Required: true, Attributes: ariaInvalid(form.Errors["occurred_at"])})
 			}
-			@formField("category_id", "Categoria", form.Errors["category_id"]) {
+			@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
 				@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
 					@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-						Sem categoria
+						{ i18n.T(ctx, "field.no_category") }
 					}
 					for _, category := range form.Categories {
 						@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
@@ -144,10 +145,10 @@ templ transactionSheet(form transactionForm) {
 			}
 		</div>
 		@kindChoice(form.Kind, form.Errors["kind"])
-		@formField("tag_id", "Tag", form.Errors["tag_id"]) {
+		@formField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}) {
 				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {
-					Sem tag
+					{ i18n.T(ctx, "field.no_tag") }
 				}
 				for _, tag := range form.Tags {
 					@nativeselect.Option(nativeselect.OptionProps{Value: tag.ID, Selected: tag.ID == form.TagID}) {

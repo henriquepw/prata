@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
@@ -94,15 +95,15 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	occurredAt, ok := parseDate(form.OccurredAt, location(r))
 	if !ok {
-		form.Errors["occurred_at"] = "Informe a data."
+		form.Errors["occurred_at"] = i18n.T(r.Context(), "form.error.date")
 	}
 
 	if form.CategoryID != "" && !hasCategory(form.Categories, form.CategoryID) {
-		form.Errors["category_id"] = "Escolha uma categoria."
+		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
 	}
 
 	if form.TagID != "" && !hasTag(form.Tags, form.TagID) {
-		form.Errors["tag_id"] = "Escolha uma tag."
+		form.Errors["tag_id"] = i18n.T(r.Context(), "form.error.tag")
 	}
 
 	change := store.Change{Entity: "TRANSACTION", EntityID: form.ID, Kind: store.KindUpdate, Fields: map[string]any{

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -25,21 +26,21 @@ type recurrenceForm struct {
 
 templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 	@layout(s) {
-		@panel("Recorrências", "", newAction("/recurrences/new")) {
+		@panel(i18n.T(ctx, "nav.recurrences"), "", newAction("/recurrences/new")) {
 			if len(recurrences) == 0 {
-				@empty("nenhuma recorrência ainda")
+				@empty(i18n.T(ctx, "recurrences.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
 						@table.Row() {
 							@table.Head(table.HeadProps{Class: "w-full"}) {
-								Descrição
+								{ i18n.T(ctx, "field.description") }
 							}
 							@table.Head() {
-								Dia
+								{ i18n.T(ctx, "recurrences.day") }
 							}
 							@table.Head(table.HeadProps{Class: "text-right"}) {
-								Valor
+								{ i18n.T(ctx, "field.amount") }
 							}
 						}
 					}
@@ -47,10 +48,10 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 						for _, recurrence := range recurrences {
 							@table.Row(sheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
 								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-									{ utils.IfElse(recurrence.Description == nil, "Sem descrição", orEmpty(recurrence.Description)) }
+									{ utils.IfElse(recurrence.Description == nil, i18n.T(ctx, "recurrences.no_description"), orEmpty(recurrence.Description)) }
 								}
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-									todo dia { ruleDay(recurrence.Rule) }
+									{ i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
 								}
 								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}) {
 									{ money(ctx, signed(recurrence.Kind, recurrence.Amount)) }
@@ -66,25 +67,25 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 
 templ recurrenceSheet(form recurrenceForm) {
 	@sheet(sheetProps{
-		Title:     utils.IfElse(form.ID == "", "Nova recorrência", "Editar recorrência"),
+		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "recurrences.new", "recurrences.edit")),
 		Action:    utils.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/recurrences/"+form.ID),
-		Confirm:   "Excluir esta recorrência? Ela para de gerar pendentes; as transações já confirmadas continuam.",
+		Confirm:   i18n.T(ctx, "recurrences.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("description", "Descrição", form.Errors["description"]) {
+		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		@kindChoice(form.Kind, form.Errors["kind"])
-		@formField("amount", "Valor", form.Errors["amount"]) {
+		@formField("amount", i18n.T(ctx, "field.amount"), form.Errors["amount"]) {
 			@currencyPrefix() {
 				@input.Input(input.Props{ID: "amount", Name: "amount", Value: form.Amount, Placeholder: amount(ctx, 0), Required: true, Attributes: ariaInvalid(form.Errors["amount"])})
 			}
 		}
-		@formField("category_id", "Categoria", form.Errors["category_id"]) {
+		@formField("category_id", i18n.T(ctx, "field.category"), form.Errors["category_id"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["category_id"])}) {
 				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.CategoryID == ""}) {
-					Sem categoria
+					{ i18n.T(ctx, "field.no_category") }
 				}
 				for _, category := range form.Categories {
 					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == form.CategoryID}) {
@@ -93,13 +94,13 @@ templ recurrenceSheet(form recurrenceForm) {
 				}
 			}
 		}
-		@formField("day", "Dia do mês (1 a 31)", form.Errors["day"]) {
+		@formField("day", i18n.T(ctx, "recurrences.day_field"), form.Errors["day"]) {
 			@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"])})
 		}
-		@formField("start_at", "Início", form.Errors["start_at"]) {
+		@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
 			@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
 		}
-		@formField("end_at", "Fim (opcional)", form.Errors["end_at"]) {
+		@formField("end_at", i18n.T(ctx, "field.end"), form.Errors["end_at"]) {
 			@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: form.EndAt, Attributes: ariaInvalid(form.Errors["end_at"])})
 		}
 	}

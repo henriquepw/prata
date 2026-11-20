@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/a-h/templ"
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
-
-const rejectedMessage = "Não foi possível salvar. Recarregue a página e tente de novo."
 
 func (h handler) categories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.db.Categories(r.Context(), sessionFrom(r.Context()).AccountID)
@@ -49,16 +48,16 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		Errors:       map[string]string{},
 	}
 	if form.Name == "" {
-		form.Errors["name"] = "Informe um nome."
+		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
 	if _, ok := findColor(form.Color); !ok {
-		form.Errors["color"] = "Escolha uma cor."
+		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
 	limit, ok := parseAmount(r.Context(), form.MonthlyLimit)
 	if !ok || limit < 0 {
-		form.Errors["monthly_limit"] = "Informe um limite maior ou igual a zero."
+		form.Errors["monthly_limit"] = i18n.T(r.Context(), "categories.error.monthly_limit")
 	}
 
 	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
@@ -122,7 +121,7 @@ func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[
 
 	if reason != "" {
 		slog.Warn("web changes rejected", "reason", reason)
-		fieldErrors["form"] = rejectedMessage
+		fieldErrors["form"] = i18n.T(r.Context(), "form.error.rejected")
 		render(w, r, http.StatusUnprocessableEntity, sheet)
 		return
 	}

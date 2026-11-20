@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
@@ -9,21 +10,21 @@ import (
 templ devicesPage(s shell, devices []store.Device) {
 	{{ loc := s.Now.Location() }}
 	@layout(s) {
-		@panel("Dispositivos", "", nil) {
+		@panel(i18n.T(ctx, "nav.devices"), "", nil) {
 			if len(devices) == 0 {
-				@empty("nenhum dispositivo conectado")
+				@empty(i18n.T(ctx, "devices.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
 						@table.Row() {
 							@table.Head(table.HeadProps{Class: "w-full"}) {
-								Nome
+								{ i18n.T(ctx, "field.name") }
 							}
 							@table.Head() {
-								Último contato
+								{ i18n.T(ctx, "devices.last_seen") }
 							}
 							@table.Head(table.HeadProps{Class: "hide-m"}) {
-								Criado em
+								{ i18n.T(ctx, "devices.created_at") }
 							}
 							@table.Head()
 						}
@@ -43,9 +44,9 @@ templ devicesPage(s shell, devices []store.Device) {
 								@table.Cell(table.CellProps{Class: "text-right"}) {
 									@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
 										"hx-delete":  "/devices/" + device.ID,
-										"hx-confirm": "Revogar o acesso de " + device.Name + "? Ele para de sincronizar até entrar de novo.",
+										"hx-confirm": i18n.T(ctx, "devices.confirm_revoke", device.Name),
 									}}) {
-										Revogar
+										{ i18n.T(ctx, "devices.revoke") }
 									}
 								}
 							}

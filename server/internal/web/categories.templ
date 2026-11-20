@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -8,15 +9,16 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// categoryColor is a schema color with its label and text color class, spelled out here for Tailwind.
-type categoryColor struct{ Value, Label, Class string }
+// categoryColor is a schema color, whose label is the i18n key "color." + Value, and its text color class, spelled
+// out here for Tailwind.
+type categoryColor struct{ Value, Class string }
 
 var categoryColors = []categoryColor{
-	{"GRAY", "Cinza", "text-cat-gray"},
-	{"RED", "Vermelho", "text-cat-red"},
-	{"YELLOW", "Amarelo", "text-cat-yellow"},
-	{"BLUE", "Azul", "text-cat-blue"},
-	{"GREEN", "Verde", "text-cat-green"},
+	{"GRAY", "text-cat-gray"},
+	{"RED", "text-cat-red"},
+	{"YELLOW", "text-cat-yellow"},
+	{"BLUE", "text-cat-blue"},
+	{"GREEN", "text-cat-green"},
 }
 
 // categoryForm is the category sheet: what the user typed and an error message per field name,
@@ -31,18 +33,18 @@ type categoryForm struct {
 
 templ categoriesPage(s shell, categories []store.Category) {
 	@layout(s) {
-		@panel("Categorias", "", newAction("/categories/new")) {
+		@panel(i18n.T(ctx, "nav.categories"), "", newAction("/categories/new")) {
 			if len(categories) == 0 {
-				@empty("nenhuma categoria ainda")
+				@empty(i18n.T(ctx, "categories.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
 						@table.Row() {
 							@table.Head(table.HeadProps{Class: "w-full"}) {
-								Nome
+								{ i18n.T(ctx, "field.name") }
 							}
 							@table.Head(table.HeadProps{Class: "text-right"}) {
-								Limite mensal
+								{ i18n.T(ctx, "categories.monthly_limit") }
 							}
 						}
 					}
@@ -54,7 +56,7 @@ templ categoriesPage(s shell, categories []store.Category) {
 								}
 								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
 									if category.MonthlyLimit == 0 {
-										sem limite
+										{ i18n.T(ctx, "categories.no_limit") }
 									} else {
 										{ money(ctx, category.MonthlyLimit) }
 									}
@@ -75,25 +77,25 @@ templ categoryName(name, color string) {
 
 templ categorySheet(form categoryForm) {
 	@sheet(sheetProps{
-		Title:     utils.IfElse(form.ID == "", "Nova categoria", "Editar categoria"),
+		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "categories.new", "categories.edit")),
 		Action:    utils.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/categories/"+form.ID),
-		Confirm:   "Excluir esta categoria? As transações dela passam a aparecer como Sem categoria.",
+		Confirm:   i18n.T(ctx, "categories.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@formField("name", "Nome", form.Errors["name"]) {
+		@formField("name", i18n.T(ctx, "field.name"), form.Errors["name"]) {
 			@input.Input(input.Props{ID: "name", Name: "name", Value: form.Name, Required: true, Attributes: ariaInvalid(form.Errors["name"])})
 		}
-		@formField("color", "Cor", form.Errors["color"]) {
+		@formField("color", i18n.T(ctx, "categories.color"), form.Errors["color"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "color", Name: "color", Class: "w-full", Attributes: ariaInvalid(form.Errors["color"])}) {
 				for _, color := range categoryColors {
 					@nativeselect.Option(nativeselect.OptionProps{Value: color.Value, Selected: color.Value == form.Color}) {
-						{ color.Label }
+						{ i18n.T(ctx, "color."+color.Value) }
 					}
 				}
 			}
 		}
-		@formField("monthly_limit", "Limite mensal (0 = sem limite)", form.Errors["monthly_limit"]) {
+		@formField("monthly_limit", i18n.T(ctx, "categories.monthly_limit_field"), form.Errors["monthly_limit"]) {
 			@currencyPrefix() {
 				@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Attributes: ariaInvalid(form.Errors["monthly_limit"])})
 			}
