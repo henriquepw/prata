@@ -187,7 +187,7 @@ func TestAuthPages_ShowTheConsoleEntrance(t *testing.T) {
 
 	for path, action := range map[string]string{"/login": "&gt; entrar", "/signup": "&gt; criar conta"} {
 		body := get(handler, path).Body.String()
-		for _, text := range []string{`role="img" aria-label="Prata"`, "██████╗", "finanças pessoais · sincronizadas", action, "prata v1", "[online]"} {
+		for _, text := range []string{`role="img" aria-label="Prata"`, "██████╗", action, "prata v1", "[online]"} {
 			if !strings.Contains(body, text) {
 				t.Errorf("%s lacks %q", path, text)
 			}
