@@ -1,52 +1,78 @@
 package web
 
 import (
+	"fmt"
+	"strconv"
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/icon"
-	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
-	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// shell is what the authenticated layout needs from the request.
+// shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
+// user's email, the clock's first tick and the ticker's balance.
 type shell struct {
-	Title string
-	Path  string
-	Theme string
+	Title   string
+	Path    string
+	Email   string
+	Now     time.Time
+	Balance balance
 }
 
-var nav = []struct{ Href, Label string }{
-	{"/", "Visão geral"},
-	{"/transactions", "Transações"},
-	{"/categories", "Categorias"},
-	{"/tags", "Tags"},
-	{"/recurrences", "Recorrências"},
-	{"/devices", "Dispositivos"},
+// nav is the rail, in the order of the 1–6 shortcuts. New is the screen's "novo" sheet, when it has one.
+var nav = []struct{ Href, Label, New string }{
+	{"/", "Visão geral", ""},
+	{"/transactions", "Transações", "/transactions/new"},
+	{"/categories", "Categorias", "/categories/new"},
+	{"/tags", "Tags", "/tags/new"},
+	{"/recurrences", "Recorrências", "/recurrences/new"},
+	{"/devices", "Dispositivos", ""},
 }
 
-var themes = []struct{ Value, Label string }{
-	{"system", "Tema do sistema"},
-	{"light", "Tema claro"},
-	{"dark", "Tema escuro"},
+// keys is the keybar: the shortcuts that work on the current screen, "n novo" only where there is a "novo".
+func (s shell) keys() [][2]string {
+	keys := [][2]string{{"1-6", "navegar"}}
+	for _, item := range nav {
+		if item.Href == s.Path && item.New != "" {
+			keys = append(keys, [2]string{"n", "novo"})
+		}
+	}
+
+	return append(keys, [2]string{"ctrl k", "comandos"}, [2]string{"esc", "fechar"})
 }
 
-// headScript applies the theme cookie before the first paint, stores the browser time zone in the tz cookie
-// and opens the #sheet dialog once htmx swaps a form into it.
+// headScript applies the theme cookie before the first paint, stores the browser time zone in the tz cookie,
+// opens the #sheet dialog once htmx swaps a form into it, ticks every [data-clock] (status bar and login footer)
+// and turns the sync dot into a braille spinner while any htmx request is in flight.
 const headScript = `(() => {
   const theme = document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const dark = theme === 'dark' || (theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', dark)
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
   document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => e.textContent = new Date().toLocaleString('pt-BR').replace(',', ''))
+  setInterval(tick, 1000)
+  addEventListener('DOMContentLoaded', tick)
   addEventListener('htmx:after:swap', () => {
+    tick()
     const sheet = document.getElementById('sheet')
     if (sheet?.childElementCount && !sheet.open) sheet.showModal()
   })
+  let requests = 0, frame = 0
+  const spin = () => document.querySelectorAll('[data-spin]').forEach(e => e.textContent = !requests ? '●' : matchMedia('(prefers-reduced-motion: reduce)').matches ? '⠿' : '⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'[frame++ % 10])
+  addEventListener('htmx:before:request', () => { requests++; spin() })
+  addEventListener('htmx:finally:request', () => { requests = Math.max(0, requests - 1); spin() })
+  setInterval(() => requests && spin(), 80)
 })()`
 
 const closeSheet = "this.closest('dialog').close()"
 
-const setTheme = "document.cookie = 'theme=' + this.value + '; path=/; max-age=31536000; samesite=lax'; location.reload()"
+const toggleTheme = "const dark = document.documentElement.classList.toggle('dark'); document.documentElement.style.colorScheme = dark ? 'dark' : 'light'; document.cookie = 'theme=' + (dark ? 'dark' : 'light') + '; path=/; max-age=31536000; samesite=lax'"
+
+// openLauncher opens the ctrl+k launcher, the <dialog id="launcher"> rendered in the layout once it exists.
+const openLauncher = "document.getElementById('launcher')?.showModal()"
 
 templ document(title string) {
 	<!DOCTYPE html>
@@ -65,42 +91,79 @@ templ document(title string) {
 	</html>
 }
 
+// layout is the console chrome around an authenticated page: status bar, ticker, rail (or the mobile nav row),
+// main and keybar. Only main scrolls.
 templ layout(s shell) {
 	@document(s.Title) {
-		<div class="flex min-h-dvh">
-			<aside class="sticky top-0 flex h-dvh w-56 shrink-0 flex-col gap-1 border-r bg-sidebar p-3 text-sidebar-foreground max-sm:hidden">
-				<div class="px-2 py-3 font-semibold tracking-tight">Prata</div>
-				<nav class="flex flex-col gap-1">
-					for _, item := range nav {
+		<div class="console-frame">
+			<div class="console">
+				<header class="sbar">
+					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
+					<div class="sbar-right">
+						<time data-clock>{ s.Now.Format("02/01/2006 15:04:05") }</time>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>[ctrl k] buscar</button>
+					</div>
+				</header>
+				<div class="ticker">
+					<dl>
+						<div><dt>Realizado</dt><dd>{ money(s.Balance.Realized) }</dd></div>
+						<div><dt>Projetado</dt><dd>{ money(s.Balance.Projected) }</dd></div>
+						<div>
+							<dt>Pendentes</dt><dd>
+								{ strconv.Itoa(len(s.Balance.Pending)) }
+								if overdue := s.Balance.overdue(); overdue > 0 {
+									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+										{ fmt.Sprintf("[%d atrasada]", overdue) }
+									}
+								}
+							</dd>
+						</div>
+						<div>
+							<dt>Sync</dt><dd>
+								<span data-spin class="sync-dot">●</span>
+								@badge.Badge(badge.Props{Class: "bg-cat-green text-background"}) {
+									[online]
+								}
+							</dd>
+						</div>
+						<div class="ticker-user"><dt>Usuário</dt><dd>{ s.Email }</dd></div>
+					</dl>
+					<div>
+						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(toggleTheme) }>[tema]</button>
+						<form method="post" action="/logout" class="inline"><button type="submit" class="lnk">[sair]</button></form>
+					</div>
+				</div>
+				<nav class="mnav" aria-label="Telas">
+					for i, item := range nav {
 						<a
 							href={ templ.SafeURL(item.Href) }
 							if item.Href == s.Path {
 								aria-current="page"
 							}
-							class={ utils.CN("px-2 py-1.5 text-sm", utils.IfElse(item.Href == s.Path, "bg-sidebar-accent font-medium text-sidebar-accent-foreground", "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground")) }
-						>
-							{ item.Label }
-						</a>
+						>{ fmt.Sprintf("[%d]%s", i+1, string([]rune(item.Label)[:3])) }</a>
 					}
 				</nav>
-				<div class="mt-auto flex flex-col gap-2">
-					@nativeselect.NativeSelect(nativeselect.Props{Size: nativeselect.SizeSm, Class: "w-full", Attributes: templ.Attributes{"aria-label": "Tema", "onchange": templ.JSUnsafeFuncCall(setTheme)}}) {
-						for _, theme := range themes {
-							@nativeselect.Option(nativeselect.OptionProps{Value: theme.Value, Selected: theme.Value == s.Theme}) {
-								{ theme.Label }
-							}
+				<div class="console-body">
+					<nav class="rail" aria-label="Telas">
+						for i, item := range nav {
+							<a
+								href={ templ.SafeURL(item.Href) }
+								if item.Href == s.Path {
+									aria-current="page"
+								}
+							><span class="text-muted-foreground">{ fmt.Sprintf("%02d", i+1) }</span>{ item.Label }</a>
 						}
-					}
-					<form method="post" action="/logout">
-						@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantGhost, Class: "w-full"}) {
-							Sair
-						}
-					</form>
+					</nav>
+					<main>
+						{ children... }
+					</main>
 				</div>
-			</aside>
-			<main class="max-w-5xl flex-1 p-6 md:p-10">
-				{ children... }
-			</main>
+				<footer class="keybar">
+					for _, key := range s.keys() {
+						<span><kbd>{ key[0] }</kbd> { key[1] }</span>
+					}
+				</footer>
+			</div>
 		</div>
 		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full border-l bg-background p-0 text-foreground shadow-lg backdrop:bg-black/50 sm:max-w-md"></dialog>
 	}

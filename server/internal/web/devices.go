@@ -15,7 +15,12 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, devicesPage(newShell(r, "Dispositivos"), devices, location(r)))
+	s, ok := h.shell(w, r, "Dispositivos")
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, devicesPage(s, devices, location(r)))
 }
 
 func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {

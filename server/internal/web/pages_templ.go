@@ -45,9 +45,9 @@ const figlet = `██████╗ ██████╗  █████╗ 
 ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝`
 
 // authScript draws the ASCII particle field in a diagonal band, sized to the window on every frame and
-// still with reduced motion, and ticks the footer clock. Both stop once a page change detaches them.
+// still with reduced motion. It stops once a page change detaches it. The footer clock ticks from headScript.
 const authScript = `(() => {
-  const pre = document.querySelector('[data-particles]'), clock = document.querySelector('[data-clock]')
+  const pre = document.querySelector('[data-particles]')
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches, CH = ' .·:-=+*#%@'
   const probe = pre.appendChild(document.createElement('span'))
   probe.textContent = 'MMMMMMMMMM'
@@ -71,13 +71,7 @@ const authScript = `(() => {
     t += .08
     if (!still) setTimeout(frame, 90)
   }
-  const tick = () => {
-    if (!clock.isConnected) return
-    clock.textContent = new Date().toLocaleString('pt-BR').replace(',', '')
-    setTimeout(tick, 1000)
-  }
   frame()
-  tick()
   if (still) addEventListener('resize', frame)
 })()`
 
@@ -206,7 +200,7 @@ func authPage(title, action string, form authForm) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(figlet)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 101, Col: 68}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 95, Col: 68}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 			if templ_7745c5c3_Err != nil {
@@ -219,7 +213,7 @@ func authPage(title, action string, form authForm) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 105, Col: 37}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 99, Col: 37}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 			if templ_7745c5c3_Err != nil {
@@ -232,7 +226,7 @@ func authPage(title, action string, form authForm) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(action)).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 107, Col: 55}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 101, Col: 55}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 			if templ_7745c5c3_Err != nil {
@@ -302,7 +296,7 @@ func authPage(title, action string, form authForm) templ.Component {
 					var templ_7745c5c3_Var13 string
 					templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(form.Error)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 116, Col: 20}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 110, Col: 20}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 					if templ_7745c5c3_Err != nil {
@@ -330,7 +324,7 @@ func authPage(title, action string, form authForm) templ.Component {
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs("> " + strings.ToLower(title))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 120, Col: 38}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages.templ`, Line: 114, Col: 38}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 				if templ_7745c5c3_Err != nil {

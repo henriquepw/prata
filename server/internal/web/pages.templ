@@ -36,9 +36,9 @@ const figlet = `██████╗ ██████╗  █████╗ 
 ╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝`
 
 // authScript draws the ASCII particle field in a diagonal band, sized to the window on every frame and
-// still with reduced motion, and ticks the footer clock. Both stop once a page change detaches them.
+// still with reduced motion. It stops once a page change detaches it. The footer clock ticks from headScript.
 const authScript = `(() => {
-  const pre = document.querySelector('[data-particles]'), clock = document.querySelector('[data-clock]')
+  const pre = document.querySelector('[data-particles]')
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches, CH = ' .·:-=+*#%@'
   const probe = pre.appendChild(document.createElement('span'))
   probe.textContent = 'MMMMMMMMMM'
@@ -62,13 +62,7 @@ const authScript = `(() => {
     t += .08
     if (!still) setTimeout(frame, 90)
   }
-  const tick = () => {
-    if (!clock.isConnected) return
-    clock.textContent = new Date().toLocaleString('pt-BR').replace(',', '')
-    setTimeout(tick, 1000)
-  }
   frame()
-  tick()
   if (still) addEventListener('resize', frame)
 })()`
 

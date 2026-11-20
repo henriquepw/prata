@@ -36,7 +36,12 @@ func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, transactionsPage(newShell(r, "Transações"), month, transactions, loc))
+	s, ok := h.shell(w, r, "Transações")
+	if !ok {
+		return
+	}
+
+	render(w, r, http.StatusOK, transactionsPage(s, month, transactions, loc))
 }
 
 func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
