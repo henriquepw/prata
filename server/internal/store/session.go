@@ -142,22 +142,29 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	}, nil
 }
 
-// SavePreferences stores the user's Preferences; the schema refuses values outside its options.
-func (s *Store) SavePreferences(ctx context.Context, userID string, preferences Preferences) error {
+// SaveSettings stores the user's Preferences and the account's Moeda, without converting any amount, in one
+// transaction; the schema refuses values outside their options and then nothing is stored.
+func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, preferences Preferences, currency string) error {
+	tx, err := s.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("starting settings: %w", err)
+	}
+	defer tx.Rollback()
+
+	now := formatTime(time.Now())
 	query := "UPDATE users SET language = ?, date_format = ?, number_format = ?, updated_at = ? WHERE id = ?"
 
-	_, err := s.ExecContext(ctx, query, preferences.Language, preferences.DateFormat, preferences.NumberFormat, formatTime(time.Now()), userID)
+	if _, err := tx.ExecContext(ctx, query, preferences.Language, preferences.DateFormat, preferences.NumberFormat, now, userID); err != nil {
+		return fmt.Errorf("saving preferences: %w", err)
+	}
 
-	return err
-}
+	query = "UPDATE accounts SET currency = ?, updated_at = ? WHERE id = ?"
 
-// SaveCurrency stores the account's Moeda without converting any amount; the schema refuses values outside its options.
-func (s *Store) SaveCurrency(ctx context.Context, accountID, currency string) error {
-	query := "UPDATE accounts SET currency = ?, updated_at = ? WHERE id = ?"
+	if _, err := tx.ExecContext(ctx, query, currency, now, accountID); err != nil {
+		return fmt.Errorf("saving currency: %w", err)
+	}
 
-	_, err := s.ExecContext(ctx, query, currency, formatTime(time.Now()), accountID)
-
-	return err
+	return tx.Commit()
 }
 
 // DeleteSession deletes only the session of this token.

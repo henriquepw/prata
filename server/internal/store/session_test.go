@@ -190,3 +190,27 @@ func TestDeleteSession_OnlyThatSession(t *testing.T) {
 		t.Errorf("other session error = %v, want nil", err)
 	}
 }
+
+func TestSaveSettings_StoresNothingWhenTheMoedaIsRefused(t *testing.T) {
+	db := openWithUser(t)
+	now := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	token, err := db.CreateSession(context.Background(), ownerID, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	preferences := store.Preferences{Language: "en", DateFormat: "YYYY-MM-DD", NumberFormat: "1,234.56"}
+	if err := db.SaveSettings(context.Background(), ownerID, accountID, preferences, "XYZ"); err == nil {
+		t.Fatal("SaveSettings with Moeda XYZ succeeded, want an error")
+	}
+
+	session, err := db.SessionByToken(context.Background(), token, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}
+	if session.Preferences != want || session.Currency != "BRL" {
+		t.Errorf("settings = %+v %q, want %+v %q", session.Preferences, session.Currency, want, "BRL")
+	}
+}

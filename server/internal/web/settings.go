@@ -51,13 +51,8 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.db.SavePreferences(r.Context(), session.UserID, form.Preferences); err != nil {
-		internalError(w, "saving preferences", err)
-		return
-	}
-
-	if err := h.db.SaveCurrency(r.Context(), session.AccountID, form.Currency); err != nil {
-		internalError(w, "saving currency", err)
+	if err := h.db.SaveSettings(r.Context(), session.UserID, session.AccountID, form.Preferences, form.Currency); err != nil {
+		internalError(w, "saving settings", err)
 		return
 	}
 
