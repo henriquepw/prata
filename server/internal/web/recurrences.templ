@@ -52,7 +52,7 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 									todo dia { ruleDay(recurrence.Rule) }
 								}
-								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", utils.IfElse(recurrence.Kind == "INCOME", "text-cat-green", "text-destructive"))}) {
+								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}) {
 									{ money(signed(recurrence.Kind, recurrence.Amount)) }
 								}
 							}

@@ -10,14 +10,12 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
-	"time"
-
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
-func devicesPage(s shell, devices []store.Device, loc *time.Location) templ.Component {
+func devicesPage(s shell, devices []store.Device) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -34,6 +32,7 @@ func devicesPage(s shell, devices []store.Device, loc *time.Location) templ.Comp
 		}
 		ctx = templ.InitializeContext(ctx)
 		ctx = templ.ClearChildren(ctx)
+		loc := s.Now.Location()
 		templ_7745c5c3_Var2 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -222,7 +221,7 @@ func devicesPage(s shell, devices []store.Device, loc *time.Location) templ.Comp
 										var templ_7745c5c3_Var13 string
 										templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(device.Name)
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 36, Col: 22}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 35, Col: 22}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 										if templ_7745c5c3_Err != nil {
@@ -249,7 +248,7 @@ func devicesPage(s shell, devices []store.Device, loc *time.Location) templ.Comp
 										var templ_7745c5c3_Var15 string
 										templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(device.LastSeenAt, loc))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 39, Col: 44}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 38, Col: 44}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 										if templ_7745c5c3_Err != nil {
@@ -276,7 +275,7 @@ func devicesPage(s shell, devices []store.Device, loc *time.Location) templ.Comp
 										var templ_7745c5c3_Var17 string
 										templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(device.CreatedAt, loc))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 42, Col: 43}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 41, Col: 43}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 										if templ_7745c5c3_Err != nil {

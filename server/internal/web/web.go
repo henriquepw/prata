@@ -24,7 +24,7 @@ var static embed.FS
 
 const sessionCookie = "session"
 
-// flashCookie holds the id of the row a sheet just saved, for the next page to flash once.
+// flashCookie holds the id of the row a sheet just saved, scoped to its list's path for that page to flash once.
 const flashCookie = "flash"
 
 type sessionKey struct{}
@@ -109,23 +109,24 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		form.PasswordError = "Informe uma senha."
 	}
 
-	if form.EmailError != "" || form.PasswordError != "" {
-		render(w, r, http.StatusUnprocessableEntity, signupPage(form))
-		return
+	if form.EmailError == "" && form.PasswordError == "" {
+		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
+		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
+		switch {
+		case errors.Is(err, store.ErrSignupClosed):
+			form.Error = "Cadastro fechado nesta instalação."
+		case errors.Is(err, store.ErrDuplicateID):
+			form.EmailError = "Este e-mail já tem conta."
+		case err != nil:
+			internalError(w, "creating account", err)
+			return
+		default:
+			h.startSession(w, r, signup.OwnerID)
+			return
+		}
 	}
 
-	signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
-	_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
-	switch {
-	case errors.Is(err, store.ErrSignupClosed):
-		render(w, r, http.StatusUnprocessableEntity, signupPage(authForm{Email: email, Error: "Cadastro fechado nesta instalação."}))
-	case errors.Is(err, store.ErrDuplicateID):
-		render(w, r, http.StatusUnprocessableEntity, signupPage(authForm{Email: email, EmailError: "Este e-mail já tem conta."}))
-	case err != nil:
-		internalError(w, "creating account", err)
-	default:
-		h.startSession(w, r, signup.OwnerID)
-	}
+	render(w, r, http.StatusUnprocessableEntity, signupPage(form))
 }
 
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {
@@ -225,7 +226,7 @@ func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (sh
 	s := shell{Title: title, Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
 	if cookie, err := r.Cookie(flashCookie); err == nil {
 		s.Flash = cookie.Value
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: "/", MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: r.URL.Path, MaxAge: -1})
 	}
 
 	return s, true

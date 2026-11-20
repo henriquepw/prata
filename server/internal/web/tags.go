@@ -22,7 +22,7 @@ func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, tagsPage(s, tags, location(r)))
+	render(w, r, http.StatusOK, tagsPage(s, tags))
 }
 
 func (h handler) editTag(w http.ResponseWriter, r *http.Request) {

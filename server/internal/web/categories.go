@@ -104,7 +104,8 @@ func (h handler) category(w http.ResponseWriter, r *http.Request) (store.Categor
 
 // commit is the end of every sheet submit: with field errors, or when CommitChanges rejects the changes,
 // it answers 422 with the sheet (fieldErrors["form"] set on rejection) and writes nothing; otherwise it commits
-// and asks htmx to reload the page, flashing the first change's row unless it was deleted. The sheet must render
+// and asks htmx to reload the page, flashing the first change's row unless it was deleted; only its list reads the
+// flash, so a sheet opened from another screen leaves it for when the list opens. The sheet must render
 // from fieldErrors, so the rejection shows up in it.
 func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[string]string, sheet templ.Component, changes ...store.Change) {
 	if len(fieldErrors) > 0 {
@@ -126,11 +127,16 @@ func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[
 	}
 
 	if changes[0].Kind != store.KindDelete {
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: "/", MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: listPath(r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// listPath is the list a sheet submit belongs to, as "/transactions" for POST /transactions/{id}.
+func listPath(r *http.Request) string {
+	return "/" + strings.Split(r.URL.Path, "/")[1]
 }
 
 func findColor(value string) (categoryColor, bool) {

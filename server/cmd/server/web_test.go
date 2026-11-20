@@ -192,6 +192,10 @@ func TestAuthPages_ShowTheConsoleEntrance(t *testing.T) {
 				t.Errorf("%s lacks %q", path, text)
 			}
 		}
+
+		if strings.Contains(body, `aria-invalid="`) {
+			t.Errorf("%s marks a field before any error: %s", path, body)
+		}
 	}
 }
 

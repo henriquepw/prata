@@ -73,6 +73,8 @@
   --line-soft: color-mix(in oklab, var(--foreground) 9%, transparent);
   --line: color-mix(in oklab, var(--foreground) 18%, transparent);
   --line-strong: color-mix(in oklab, var(--foreground) 45%, transparent);
+  /* Behind the launcher and the sheet: the page fades toward the background in both themes. */
+  --scrim: color-mix(in oklab, var(--background) 70%, transparent);
   --snap: 90ms; /* hover, focus, selection */
   --move: 170ms; /* entries */
   --swap: 210ms; /* page change, sheet */
@@ -307,7 +309,7 @@
   }
 
   .launcher::backdrop {
-    background: rgb(0 0 0 / 0.45);
+    background: var(--scrim);
     backdrop-filter: blur(2px);
   }
 
@@ -478,10 +480,20 @@
     border-right: 0;
   }
 
+  /* Sync dot: "●", and the braille spinner while any htmx request is in flight. */
   .sync-dot {
     display: inline-block;
     width: 1ch;
     color: var(--cat-green);
+  }
+
+  .sync-dot::before {
+    content: "●";
+  }
+
+  body:has(.htmx-request) .sync-dot::before {
+    content: "⠋";
+    animation: braille 0.8s steps(1) infinite;
   }
 
   .console-body {
@@ -636,7 +648,7 @@
     }
   }
 
-  /* Segmented meter: 20 <i> of the category color in --c, .on filled and .over past the limit. */
+  /* Segmented meter: 20 <i>, empty, filled in the category color class or .over past the limit. */
   .meter {
     display: flex;
     gap: 3px;
@@ -646,15 +658,12 @@
 
   .meter > i {
     flex: 1;
-    background: var(--line-soft);
-  }
-
-  .meter > i.on {
-    background: var(--c);
+    color: var(--line-soft);
+    background: currentColor;
   }
 
   .meter > i.over {
-    background: var(--destructive);
+    color: var(--destructive);
   }
 
   /* Overview: the KPI strip, Pendentes and Uso por categoria in the main column, the activity log down the right. */
@@ -725,7 +734,8 @@
   /* Busy submit: while its form's htmx request is in flight, a braille spinner runs before the label, and a
      data-busy replaces the label, as in "⠋ salvando". */
   .htmx-request [type="submit"]::before {
-    content: "⠋ ";
+    content: "⠋";
+    margin-inline-end: 1ch;
     animation: braille 0.8s steps(1) infinite;
   }
 
@@ -778,7 +788,7 @@
   }
 
   .sheet::backdrop {
-    background: rgb(0 0 0 / 0.45);
+    background: var(--scrim);
   }
 
   .sheet-panel {
@@ -987,31 +997,31 @@ dialog.sheet[open] {
 
 @keyframes braille {
   10% {
-    content: "⠙ ";
+    content: "⠙";
   }
   20% {
-    content: "⠹ ";
+    content: "⠹";
   }
   30% {
-    content: "⠸ ";
+    content: "⠸";
   }
   40% {
-    content: "⠼ ";
+    content: "⠼";
   }
   50% {
-    content: "⠴ ";
+    content: "⠴";
   }
   60% {
-    content: "⠦ ";
+    content: "⠦";
   }
   70% {
-    content: "⠧ ";
+    content: "⠧";
   }
   80% {
-    content: "⠇ ";
+    content: "⠇";
   }
   90% {
-    content: "⠏ ";
+    content: "⠏";
   }
 }
 

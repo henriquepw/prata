@@ -1,17 +1,21 @@
 package web
 
 import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
-// decodeScript scrambles every [data-decode] (panel titles and KPI values) into the real value in its aria-label
-// within 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion
-// leaves the value as rendered.
+// decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
+// 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion leaves the
+// value as rendered.
 const decodeScript = `(() => {
   const scramble = c => /\d/.test(c) ? Math.random() * 10 | 0 : /\p{L}/u.test(c) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.random() * 26 | 0] : c
   const decode = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelectorAll('[data-decode]').forEach(e => {
-    const value = e.getAttribute('aria-label'), start = performance.now()
+    const value = e.textContent, start = performance.now()
     e.removeAttribute('data-decode')
     const step = now => {
       const n = Math.floor(Math.min(1, (now - start) / 300) * value.length)
@@ -29,7 +33,9 @@ const decodeScript = `(() => {
 templ panel(title, class string, action templ.Component) {
 	<section class={ "panel", class }>
 		<header class="panel-head">
-			<h2 class="panel-title" data-decode aria-label={ title }>{ title }</h2>
+			<h2 class="panel-title">
+				@decoded(title)
+			</h2>
 			if action != nil {
 				@action
 			}
@@ -41,9 +47,16 @@ templ panel(title, class string, action templ.Component) {
 // kpi is a loose KPI box: the decoded amount over its label.
 templ kpi(label string, cents int64) {
 	<div class="kpi">
-		<div class="kpi-value" data-decode aria-label={ money(cents) }>{ money(cents) }</div>
+		<div class="kpi-value">
+			@decoded(money(cents))
+		</div>
 		<div class="kpi-label">{ label }</div>
 	</div>
+}
+
+// decoded is text that decodes on screen: screen readers read it from the sr-only copy and skip the scramble.
+templ decoded(text string) {
+	<span class="sr-only">{ text }</span><span aria-hidden="true" data-decode>{ text }</span>
 }
 
 // newAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.
@@ -61,4 +74,83 @@ templ empty(text string) {
 // sheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
 func sheetRow(url string, flash bool) table.RowProps {
 	return table.RowProps{Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet", "tabindex": "0", "data-flash": flash}}
+}
+
+// online is the server status of the ticker and the login footer, "● [online]"; the dot turns into the braille
+// spinner, in CSS, while any htmx request is in flight.
+templ online() {
+	<span class="inline-flex items-center gap-[1ch]">
+		<span class="sync-dot" aria-hidden="true"></span>
+		@badge.Badge(badge.Props{Class: "bg-cat-green text-background"}) {
+			[online]
+		}
+	</span>
+}
+
+const closeSheet = "this.closest('dialog').close()"
+
+// sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir" asking Confirm first;
+// Error is a form-level message, such as a rejected commit.
+type sheetProps struct {
+	Title     string
+	Action    string
+	DeleteURL string
+	Confirm   string
+	Error     string
+}
+
+// sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
+// fields as children, then "excluir" on the left and "cancelar" and "> salvar" on the right; while saving, the
+// submit reads "⠋ salvando". Every response, a 422 included, swaps into #sheet.
+templ sheet(p sheetProps) {
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel">
+		<header class="panel-head">
+			<h2 class="panel-title">{ p.Title }</h2>
+			<button type="button" class="lnk" aria-label="Fechar" onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+		</header>
+		{ children... }
+		if p.Error != "" {
+			@field.Error() {
+				{ p.Error }
+			}
+		}
+		<footer class="mt-auto flex justify-between gap-[1ch]">
+			<div>
+				if p.DeleteURL != "" {
+					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet", "hx-confirm": p.Confirm}}) {
+						Excluir
+					}
+				}
+			</div>
+			<div class="flex gap-[1ch]">
+				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+					Cancelar
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": "salvando"}}) {
+					<span>&gt; Salvar</span>
+				}
+			</div>
+		</footer>
+	</form>
+}
+
+// kindChoice is the [despesa] [receita] choice of a transaction or recurrence: radios drawn as buttons, the checked
+// one inverted.
+templ kindChoice(value, message string) {
+	@field.Field() {
+		<span id="kind-label" class="text-[11px] uppercase tracking-[.1em] text-muted-foreground">Tipo</span>
+		<div role="radiogroup" aria-labelledby="kind-label" class="choice" { ariaInvalid(message)... }>
+			for _, kind := range kinds {
+				<label>
+					<input type="radio" name="kind" value={ kind.Value } checked?={ kind.Value == value }/>
+					<span>[{ strings.ToLower(kind.Label) }]</span>
+				</label>
+			}
+		</div>
+		if message != "" {
+			@field.Error() {
+				{ message }
+			}
+		}
+	}
 }

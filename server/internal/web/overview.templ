@@ -57,6 +57,9 @@ func percent(usage store.CategoryUsage) string {
 	return strconv.FormatInt((usage.Used*100+usage.MonthlyLimit/2)/usage.MonthlyLimit, 10) + "%"
 }
 
+// tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
+const tightTable = "@max-[640px]:[&_:is(td,th)]:px-1"
+
 // shortDate writes a pure "YYYY-MM-DD" date as "DD/MM/YYYY".
 func shortDate(date string) string {
 	t, _ := time.Parse(time.DateOnly, date)
@@ -67,13 +70,14 @@ func shortDate(date string) string {
 // homePage lays the KPI strip, Pendentes and Uso por categoria in the main column and the activity log down the
 // right, or last on mobile.
 templ homePage(s shell, page overview) {
+	{{ month := monthNames[page.Month.Month()-1][:3] }}
 	@layout(s) {
 		<div class="overview">
 			<div class="kpis">
 				@kpi("Saldo realizado", s.Balance.Realized)
 				@kpi("Saldo projetado", s.Balance.Projected)
-				@kpi("Entradas "+monthNames[page.Month.Month()-1][:3], page.Income)
-				@kpi("Saídas "+monthNames[page.Month.Month()-1][:3], -page.Outcome)
+				@kpi("Entradas "+month, page.Income)
+				@kpi("Saídas "+month, -page.Outcome)
 			</div>
 			@panel("Pendentes", "", nil) {
 				if page.Error != "" {
@@ -82,7 +86,7 @@ templ homePage(s shell, page overview) {
 				if len(s.Balance.Pending) == 0 {
 					@empty("nenhuma ocorrência pendente")
 				} else {
-					@table.Table(table.Props{Class: "@max-[640px]:[&_:is(td,th)]:px-1"}) {
+					@table.Table(table.Props{Class: tightTable}) {
 						@table.Header() {
 							@table.Row() {
 								@table.Head() {
@@ -90,9 +94,6 @@ templ homePage(s shell, page overview) {
 								}
 								@table.Head(table.HeadProps{Class: "w-full"}) {
 									Descrição
-								}
-								@table.Head(table.HeadProps{Class: "hide-m"}) {
-									Status
 								}
 								@table.Head(table.HeadProps{Class: "text-right"}) {
 									Valor
@@ -110,8 +111,6 @@ templ homePage(s shell, page overview) {
 									}
 									@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 										{ orEmpty(pending.Recurrence.Description) }
-									}
-									@table.Cell(table.CellProps{Class: "hide-m"}) {
 										if pending.Overdue {
 											@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 												[atrasada]
@@ -122,7 +121,7 @@ templ homePage(s shell, page overview) {
 											}
 										}
 									}
-									@table.Cell(table.CellProps{Class: "text-right tabular-nums"}) {
+									@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(pending.Recurrence.Kind))}) {
 										{ money(signed(pending.Recurrence.Kind, pending.Recurrence.Amount)) }
 									}
 									@table.Cell(table.CellProps{Class: "text-right"}) {

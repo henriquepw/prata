@@ -17,7 +17,7 @@ func at(o op, instant string) op {
 	return o
 }
 
-func TestWebOverview_ActivityLogListsLatestOpsOfEveryDevice(t *testing.T) {
+func TestWebOverview_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) {
 	w := newWebClient(t)
 	phone := signinClient(t, w.client, newSignin().DeviceID)
 	ops := []op{at(w.op("TAG", ulid.Make().String(), "CREATE", map[string]any{
@@ -34,7 +34,7 @@ func TestWebOverview_ActivityLogListsLatestOpsOfEveryDevice(t *testing.T) {
 	w.push(ops...)
 	phone.push(
 		at(phone.op("TRANSACTION", ops[1].EntityID, "UPDATE", map[string]any{"description": "Uber", "updated_at": "2026-08-23T17:32:00Z"}), "2026-08-23T17:32:00Z"),
-		at(phone.op("TRANSACTION", ops[2].EntityID, "DELETE", nil), "2026-08-23T17:35:00Z"),
+		at(phone.op("TRANSACTION", ops[2].EntityID, "DELETE", nil), "2026-08-23T13:05:30Z"),
 	)
 
 	body := get(w.handler, "/", w.cookie, &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}).Body.String()
@@ -48,9 +48,11 @@ func TestWebOverview_ActivityLogListsLatestOpsOfEveryDevice(t *testing.T) {
 
 	rest := body
 	for _, want := range []string{
-		"[14:35]", "phone · transação excluída",
 		"[14:32]", `phone · transação "Uber" alterada`,
 		"[10:10]", `laptop · transação "Compra 10" criada`,
+		"[10:06]", `laptop · transação "Compra 6" criada`,
+		"[10:05]", "phone · transação excluída",
+		"[10:05]", `laptop · transação "Compra 5" criada`,
 		"[10:01]", `laptop · transação "Compra 1" criada`,
 	} {
 		i := strings.Index(rest, html.EscapeString(want))
