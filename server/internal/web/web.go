@@ -26,7 +26,8 @@ var static embed.FS
 
 const sessionCookie = "session"
 
-// flashCookie holds the id of the row a sheet just saved, scoped to its list's path for that page to flash once.
+// flashCookie holds the id of the row a sheet just saved, scoped to the path of the list that shows it for that page
+// to flash once.
 const flashCookie = "flash"
 
 type sessionKey struct{}
@@ -68,6 +69,7 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /recurrences", h.requireSession(h.saveRecurrence))
 	mux.Handle("POST /recurrences/{id}", h.requireSession(h.saveRecurrence))
 	mux.Handle("DELETE /recurrences/{id}", h.requireSession(h.deleteRecurrence))
+	mux.Handle("GET /recurrences/{id}/occurrences/{date}", h.requireSession(h.occurrenceSheet))
 	mux.Handle("POST /recurrences/{id}/occurrences/{date}", h.requireSession(h.confirmOccurrence))
 	mux.Handle("GET /tags", h.requireSession(h.tags))
 	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {

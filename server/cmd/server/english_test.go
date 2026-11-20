@@ -58,31 +58,21 @@ func TestWebEnglish_Recurrences(t *testing.T) {
 	w.assertBody("/recurrences/new", "New recurrence")
 }
 
-func TestWebEnglish_Transactions(t *testing.T) {
+func TestWebEnglish_Month(t *testing.T) {
 	w := newEnglishClient(t)
 	tz := &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}
-	w.assertBody("/transactions?month=2026-07", "Transactions", "Income", "Expenses", "Month balance", `aria-label="Previous month"`,
-		`aria-label="Next month"`, "no transactions this month", "Activity log", "no operations yet")
+	w.assertBody("/?month=2026-07", "July 2026", "Previous balance", "+ Income", "− Expenses", "= Realized", "± To confirm",
+		"= Projected", `aria-label="Previous month"`, `aria-label="Next month"`, "[this month]", "switch month", "Statement",
+		"no transactions this month", "no categories yet")
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
-	w.mustSubmit(http.MethodPost, "/tags", tagForm("Viagem", "2026-07-01", ""), tz)
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""), tz)
-	id := w.newOps()[2].EntityID
-	w.assertBody("/transactions?month=2026-07", "Feira", "Date", "Description", "Category", "Tags", "Amount",
-		`<span class="text-muted-foreground">income</span>`, `<span class="text-muted-foreground">· expenses</span>`,
-		"category &#34;Mercado&#34; created", "tag &#34;Viagem&#34; created", "transaction &#34;Feira&#34; created")
+	id := w.newOps()[1].EntityID
+	w.assertBody("/?month=2026-07", "Feira", "wed 15/07", "Mercado", "R$ 0,00 · no limit")
 	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "No category", "Tag", "No tag",
 		"Delete this transaction? It disappears from the lists and balances on every device.")
 	w.assertBody("/transactions/new", "New transaction")
-}
 
-func TestWebEnglish_Overview(t *testing.T) {
-	w := newEnglishClient(t)
-	month := time.Now().Format("Jan")
-	w.assertBody("/", "Realized balance", "Projected balance", "Income "+month, "Expenses "+month, "Pending",
-		"no pending occurrences", "Usage by category", "no categories yet", "Activity log")
-
-	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	now := time.Now().UTC()
 	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	recurrenceID := ulid.Make().String()
@@ -90,10 +80,10 @@ func TestWebEnglish_Overview(t *testing.T) {
 		"kind": "INCOME", "amount": 10000, "rule": "MONTHLY:31", "start_at": first.Format(time.DateOnly),
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 	}))
-	w.assertBody("/", "Date", "Description", "Amount", `<span class="sr-only">Action</span>`, "[overdue]", "[pending]", "confirm",
-		"Mercado", "R$ 0,00 · no limit")
+	w.assertBody("/", "── today", "[overdue]", "[pending]", "confirm", `data-busy="confirming"`)
 
 	date := first.AddDate(0, -1, 0).Format(time.DateOnly)
+	w.assertBody("/recurrences/"+recurrenceID+"/occurrences/"+date, "Confirm occurrence", "came out different? adjust it before confirming")
 	w.submit(http.MethodPost, "/recurrences/"+recurrenceID+"/occurrences/"+date, nil)
 	response := w.submit(http.MethodPost, "/recurrences/"+recurrenceID+"/occurrences/"+date, nil)
 	if response.Code != http.StatusConflict || !strings.Contains(response.Body.String(), "Occurrence already confirmed.") {
@@ -128,7 +118,7 @@ func TestWebTicker_OverdueCountIsPluralInEachLanguage(t *testing.T) {
 func TestWebEnglish_Devices(t *testing.T) {
 	w := newEnglishClient(t)
 	w.assertBody("/devices", "Devices", "Name", "Last seen", "Created at", "Revoke",
-		"Revoke the access of laptop? It stops syncing until it signs in again.")
+		"Revoke the access of laptop? It stops syncing until it signs in again.", "Activity log", "no operations yet")
 }
 
 func TestWebEnglish_ValidationErrorsAre422InEnglish(t *testing.T) {

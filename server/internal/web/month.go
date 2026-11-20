@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -14,19 +15,17 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// overview is the home page's own content: this month's INCOME and OUTCOME totals in cents and category usage, the
-// activity log and Error holding a rejected confirmation. The balances and the pending occurrences come from the
-// shell's balance.
-type overview struct {
-	Month           time.Time
-	Income, Outcome int64
-	Usages          []store.CategoryUsage
-	Activity        []store.Activity
-	Error           string
+const monthLayout = "2006-01"
+
+// monthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
+func monthWindow(t time.Time) (month time.Time, from, to string) {
+	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+
+	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 }
 
-// balance is what the ticker and the overview show: the realized balance, the occurrences still pending up to the
-// end of this month and the projected balance, which is the realized one plus every pending occurrence.
+// balance is what the ticker shows: the account's realized balance, the occurrences still pending up to the end of
+// this month and the projected balance, which is the realized one plus every pending occurrence.
 type balance struct {
 	Realized, Projected int64
 	Pending             []occurrence
@@ -50,146 +49,315 @@ func (b balance) overdue() int {
 	return count
 }
 
-// balance reads the realized balance and the occurrences from each live recurrence's start_at to the end of now's
-// month, minus the confirmed ones, in now's location.
+// balance reads the realized balance and the occurrences pending up to the end of now's month, in now's location.
 func (h handler) balance(ctx context.Context, accountID string, now time.Time) (balance, error) {
 	realized, err := h.db.RealizedBalance(ctx, accountID)
 	if err != nil {
 		return balance{}, fmt.Errorf("reading realized balance: %w", err)
 	}
 
-	recurrences, err := h.db.Recurrences(ctx, accountID)
-	if err != nil {
-		return balance{}, fmt.Errorf("listing recurrences: %w", err)
-	}
-
-	confirmed, err := h.db.ConfirmedOccurrences(ctx, accountID)
-	if err != nil {
-		return balance{}, fmt.Errorf("listing confirmed occurrences: %w", err)
-	}
-
 	month, _, _ := monthWindow(now)
-	today, end := now.Format(time.DateOnly), month.AddDate(0, 1, -1).Format(time.DateOnly)
-	b := balance{Realized: realized, Projected: realized}
-	for _, rec := range recurrences {
-		dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, rec.StartAt, end)
-		if err != nil {
-			return balance{}, fmt.Errorf("expanding recurrence: %w", err)
-		}
-
-		for _, date := range dates {
-			if slices.Contains(confirmed[rec.ID], date) {
-				continue
-			}
-
-			b.Pending = append(b.Pending, occurrence{Recurrence: rec, Date: date, Overdue: date < today})
-			b.Projected += signed(rec.Kind, rec.Amount)
-		}
+	pending, err := h.pending(ctx, accountID, now, month.AddDate(0, 1, -1))
+	if err != nil {
+		return balance{}, err
 	}
 
-	slices.SortStableFunc(b.Pending, func(a, b occurrence) int { return cmp.Compare(a.Date, b.Date) })
+	b := balance{Realized: realized, Projected: realized, Pending: pending}
+	for _, p := range pending {
+		b.Projected += signed(p.Recurrence.Kind, p.Recurrence.Amount)
+	}
 
 	return b, nil
 }
 
-func (h handler) home(w http.ResponseWriter, r *http.Request) {
-	h.renderOverview(w, r, http.StatusOK, "")
+// pending lists by date the occurrences from each live recurrence's start_at through the day of end, minus the
+// confirmed ones, overdue before the day of now.
+func (h handler) pending(ctx context.Context, accountID string, now, end time.Time) ([]occurrence, error) {
+	recurrences, err := h.db.Recurrences(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("listing recurrences: %w", err)
+	}
+
+	confirmed, err := h.db.ConfirmedOccurrences(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("listing confirmed occurrences: %w", err)
+	}
+
+	today, pending := now.Format(time.DateOnly), []occurrence{}
+	for _, rec := range recurrences {
+		dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, rec.StartAt, end.Format(time.DateOnly))
+		if err != nil {
+			return nil, fmt.Errorf("expanding recurrence: %w", err)
+		}
+
+		for _, date := range dates {
+			if !slices.Contains(confirmed[rec.ID], date) {
+				pending = append(pending, occurrence{Recurrence: rec, Date: date, Overdue: date < today})
+			}
+		}
+	}
+
+	slices.SortStableFunc(pending, func(a, b occurrence) int { return cmp.Compare(a.Date, b.Date) })
+
+	return pending, nil
 }
 
-// renderOverview reads the overview in the user's time zone: the shell's balance, this month's totals and usage
-// over [from, to) in UTC, and the activity log.
-func (h handler) renderOverview(w http.ResponseWriter, r *http.Request, status int, message string) {
-	s, ok := h.shell(w, r, "nav.overview")
+// month is the Mês screen: the boxes of the month shown, in cents, its statement by day, newest first, and the usage of
+// each category. Overdue holds, on the current month only, the occurrences of earlier months still pending, drawn under
+// the "hoje" line, which sits before Days[TodayAt] (after the last day when TodayAt is len(Days), nowhere when it is
+// -1). Flash is the row to flash and Error a rejected confirmation.
+type month struct {
+	Month                              time.Time
+	Today                              string
+	Previous, Income, Outcome, Pending int64
+	Days                               []day
+	Overdue                            []occurrence
+	TodayAt                            int
+	Usages                             []store.CategoryUsage
+	Flash, Error                       string
+}
+
+// day is one day of the statement, as YYYY-MM-DD: its pending occurrences, its transactions and their Total.
+type day struct {
+	Date         string
+	Total        int64
+	Pending      []occurrence
+	Transactions []store.Transaction
+}
+
+func (m month) isCurrent() bool { return m.Month.Format(monthLayout) == m.Today[:len(monthLayout)] }
+
+func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
+
+// readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
+// occurrences pending in it plus, on the current month, the overdue ones of earlier months.
+func (h handler) readMonth(ctx context.Context, accountID string, now, shown time.Time) (month, error) {
+	first, from, to := monthWindow(shown)
+	last := first.AddDate(0, 1, -1)
+	page := month{Month: first, Today: now.Format(time.DateOnly)}
+	previous, err := h.db.BalanceBefore(ctx, accountID, from)
+	if err != nil {
+		return month{}, fmt.Errorf("reading the balance before the month: %w", err)
+	}
+
+	transactions, err := h.db.Transactions(ctx, accountID, from, to)
+	if err != nil {
+		return month{}, fmt.Errorf("listing transactions: %w", err)
+	}
+
+	page.Usages, err = h.db.CategoryUsages(ctx, accountID, from, to)
+	if err != nil {
+		return month{}, fmt.Errorf("reading category usage: %w", err)
+	}
+
+	pending, err := h.pending(ctx, accountID, now, last)
+	if err != nil {
+		return month{}, err
+	}
+
+	page.Previous = previous
+	page.Income, page.Outcome = totals(transactions)
+	days := map[string]*day{}
+	at := func(date string) *day {
+		if days[date] == nil {
+			days[date] = &day{Date: date}
+		}
+
+		return days[date]
+	}
+
+	for _, p := range pending {
+		switch {
+		case p.Date >= first.Format(time.DateOnly):
+			at(p.Date).Pending = append(at(p.Date).Pending, p)
+		case page.isCurrent():
+			page.Overdue = append(page.Overdue, p)
+		default:
+			continue
+		}
+
+		page.Pending += signed(p.Recurrence.Kind, p.Recurrence.Amount)
+	}
+
+	for _, t := range transactions {
+		d := at(formatDate(t.OccurredAt, now.Location(), time.DateOnly))
+		d.Transactions = append(d.Transactions, t)
+		d.Total += signed(t.Kind, t.Amount)
+	}
+
+	for _, d := range days {
+		page.Days = append(page.Days, *d)
+	}
+
+	slices.SortFunc(page.Days, func(a, b day) int { return cmp.Compare(b.Date, a.Date) })
+	page.TodayAt = -1
+	if page.isCurrent() {
+		page.TodayAt = len(page.Days)
+		if i := slices.IndexFunc(page.Days, func(d day) bool { return d.Date <= page.Today }); i >= 0 {
+			page.TodayAt = i
+		}
+	}
+
+	return page, nil
+}
+
+// shownMonth is the month in ?month=YYYY-MM, or the current one, in now's location.
+func shownMonth(r *http.Request, now time.Time) time.Time {
+	shown, err := time.ParseInLocation(monthLayout, r.FormValue("month"), now.Location())
+	if err != nil {
+		return now
+	}
+
+	return shown
+}
+
+// home is the Mês screen of ?month=YYYY-MM, the current month in the user's time zone by default.
+func (h handler) home(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.shell(w, r, "nav.month")
 	if !ok {
 		return
 	}
 
-	accountID := sessionFrom(r.Context()).AccountID
-	month, from, to := monthWindow(s.Now)
-	page := overview{Month: month, Error: message}
-	transactions, err := h.db.Transactions(r.Context(), accountID, from, to)
+	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now))
 	if err != nil {
-		internalError(w, "listing transactions", err)
+		internalError(w, "reading month", err)
 		return
 	}
 
-	page.Income, page.Outcome = totals(transactions)
-	page.Usages, err = h.db.CategoryUsages(r.Context(), accountID, from, to)
-	if err != nil {
-		internalError(w, "reading category usage", err)
-		return
-	}
-
-	page.Activity, err = h.db.Activity(r.Context(), accountID)
-	if err != nil {
-		internalError(w, "reading activity", err)
-		return
-	}
-
-	render(w, r, status, homePage(s, page))
+	page.Flash = s.Flash
+	render(w, r, http.StatusOK, monthPage(s, page))
 }
 
-// confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC,
-// with the recurrence's category only while it is live. An occurrence already confirmed elsewhere hits the unique
-// (recurrence_id, occurrence_date) and reloads the overview with "já confirmada"; any other rejection is a 500.
-func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
+// transactions sends the old transactions list to the Mês, keeping its month.
+func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
+	url := "/"
+	if month := r.URL.Query().Get("month"); month != "" {
+		url += "?month=" + month
+	}
+
+	redirect(w, r, url)
+}
+
+// occurrenceForm is the "confirmar ocorrência" sheet: the transaction sheet filled from the recurrence and the
+// occurrence's date.
+type occurrenceForm struct {
+	transactionForm
+	Recurrence store.Recurrence
+	Date       string
+}
+
+// occurrence reads the recurrence and the date of the occurrence in the path, answering 404 when the recurrence has
+// no occurrence on that date, and fills the sheet from them, with the recurrence's category only while it is live.
+func (h handler) occurrence(w http.ResponseWriter, r *http.Request) (occurrenceForm, bool) {
 	rec, ok := h.recurrence(w, r)
 	if !ok {
-		return
+		return occurrenceForm{}, false
 	}
 
 	date := r.PathValue("date")
 	dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, date, date)
 	if err != nil || len(dates) == 0 {
 		http.NotFound(w, r)
-		return
+		return occurrenceForm{}, false
 	}
 
-	occurredAt, ok := parseDate(date, location(r))
+	form, ok := h.transactionForm(w, r)
 	if !ok {
-		http.NotFound(w, r)
-		return
+		return occurrenceForm{}, false
 	}
 
-	categories, ok := h.liveCategories(w, r)
+	form.Kind, form.Amount, form.Description, form.OccurredAt = rec.Kind, amount(r.Context(), rec.Amount), orEmpty(rec.Description), date
+	if id := orEmpty(rec.CategoryID); hasCategory(form.Categories, id) {
+		form.CategoryID = id
+	}
+
+	return occurrenceForm{transactionForm: form, Recurrence: rec, Date: date}, true
+}
+
+func (h handler) occurrenceSheet(w http.ResponseWriter, r *http.Request) {
+	form, ok := h.occurrence(w, r)
 	if !ok {
 		return
 	}
 
-	categoryID := orEmpty(rec.CategoryID)
-	if !hasCategory(categories, categoryID) {
-		categoryID = ""
+	render(w, r, http.StatusOK, occurrenceSheet(form))
+}
+
+// confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC. The
+// sheet posts what the user adjusted and gets the sheet's answer; the statement's row posts nothing but the month on
+// screen and gets that month back with the new row flashing. On the row, an occurrence already confirmed elsewhere
+// hits the unique (recurrence_id, occurrence_date) and answers 409 with "já confirmada"; any other rejection is a 500.
+func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
+	form, ok := h.occurrence(w, r)
+	if !ok {
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+
+	isSheet := r.PostForm.Has("amount")
+	if isSheet {
+		form.Kind = r.PostFormValue("kind")
+		form.Amount = strings.TrimSpace(r.PostFormValue("amount"))
+		form.Description = strings.TrimSpace(r.PostFormValue("description"))
+		form.OccurredAt = r.PostFormValue("occurred_at")
+		form.CategoryID = r.PostFormValue("category_id")
+	}
+
+	cents := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
+	occurredAt, ok := parseDate(form.OccurredAt, location(r))
+	if !ok {
+		form.Errors["occurred_at"] = i18n.T(r.Context(), "form.error.date")
+	}
+
+	if form.CategoryID != "" && !hasCategory(form.Categories, form.CategoryID) {
+		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
+	}
+
+	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
+		"kind": form.Kind, "amount": cents, "category_id": orNil(form.CategoryID), "description": orNil(form.Description),
+		"recurrence_id": form.Recurrence.ID, "occurrence_date": form.Date, "occurred_at": occurredAt,
+	}}
+	if isSheet {
+		h.commit(w, r, form.Errors, occurrenceSheet(form), change)
+		return
 	}
 
 	session := sessionFrom(r.Context())
-	reason, err := h.db.CommitChanges(r.Context(), session, store.Change{
-		Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
-			"kind": rec.Kind, "amount": rec.Amount, "category_id": orNil(categoryID), "description": orNil(orEmpty(rec.Description)),
-			"recurrence_id": rec.ID, "occurrence_date": date, "occurred_at": occurredAt,
-		},
-	})
+	reason, err := h.db.CommitChanges(r.Context(), session, change)
 	if err != nil {
 		internalError(w, "confirming occurrence", err)
 		return
 	}
 
-	if reason == "" {
-		redirect(w, r, "/")
-		return
+	status, message := http.StatusOK, ""
+	if reason != "" {
+		confirmed, err := h.db.ConfirmedOccurrences(r.Context(), session.AccountID)
+		if err != nil {
+			internalError(w, "listing confirmed occurrences", err)
+			return
+		}
+
+		if !slices.Contains(confirmed[form.Recurrence.ID], form.Date) {
+			internalError(w, "confirming occurrence", fmt.Errorf("rejected: %s", reason))
+			return
+		}
+
+		status, message = http.StatusConflict, i18n.T(r.Context(), "month.error.confirmed")
 	}
 
-	confirmed, err := h.db.ConfirmedOccurrences(r.Context(), session.AccountID)
+	now := time.Now().In(location(r))
+	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now))
 	if err != nil {
-		internalError(w, "listing confirmed occurrences", err)
+		internalError(w, "reading month", err)
 		return
 	}
 
-	if !slices.Contains(confirmed[rec.ID], date) {
-		internalError(w, "confirming occurrence", fmt.Errorf("rejected: %s", reason))
-		return
-	}
-
-	h.renderOverview(w, r, http.StatusConflict, i18n.T(r.Context(), "overview.error.confirmed"))
+	page.Flash, page.Error = change.EntityID, message
+	render(w, r, status, monthContent(page))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

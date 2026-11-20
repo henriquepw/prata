@@ -23,11 +23,10 @@ type shell struct {
 	Flash   string
 }
 
-// nav is the rail, in the order of the 1–7 shortcuts. Label is the i18n key of the screen's name, which is also
+// nav is the rail, in the order of the number shortcuts. Label is the i18n key of the screen's name, which is also
 // its title; NewURL is the screen's "novo" sheet, when it has one, and NewLabel the key of its launcher command.
 var nav = []struct{ Href, Label, NewURL, NewLabel string }{
-	{"/", "nav.overview", "", ""},
-	{"/transactions", "nav.transactions", "/transactions/new", "launcher.new_transaction"},
+	{"/", "nav.month", "/transactions/new", "launcher.new_transaction"},
 	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
 	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
 	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
@@ -50,8 +49,8 @@ func (s shell) newURL() string {
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+k (cmd+k) toggles the launcher anywhere, which filters its options without accents by
-// every word, moves the selection with ↑↓ and runs it with enter; outside fields and dialogs, 1–7 and n click their
-// [data-key] and enter opens the focused row.
+// every word, moves the selection with ↑↓ and runs it with enter; outside fields and dialogs, the digits, n, [ and ]
+// click their [data-key] and enter opens the focused row.
 const headScript = `(() => {
   const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
   const applyTheme = () => {
@@ -114,7 +113,7 @@ const headScript = `(() => {
     }
     if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
     if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
-    else if (/^[1-7n]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+    else if (/^[1-9n[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
   })
 })()`
 
@@ -210,7 +209,7 @@ templ layout(s shell) {
 					</main>
 				</div>
 				<footer class="keybar">
-					<span><kbd>1-7</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
+					<span><kbd>{ fmt.Sprintf("1-%d", len(nav)) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 					if url := s.newURL(); url != "" {
 						<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
 					}

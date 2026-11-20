@@ -44,10 +44,10 @@ func TestWebTransactions_WritesReachDevicePull(t *testing.T) {
 		t.Errorf("create op = %+v, want a TRANSACTION CREATE from the web device with payload %v", created, want)
 	}
 
-	page := get(w.handler, "/transactions?month=2026-07", w.cookie, tz)
-	if body := page.Body.String(); page.Code != http.StatusOK || !strings.Contains(body, "Feira") || !strings.Contains(body, "15/07/2026") ||
+	page := get(w.handler, "/?month=2026-07", w.cookie, tz)
+	if body := page.Body.String(); page.Code != http.StatusOK || !strings.Contains(body, "Feira") || !strings.Contains(body, "qua 15/07") ||
 		!strings.Contains(body, "1.234,56") || !strings.Contains(body, "Mercado") {
-		t.Errorf("list = %d, want Feira on 15/07/2026 with its amount and category: %s", page.Code, body)
+		t.Errorf("month = %d, want Feira on qua 15/07 with its amount and category: %s", page.Code, body)
 	}
 
 	edit := get(w.handler, "/transactions/"+created.EntityID, w.cookie, tz)
@@ -72,7 +72,7 @@ func TestWebTransactions_WritesReachDevicePull(t *testing.T) {
 		t.Errorf("ops after delete = %+v, want one DELETE tombstone", ops)
 	}
 
-	if body := get(w.handler, "/transactions?month=2026-07", w.cookie, tz).Body.String(); strings.Contains(body, `hx-get="/transactions/`+created.EntityID) {
+	if body := get(w.handler, "/?month=2026-07", w.cookie, tz).Body.String(); strings.Contains(body, `hx-get="/transactions/`+created.EntityID) {
 		t.Errorf("list after delete still shows the transaction: %s", body)
 	}
 
@@ -100,11 +100,11 @@ func TestWebTransactions_DateIsLocalMidnightInUTC(t *testing.T) {
 				t.Fatalf("create ops = %+v, want occurred_at %s", ops, tt.wantOccurredAt)
 			}
 
-			if body := get(w.handler, "/transactions?month="+tt.inMonth, w.cookie, tz).Body.String(); !strings.Contains(body, "01/07/2026") {
-				t.Errorf("month %s lacks the transaction on 01/07/2026: %s", tt.inMonth, body)
+			if body := get(w.handler, "/?month="+tt.inMonth, w.cookie, tz).Body.String(); !strings.Contains(body, "qua 01/07") {
+				t.Errorf("month %s lacks the transaction on qua 01/07: %s", tt.inMonth, body)
 			}
 
-			if body := get(w.handler, "/transactions?month="+tt.outMonth, w.cookie, tz).Body.String(); strings.Contains(body, `hx-get="/transactions/`+ops[0].EntityID) {
+			if body := get(w.handler, "/?month="+tt.outMonth, w.cookie, tz).Body.String(); strings.Contains(body, `hx-get="/transactions/`+ops[0].EntityID) {
 				t.Errorf("month %s shows the transaction: %s", tt.outMonth, body)
 			}
 
@@ -121,8 +121,8 @@ func TestWebTransactions_MonthNavigation(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Antiga", "OUTCOME", "10", "2026-07-01", "", ""), tz)
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Nova", "INCOME", "20", "2026-07-31", "", ""), tz)
 
-	body := get(w.handler, "/transactions?month=2026-07", w.cookie, tz).Body.String()
-	if !strings.Contains(body, "julho de 2026") || !strings.Contains(body, `href="/transactions?month=2026-06"`) || !strings.Contains(body, `href="/transactions?month=2026-08"`) {
+	body := get(w.handler, "/?month=2026-07", w.cookie, tz).Body.String()
+	if !strings.Contains(body, "julho de 2026") || !strings.Contains(body, `href="/?month=2026-06"`) || !strings.Contains(body, `href="/?month=2026-08"`) {
 		t.Errorf("July page lacks its label or the arrows to June and August: %s", body)
 	}
 
@@ -130,14 +130,14 @@ func TestWebTransactions_MonthNavigation(t *testing.T) {
 		t.Errorf("July page = Nova at %d, Antiga at %d, want both, newest first", newer, older)
 	}
 
-	body = get(w.handler, "/transactions?month=2026-12", w.cookie, tz).Body.String()
-	if !strings.Contains(body, `href="/transactions?month=2026-11"`) || !strings.Contains(body, `href="/transactions?month=2027-01"`) {
+	body = get(w.handler, "/?month=2026-12", w.cookie, tz).Body.String()
+	if !strings.Contains(body, `href="/?month=2026-11"`) || !strings.Contains(body, `href="/?month=2027-01"`) {
 		t.Errorf("December page lacks the arrows to November and next January: %s", body)
 	}
 
 	today := time.Now().UTC().Format(time.DateOnly)
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Hoje", "OUTCOME", "10", today, "", ""))
-	if body := get(w.handler, "/transactions", w.cookie).Body.String(); !strings.Contains(body, "Hoje") {
+	if body := get(w.handler, "/", w.cookie).Body.String(); !strings.Contains(body, "Hoje") {
 		t.Errorf("default page lacks today's transaction: %s", body)
 	}
 }
@@ -188,7 +188,7 @@ func TestWebTransactions_DeletedCategoryAndTag(t *testing.T) {
 	w.mustSubmit(http.MethodDelete, "/tags/"+tagID, nil)
 	w.newOps()
 
-	if body := get(w.handler, "/transactions?month=2026-07", w.cookie).Body.String(); !strings.Contains(body, "Sem categoria") {
+	if body := get(w.handler, "/?month=2026-07", w.cookie).Body.String(); !strings.Contains(body, "Sem categoria") {
 		t.Errorf("list shows the deleted category, want Sem categoria: %s", body)
 	}
 
@@ -233,20 +233,20 @@ func flashCookie(response *httptest.ResponseRecorder) *http.Cookie {
 	return nil
 }
 
-func TestWebTransactions_ShowsMonthTotalsTagsAndActivity(t *testing.T) {
+func TestWebTransactions_ShowsTheDayTotalAndTags(t *testing.T) {
 	w := newWebClient(t)
 	w.push(newCategory(w.client), newTag(w.client))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1.234,56", "2026-07-15", categoryID, tagID))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Salário", "INCOME", "5.000", "2026-07-05", "", ""))
 
-	body := get(w.handler, "/transactions?month=2026-07", w.cookie).Body.String()
-	for _, want := range []string{"Entradas", "R$ 5.000,00", "Saídas", "−R$ 1.234,56", "Saldo do mês", "R$ 3.765,44", "#Viagem", "Log de atividade", `transação &#34;Feira&#34; criada`} {
+	body := get(w.handler, "/?month=2026-07", w.cookie).Body.String()
+	for _, want := range []string{"R$ 5.000,00", "−R$ 1.234,56", "R$ 3.765,44", "#Viagem"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("July page lacks %q: %s", want, body)
 		}
 	}
 
-	if body := get(w.handler, "/transactions?month=2026-06", w.cookie).Body.String(); !strings.Contains(body, "nenhuma transação neste mês") {
+	if body := get(w.handler, "/?month=2026-06", w.cookie).Body.String(); !strings.Contains(body, "nenhuma transação neste mês") {
 		t.Errorf("empty June page lacks the empty state: %s", body)
 	}
 }
@@ -255,20 +255,20 @@ func TestWebTransactions_FlashesTheSavedRowOnce(t *testing.T) {
 	w := newWebClient(t)
 	response := w.submit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""))
 	flash := flashCookie(response)
-	if response.Header().Get("HX-Refresh") != "true" || flash == nil || flash.Value != w.newOps()[0].EntityID || flash.Path != "/transactions" {
-		t.Fatalf("create = %d with flash cookie %v, want HX-Refresh and the saved row's id in it, for /transactions only", response.Code, flash)
+	if response.Header().Get("HX-Refresh") != "true" || flash == nil || flash.Value != w.newOps()[0].EntityID || flash.Path != "/" {
+		t.Fatalf("create = %d with flash cookie %v, want HX-Refresh and the saved row's id in it, for the month", response.Code, flash)
 	}
 
-	page := get(w.handler, "/transactions?month=2026-07", w.cookie, flash)
+	page := get(w.handler, "/?month=2026-07", w.cookie, flash)
 	if got := strings.Count(page.Body.String(), "data-flash"); got != 1 {
 		t.Errorf("page after saving marks %d rows to flash, want 1: %s", got, page.Body)
 	}
 
-	if cleared := flashCookie(page); cleared == nil || cleared.MaxAge >= 0 || cleared.Path != "/transactions" {
-		t.Errorf("page after saving sets flash cookie %v, want it cleared at /transactions", cleared)
+	if cleared := flashCookie(page); cleared == nil || cleared.MaxAge >= 0 || cleared.Path != "/" {
+		t.Errorf("page after saving sets flash cookie %v, want it cleared at /", cleared)
 	}
 
-	if body := get(w.handler, "/transactions?month=2026-07", w.cookie).Body.String(); strings.Contains(body, "data-flash") {
+	if body := get(w.handler, "/?month=2026-07", w.cookie).Body.String(); strings.Contains(body, "data-flash") {
 		t.Errorf("a later page flashes a row: %s", body)
 	}
 }

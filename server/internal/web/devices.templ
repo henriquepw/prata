@@ -1,53 +1,64 @@
 package web
 
 import (
+	"time"
+
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
-templ devicesPage(s shell, devices []store.Device) {
+// devicesPage lays the Dispositivos panel beside the activity log, or over it on mobile.
+templ devicesPage(s shell, devices []store.Device, activity []store.Activity) {
 	{{ loc := s.Now.Location() }}
 	@layout(s) {
-		@panel(i18n.T(ctx, "nav.devices"), "", nil) {
-			if len(devices) == 0 {
-				@empty(i18n.T(ctx, "devices.empty"))
-			} else {
-				@table.Table() {
-					@table.Header() {
-						@table.Row() {
-							@table.Head(table.HeadProps{Class: "w-full"}) {
-								{ i18n.T(ctx, "field.name") }
-							}
-							@table.Head() {
-								{ i18n.T(ctx, "devices.last_seen") }
-							}
-							@table.Head(table.HeadProps{Class: "hide-m"}) {
-								{ i18n.T(ctx, "devices.created_at") }
-							}
-							@table.Head()
+		<div class="split">
+			@devicesPanel(devices, loc)
+			@activityLog(activity, loc)
+		</div>
+	}
+}
+
+// devicesPanel lists the keyed devices, each with its revoke button.
+templ devicesPanel(devices []store.Device, loc *time.Location) {
+	@panel(i18n.T(ctx, "nav.devices"), "", nil) {
+		if len(devices) == 0 {
+			@empty(i18n.T(ctx, "devices.empty"))
+		} else {
+			@table.Table() {
+				@table.Header() {
+					@table.Row() {
+						@table.Head(table.HeadProps{Class: "w-full"}) {
+							{ i18n.T(ctx, "field.name") }
 						}
+						@table.Head() {
+							{ i18n.T(ctx, "devices.last_seen") }
+						}
+						@table.Head(table.HeadProps{Class: "hide-m"}) {
+							{ i18n.T(ctx, "devices.created_at") }
+						}
+						@table.Head()
 					}
-					@table.Body() {
-						for _, device := range devices {
-							@table.Row() {
-								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-									{ device.Name }
-								}
-								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-									{ localTime(ctx, device.LastSeenAt, loc) }
-								}
-								@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
-									{ localTime(ctx, device.CreatedAt, loc) }
-								}
-								@table.Cell(table.CellProps{Class: "text-right"}) {
-									@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
-										"hx-delete":  "/devices/" + device.ID,
-										"hx-confirm": i18n.T(ctx, "devices.confirm_revoke", device.Name),
-									}}) {
-										{ i18n.T(ctx, "devices.revoke") }
-									}
+				}
+				@table.Body() {
+					for _, device := range devices {
+						@table.Row() {
+							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+								{ device.Name }
+							}
+							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+								{ localTime(ctx, device.LastSeenAt, loc) }
+							}
+							@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
+								{ localTime(ctx, device.CreatedAt, loc) }
+							}
+							@table.Cell(table.CellProps{Class: "text-right"}) {
+								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{
+									"hx-delete":  "/devices/" + device.ID,
+									"hx-confirm": i18n.T(ctx, "devices.confirm_revoke", device.Name),
+								}}) {
+									{ i18n.T(ctx, "devices.revoke") }
 								}
 							}
 						}

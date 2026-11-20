@@ -95,7 +95,7 @@ func TestWebSettings_AmountsAreTypedAndShownInTheNumberFormat(t *testing.T) {
 
 	w.assertBody("/categories", "R$ 1,234.56")
 	w.assertBody("/categories/"+category.EntityID, `value="1,234.56"`, `placeholder="0.00"`)
-	w.assertBody("/transactions?month=2026-07", "−R$ 1,234.56")
+	w.assertBody("/?month=2026-07", "−R$ 1,234.56")
 	w.assertBody("/transactions/"+transaction.EntityID, `value="1,234.56"`)
 	w.assertBody("/recurrences", "−R$ 1,500.00")
 	w.assertBody("/recurrences/"+recurrence.EntityID, `value="1,500.00"`)
@@ -126,11 +126,12 @@ func TestWebSettings_DatesFollowTheDateFormat(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""),
 		&http.Cookie{Name: "tz", Value: "America/Sao_Paulo"})
 
-	for format, layout := range map[string]string{"MM/DD/YYYY": "01/02/2006", "YYYY-MM-DD": "2006-01-02"} {
+	for format, layouts := range map[string][2]string{"MM/DD/YYYY": {"01/02/2006", "01/02"}, "YYYY-MM-DD": {"2006-01-02", "01-02"}} {
+		layout, day := layouts[0], layouts[1]
 		w.mustSubmit(http.MethodPost, "/settings", settingsForm(format, "1.234,56"))
 
-		w.assertBody("/", `data-clock="`+format+`"`, now.Format(layout), month.Format(layout))
-		w.assertBody("/transactions?month=2026-07", time.Date(2026, 7, 15, 0, 0, 0, 0, loc).Format(layout))
+		w.assertBody("/", `data-clock="`+format+`"`, now.Format(layout), month.Format(day))
+		w.assertBody("/?month=2026-07", "qua "+time.Date(2026, 7, 15, 0, 0, 0, 0, loc).Format(day))
 		w.assertBody("/tags", time.Date(2026, 7, 1, 0, 0, 0, 0, loc).Format(layout))
 		w.assertBody("/devices", now.Format(layout)+" ")
 	}
@@ -151,12 +152,12 @@ func TestWebSettings_CurrencySymbolFollowsTheAccountCurrency(t *testing.T) {
 	w.assertSelected("USD")
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1,234.56", "2026-07-15", "", ""), tz)
 
-	w.assertBody("/transactions?month=2026-07", "−$ 1,234.56")
+	w.assertBody("/?month=2026-07", "−$ 1,234.56")
 	for _, path := range []string{"/transactions/new", "/recurrences/new", "/categories/new"} {
 		w.assertBody(path, ">$</span>")
 	}
 
-	for _, path := range []string{"/", "/transactions?month=2026-07", "/transactions/new"} {
+	for _, path := range []string{"/", "/?month=2026-07", "/transactions/new"} {
 		if body := get(w.handler, path, w.cookie, tz).Body.String(); strings.Contains(body, "R$") {
 			t.Errorf("%s still shows R$ after switching to USD: %s", path, body)
 		}
@@ -181,17 +182,11 @@ func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 
 	w.mustSubmit(http.MethodPost, "/settings", withLanguage(settingsForm("DD/MM/YYYY", "1.234,56"), "en"))
 	w.assertSelected("en")
-
-	loc, err := time.LoadLocation("America/Sao_Paulo")
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	w.assertBody("/",
-		`<html lang="en">`, "Overview", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] search",
-		"Go to overview", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
-		"<kbd>1-7</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", time.Now().In(loc).Format("Jan")+"</div>")
-	w.assertBody("/transactions?month=2026-11", "November 2026", "<kbd>n</kbd> new")
+		`<html lang="en">`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]", "[ctrl k] search",
+		"Go to month", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
+		"<kbd>1-6</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
+	w.assertBody("/?month=2026-11", "November 2026", "<kbd>n</kbd> new")
 	w.assertBody("/transactions/new", "[expense]", "[income]")
 	w.assertBody("/settings", "Settings", "Preferences", "Language", "Date format", "Number format", "DD/MM/YYYY",
 		"Account", "Currency", "recorded amounts are not converted", "&gt; Save")

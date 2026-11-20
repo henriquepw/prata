@@ -12,45 +12,6 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-const monthLayout = "2006-01"
-
-// monthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
-func monthWindow(t time.Time) (month time.Time, from, to string) {
-	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
-
-	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
-}
-
-// transactions lists the month in ?month=YYYY-MM, the current one in the user's time zone by default, beside the
-// activity log.
-func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
-	loc, accountID := location(r), sessionFrom(r.Context()).AccountID
-	month, err := time.ParseInLocation(monthLayout, r.URL.Query().Get("month"), loc)
-	if err != nil {
-		month = time.Now().In(loc)
-	}
-
-	month, from, to := monthWindow(month)
-	transactions, err := h.db.Transactions(r.Context(), accountID, from, to)
-	if err != nil {
-		internalError(w, "listing transactions", err)
-		return
-	}
-
-	activity, err := h.db.Activity(r.Context(), accountID)
-	if err != nil {
-		internalError(w, "reading activity", err)
-		return
-	}
-
-	s, ok := h.shell(w, r, "nav.transactions")
-	if !ok {
-		return
-	}
-
-	render(w, r, http.StatusOK, transactionsPage(s, month, transactions, activity))
-}
-
 func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
 	form, ok := h.transactionForm(w, r)
 	if !ok {

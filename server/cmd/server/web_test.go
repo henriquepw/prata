@@ -220,7 +220,7 @@ func TestWebLauncher_ListsTheCommandsOnEveryPage(t *testing.T) {
 	for _, path := range []string{"/", "/devices"} {
 		body := get(w.handler, path, w.cookie).Body.String()
 		for _, text := range []string{
-			`<dialog id="launcher"`, "Ir para visão geral", "Ir para dispositivos", "Nova transação", "Nova categoria",
+			`<dialog id="launcher"`, "Ir para mês", "Ir para dispositivos", "Nova transação", "Nova categoria",
 			"Nova tag", "Nova recorrência", "Alternar tema", "Sair",
 		} {
 			if !strings.Contains(body, text) {
@@ -232,7 +232,7 @@ func TestWebLauncher_ListsTheCommandsOnEveryPage(t *testing.T) {
 
 func TestWebKeybar_BindsNewOnlyWhereThereIsOne(t *testing.T) {
 	w := newWebClient(t)
-	for path, want := range map[string]string{"/": "", "/transactions": "/transactions/new", "/tags": "/tags/new", "/devices": ""} {
+	for path, want := range map[string]string{"/": "/transactions/new", "/tags": "/tags/new", "/devices": ""} {
 		body := get(w.handler, path, w.cookie).Body.String()
 		bound := `data-key="n" hx-get="` + want + `"`
 		if want == "" && strings.Contains(body, `data-key="n"`) || want != "" && !strings.Contains(body, bound) {

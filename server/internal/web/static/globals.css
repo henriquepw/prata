@@ -666,27 +666,78 @@
     color: var(--destructive);
   }
 
-  /* Overview: the KPI strip, Pendentes and Uso por categoria in the main column, the activity log down the right. */
-  .overview {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(32ch, 0.4fr);
-    grid-template-rows: auto auto 1fr;
-    gap: 1lh 2ch;
+  /* Mês: the month bar over the boxes of the month's account and a split of the statement and the categories. */
+  .month-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2ch;
+    margin-bottom: 1lh;
   }
 
-  .overview > .log-panel {
-    grid-column: 2;
-    grid-row: 1 / span 3;
+  .month-label {
+    min-width: 18ch;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
 
+  .month-keys {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .month-keys kbd {
+    font: inherit;
+    color: var(--primary);
+  }
+
+  .month {
+    display: flex;
+    flex-direction: column;
+    gap: 1lh;
+  }
+
+  /* The boxes read as a sum: the two "=" ones get a --line border and the projected one is primary. */
   .kpis {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 1.5ch;
   }
 
-  .kpis-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .kpis > :nth-child(4),
+  .kpis > :nth-child(6) {
+    border-color: var(--line);
+  }
+
+  .kpis > :nth-child(6) .kpi-value {
+    color: var(--primary);
+  }
+
+  /* Statement: a day line with its total, the "hoje" line and the pending rows muted. */
+  .statement-day td {
+    padding: 1lh 0.5rem 0.3lh;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .statement-today td {
+    padding: 0.4lh 0.5rem;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--primary);
+    background: color-mix(in oklab, var(--primary) 8%, transparent);
+  }
+
+  .statement-pending td {
+    color: var(--muted-foreground);
   }
 
   .usages {
@@ -752,25 +803,11 @@
     animation: flash 600ms var(--ease);
   }
 
-  /* Transactions: the month's KPI strip over a 3fr 1fr grid of the Transações panel and the activity log. */
-  .transactions {
-    display: flex;
-    flex-direction: column;
-    gap: 1lh;
-  }
-
-  .transactions-grid {
+  /* Split: a 3fr 1fr grid of a screen's panel and the one beside it, stacked on mobile. */
+  .split {
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
     gap: 1lh 2ch;
-  }
-
-  .month-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2ch;
-    margin-bottom: 0.5lh;
   }
 
   /* Sheet: a dialog on the right holding a borderless panel, set apart only by a --line-soft left border. */
@@ -850,22 +887,8 @@
   }
 
   @container console (max-width: 640px) {
-    .transactions-grid {
+    .split {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .kpis-3 > :last-child {
-      grid-column: span 2;
-    }
-
-    .overview {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: none;
-    }
-
-    .overview > .log-panel {
-      grid-column: auto;
-      grid-row: auto;
     }
 
     .kpis {

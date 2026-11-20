@@ -17,7 +17,7 @@ func at(o op, instant string) op {
 	return o
 }
 
-func TestWebOverview_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) {
+func TestWebDevices_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) {
 	w := newWebClient(t)
 	phone := signinClient(t, w.client, newSignin().DeviceID)
 	ops := []op{at(w.op("TAG", ulid.Make().String(), "CREATE", map[string]any{
@@ -37,7 +37,11 @@ func TestWebOverview_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) 
 		at(phone.op("TRANSACTION", ops[2].EntityID, "DELETE", nil), "2026-08-23T13:05:30Z"),
 	)
 
-	body := get(w.handler, "/", w.cookie, &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}).Body.String()
+	if body := get(w.handler, "/", w.cookie).Body.String(); strings.Contains(body, "Log de atividade") {
+		t.Errorf("the month shows the activity log: %s", body)
+	}
+
+	body := get(w.handler, "/devices", w.cookie, &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}).Body.String()
 	if got := strings.Count(body, "&gt; ["); got != 12 {
 		t.Errorf("activity log has %d lines, want 12: %s", got, body)
 	}

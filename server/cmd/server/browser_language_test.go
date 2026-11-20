@@ -50,7 +50,7 @@ func TestWebSignup_KeepsThePageLanguageWithTheDefaultFormats(t *testing.T) {
 	response := browse(handler, http.MethodPost, "/signup", "en-US,en;q=0.9", credentials())
 	w := &webClient{client: &client{t: t, handler: handler}, cookie: sessionCookie(t, response)}
 
-	w.assertBody("/", `<html lang="en">`, "Overview")
+	w.assertBody("/", `<html lang="en">`, "Statement")
 	w.assertSelected("en", "DD/MM/YYYY", "1.234,56", "BRL")
 }
 
@@ -61,7 +61,7 @@ func TestAPISignup_IsInPortugueseWhateverTheBrowser(t *testing.T) {
 	response := browse(handler, http.MethodPost, "/login", "en-US,en;q=0.9", credentials())
 	w := &webClient{client: &client{t: t, handler: handler}, cookie: sessionCookie(t, response)}
 
-	w.assertBody("/", `<html lang="pt-BR">`, "Visão geral")
+	w.assertBody("/", `<html lang="pt-BR">`, "Extrato")
 	w.assertSelected("pt-BR")
 }
 

@@ -17,12 +17,18 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	activity, err := h.db.Activity(r.Context(), sessionFrom(r.Context()).AccountID)
+	if err != nil {
+		internalError(w, "reading activity", err)
+		return
+	}
+
 	s, ok := h.shell(w, r, "nav.devices")
 	if !ok {
 		return
 	}
 
-	render(w, r, http.StatusOK, devicesPage(s, devices))
+	render(w, r, http.StatusOK, devicesPage(s, devices, activity))
 }
 
 func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {

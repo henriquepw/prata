@@ -1,14 +1,10 @@
 package web
 
 import (
-	"strings"
-	"time"
-
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
-	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -25,90 +21,6 @@ type transactionForm struct {
 	Categories  []store.Category
 	Tags        []store.Tag
 	Errors      map[string]string
-}
-
-// monthURL is the transactions page of the month offset months away from month.
-func monthURL(month time.Time, offset int) string {
-	return "/transactions?month=" + month.AddDate(0, offset, 0).Format(monthLayout)
-}
-
-// transactionsPage lays the month's KPI strip over the Transações panel and, on its right, the activity log.
-templ transactionsPage(s shell, month time.Time, transactions []store.Transaction, activity []store.Activity) {
-	{{ income, outcome := totals(transactions) }}
-	{{ label := i18n.T(ctx, "month.year", i18n.T(ctx, "month."+month.Month().String()), month.Year()) }}
-	@layout(s) {
-		<div class="transactions">
-			<div class="kpis kpis-3">
-				@kpi(i18n.T(ctx, "transactions.income"), income)
-				@kpi(i18n.T(ctx, "transactions.outcome"), -outcome)
-				@kpi(i18n.T(ctx, "transactions.balance"), income-outcome)
-			</div>
-			<div class="transactions-grid">
-				@panel(i18n.T(ctx, "nav.transactions"), "", newAction("/transactions/new")) {
-					<div class="month-bar">
-						<div class="flex items-center gap-[1ch]">
-							<a href={ templ.SafeURL(monthURL(month, -1)) } class="lnk" aria-label={ i18n.T(ctx, "transactions.previous_month") }>‹</a>
-							<span class="uppercase tracking-[.08em]">{ label }</span>
-							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label={ i18n.T(ctx, "transactions.next_month") }>›</a>
-						</div>
-						<div class="hide-m text-xs tabular-nums">
-							<span class="text-muted-foreground">{ strings.ToLower(i18n.T(ctx, "transactions.income")) }</span> { money(ctx, income) }
-							<span class="text-muted-foreground">· { strings.ToLower(i18n.T(ctx, "transactions.outcome")) }</span> { money(ctx, -outcome) }
-						</div>
-					</div>
-					if len(transactions) == 0 {
-						@empty(i18n.T(ctx, "transactions.empty"))
-					} else {
-						@table.Table(table.Props{Class: tightTable}) {
-							@table.Header() {
-								@table.Row() {
-									@table.Head() {
-										{ i18n.T(ctx, "field.date") }
-									}
-									@table.Head(table.HeadProps{Class: "w-full"}) {
-										{ i18n.T(ctx, "field.description") }
-									}
-									@table.Head(table.HeadProps{Class: "hide-m"}) {
-										{ i18n.T(ctx, "field.category") }
-									}
-									@table.Head(table.HeadProps{Class: "hide-m"}) {
-										{ i18n.T(ctx, "nav.tags") }
-									}
-									@table.Head(table.HeadProps{Class: "text-right"}) {
-										{ i18n.T(ctx, "field.amount") }
-									}
-								}
-							}
-							@table.Body() {
-								for _, transaction := range transactions {
-									@table.Row(sheetRow("/transactions/"+transaction.ID, transaction.ID == s.Flash)) {
-										@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-											{ formatDate(transaction.OccurredAt, s.Now.Location(), dateLayout(ctx)) }
-										}
-										@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-											{ orEmpty(transaction.Description) }
-										}
-										@table.Cell(table.CellProps{Class: "hide-m"}) {
-											@categoryName(transaction.CategoryName, transaction.CategoryColor)
-										}
-										@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
-											if transaction.TagName != "" {
-												{ "#" + transaction.TagName }
-											}
-										}
-										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(transaction.Kind))}) {
-											{ money(ctx, signed(transaction.Kind, transaction.Amount)) }
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				@activityLog(activity, s.Now.Location())
-			</div>
-		</div>
-	}
 }
 
 templ transactionSheet(form transactionForm) {

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"cmp"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -91,13 +92,16 @@ templ online() {
 const closeSheet = "this.closest('dialog').close()"
 
 // sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir" asking Confirm first;
-// Error is a form-level message, such as a rejected commit.
+// Error is a form-level message, such as a rejected commit. Submit and Busy name the submit and its spinner,
+// "salvar" and "salvando" when empty.
 type sheetProps struct {
 	Title     string
 	Action    string
 	DeleteURL string
 	Confirm   string
 	Error     string
+	Submit    string
+	Busy      string
 }
 
 // sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
@@ -127,8 +131,8 @@ templ sheet(p sheetProps) {
 				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
 					{ i18n.T(ctx, "sheet.cancel") }
 				}
-				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.saving")}}) {
-					<span>&gt; { i18n.T(ctx, "form.save") }</span>
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": cmp.Or(p.Busy, i18n.T(ctx, "form.saving"))}}) {
+					<span>&gt; { cmp.Or(p.Submit, i18n.T(ctx, "form.save")) }</span>
 				}
 			</div>
 		</footer>
