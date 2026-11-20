@@ -3,12 +3,11 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 )
 
-// settingsForm is the settings screen: the Preferences and the account's Moeda shown or typed and an error message
+// settingsForm is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
 // per field name.
 type settingsForm struct {
 	store.Preferences
@@ -16,64 +15,47 @@ type settingsForm struct {
 	Errors   map[string]string
 }
 
-templ settingsPage(s shell, form settingsForm) {
-	@layout(s) {
-		@settingsFields(form)
+// settingsSheet is the Configurações sheet: the four fields in one list and "> salvar". A 422 swaps the whole sheet.
+templ settingsSheet(form settingsForm) {
+	@sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
+		@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
+				for _, l := range languages {
+					@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
+						{ l.Label }
+					}
+				}
+			}
+		}
+		@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
+				for _, f := range dateFormats {
+					@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
+						{ i18n.T(ctx, "date_format."+f.Value) }
+					}
+				}
+			}
+		}
+		@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
+				for _, f := range numberFormats {
+					@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
+						{ f.Value }
+					}
+				}
+			}
+		}
+		@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
+				for _, c := range currencies {
+					@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
+						{ c.Value + " (" + c.Symbol + ")" }
+					}
+				}
+			}
+			@field.Description() {
+				{ i18n.T(ctx, "settings.currency_note") }
+			}
+		}
 	}
-}
-
-// settingsFields is the settings form: the Preferências and Conta panels and "> salvar". A 422 swaps the whole form.
-templ settingsFields(form settingsForm) {
-	<form hx-post="/settings" hx-swap="outerHTML" hx-disable="find [type=submit]" class="grid max-w-[60ch] gap-[1lh]">
-		@panel(i18n.T(ctx, "settings.preferences"), "", nil) {
-			<div class="grid gap-[1lh]">
-				@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
-					@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
-						for _, l := range languages {
-							@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
-								{ l.Label }
-							}
-						}
-					}
-				}
-				@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
-					@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
-						for _, f := range dateFormats {
-							@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
-								{ i18n.T(ctx, "date_format."+f.Value) }
-							}
-						}
-					}
-				}
-				@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
-					@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
-						for _, f := range numberFormats {
-							@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
-								{ f.Value }
-							}
-						}
-					}
-				}
-			</div>
-		}
-		@panel(i18n.T(ctx, "settings.account"), "", nil) {
-			@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
-				@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
-					for _, c := range currencies {
-						@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
-							{ c.Value + " (" + c.Symbol + ")" }
-						}
-					}
-				}
-				@field.Description() {
-					{ i18n.T(ctx, "settings.currency_note") }
-				}
-			}
-		}
-		<div class="flex justify-end">
-			@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.saving")}}) {
-				<span>&gt; { i18n.T(ctx, "form.save") }</span>
-			}
-		</div>
-	</form>
 }

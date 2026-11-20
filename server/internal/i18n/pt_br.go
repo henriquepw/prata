@@ -44,6 +44,7 @@ var ptBR = map[string]string{
 	"keybar.navigate":      "navegar",
 	"keybar.new":           "novo",
 	"keybar.month":         "trocar mês",
+	"keybar.settings":      "configurações",
 	"keybar.commands":      "comandos",
 	"keybar.close":         "fechar",
 	"keybar.save":          "salvar",
@@ -57,6 +58,7 @@ var ptBR = map[string]string{
 	"launcher.new_category":    "Nova categoria",
 	"launcher.new_tag":         "Nova tag",
 	"launcher.new_recurrence":  "Nova recorrência",
+	"launcher.open_settings":   "Abrir configurações",
 	"launcher.toggle_theme":    "Alternar tema",
 	"launcher.sign_out":        "Sair",
 	"launcher.empty":           "nenhum comando",
@@ -70,11 +72,9 @@ var ptBR = map[string]string{
 	"kind.INCOME":     "Receita",
 
 	// Settings.
-	"settings.preferences":         "Preferências",
 	"settings.language":            "Idioma",
 	"settings.date_format":         "Formato de data",
 	"settings.number_format":       "Formato numérico",
-	"settings.account":             "Conta",
 	"settings.currency":            "Moeda",
 	"settings.currency_note":       "Trocar a moeda só muda o símbolo: os valores lançados não serão convertidos.",
 	"settings.error.language":      "Escolha um idioma.",

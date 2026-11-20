@@ -7,13 +7,13 @@ import (
 )
 
 func (h handler) settings(w http.ResponseWriter, r *http.Request) {
-	s, ok := h.shell(w, r, "nav.settings")
-	if !ok {
+	if r.Header.Get("HX-Request") != "true" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
 	session := sessionFrom(r.Context())
-	render(w, r, http.StatusOK, settingsPage(s, settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}))
+	render(w, r, http.StatusOK, settingsSheet(settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}))
 }
 
 // saveSettings stores the Preferences, Idioma included, and the account's Moeda and reloads the page in them, or
@@ -44,7 +44,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(form.Errors) > 0 {
-		render(w, r, http.StatusUnprocessableEntity, settingsFields(form))
+		render(w, r, http.StatusUnprocessableEntity, settingsSheet(form))
 		return
 	}
 

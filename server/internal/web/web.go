@@ -265,7 +265,7 @@ func redirect(w http.ResponseWriter, r *http.Request, url string) {
 
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
 // now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
-// name, as "nav.settings".
+// name, as "nav.devices".
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
 	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
 	balance, err := h.balance(r.Context(), session.AccountID, now)

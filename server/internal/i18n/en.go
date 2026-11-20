@@ -44,6 +44,7 @@ var en = map[string]string{
 	"keybar.navigate":      "navigate",
 	"keybar.new":           "new",
 	"keybar.month":         "switch month",
+	"keybar.settings":      "settings",
 	"keybar.commands":      "commands",
 	"keybar.close":         "close",
 	"keybar.save":          "save",
@@ -57,6 +58,7 @@ var en = map[string]string{
 	"launcher.new_category":    "New category",
 	"launcher.new_tag":         "New tag",
 	"launcher.new_recurrence":  "New recurrence",
+	"launcher.open_settings":   "Open settings",
 	"launcher.toggle_theme":    "Toggle theme",
 	"launcher.sign_out":        "Sign out",
 	"launcher.empty":           "no command",
@@ -70,11 +72,9 @@ var en = map[string]string{
 	"kind.INCOME":     "Income",
 
 	// Settings.
-	"settings.preferences":         "Preferences",
 	"settings.language":            "Language",
 	"settings.date_format":         "Date format",
 	"settings.number_format":       "Number format",
-	"settings.account":             "Account",
 	"settings.currency":            "Currency",
 	"settings.currency_note":       "Changing the currency only changes the symbol: recorded amounts are not converted.",
 	"settings.error.language":      "Choose a language.",

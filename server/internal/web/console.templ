@@ -53,7 +53,7 @@ templ panel(title, class string, action templ.Component) {
 // kpi is a loose KPI box: the decoded amount over its label.
 templ kpi(label string, cents int64) {
 	<div class="kpi">
-		<div class="kpi-value">
+		<div class="kpi-value text-nowrap">
 			@decoded(money(ctx, cents))
 		</div>
 		<div class="kpi-label">{ label }</div>

@@ -30,7 +30,6 @@ var nav = []struct{ Href, Label, NewURL, NewLabel string }{
 	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
 	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
 	{"/devices", "nav.devices", "", ""},
-	{"/settings", "nav.settings", "", ""},
 }
 
 // newURL is the URL of the current screen's "novo" sheet, empty where there is none.
@@ -49,7 +48,7 @@ func (s shell) newURL() string {
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
-// outside fields and dialogs, the digits, n, [ and ] click their [data-key], / focuses the Mês prompt and enter opens
+// outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Mês prompt and enter opens
 // the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
 const headScript = `(() => {
   const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
@@ -114,7 +113,7 @@ const headScript = `(() => {
     }
     if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
     if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
-    else if (/^[1-9n[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+    else if (/^[1-9n,[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
     else if (e.key === '/' && document.getElementById('launch')) {
       e.preventDefault()
       document.getElementById('launch').focus()
@@ -165,6 +164,7 @@ templ layout(s shell) {
 					<div class="ticker">
 						@ticker(s, false)
 						<div>
+							<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
 							<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
 							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
 						</div>
@@ -207,6 +207,7 @@ templ layout(s shell) {
 							<span><kbd>/</kbd> { i18n.T(ctx, "launch.submit") }</span>
 							<span><kbd>[<strong class="text-muted-foreground mx-px">/</strong>]</kbd> { i18n.T(ctx, "keybar.month") }</span>
 						}
+						<span><button type="button" data-key="," hx-get="/settings" hx-target="#sheet"><kbd>,</kbd> { i18n.T(ctx, "keybar.settings") }</button></span>
 						<span><kbd>ctrl k</kbd> { i18n.T(ctx, "keybar.commands") }</span>
 					</div>
 					<div class="keys-open">
@@ -296,11 +297,14 @@ templ launcher() {
 						</button>
 					}
 				}
+				<button type="button" role="option" hx-get="/settings" hx-target="#sheet">
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> { i18n.T(ctx, "launcher.open_settings") }</span>
+				</button>
 				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> { i18n.T(ctx, "launcher.toggle_theme") }</span>
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> { i18n.T(ctx, "launcher.toggle_theme") }</span>
 				</button>
 				<button type="submit" role="option" form="logout">
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> { i18n.T(ctx, "launcher.sign_out") }</span>
+					<span><span class="option-n">{ fmt.Sprintf("%02d", n+3) }</span> { i18n.T(ctx, "launcher.sign_out") }</span>
 				</button>
 			</div>
 			<p class="launcher-empty text-muted-foreground">¯\_(ツ)_/¯ { i18n.T(ctx, "launcher.empty") }</p>
