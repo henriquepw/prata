@@ -32,12 +32,19 @@ var (
 
 // Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup.
 type Signup struct {
-	Email      string
-	Password   string
-	DeviceName string
-	AccountID  string
-	OwnerID    string
-	DeviceID   string
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	DeviceName string `json:"device_name"`
+	AccountID  string `json:"account_id"`
+	OwnerID    string `json:"owner_id"`
+	DeviceID   string `json:"device_id"`
+}
+
+type Signin struct {
+	Email      string `json:"email"`
+	Password   string `json:"password"`
+	DeviceID   string `json:"device_id"`
+	DeviceName string `json:"device_name"`
 }
 
 // Actor is who an API key acts as.
@@ -73,21 +80,31 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	now := formatTime(time.Now())
 	statements := []statement{
-		{"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), now, now}},
-		{"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-			[]any{signup.AccountID, signup.Email, signup.OwnerID, now, now}},
-		{"INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'OWNER', ?)",
-			[]any{ulid.Make().String(), signup.AccountID, signup.OwnerID, now}},
-		{"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
-			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now}},
+		{
+			"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), now, now},
+		},
+		{
+			"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+			[]any{signup.AccountID, signup.Email, signup.OwnerID, now, now},
+		},
+		{
+			"INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'OWNER', ?)",
+			[]any{ulid.Make().String(), signup.AccountID, signup.OwnerID, now},
+		},
+		{
+			"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
+			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now},
+		},
 	}
 
 	var key string
 	if signup.DeviceID != "" {
 		key = newToken()
-		statements = append(statements, statement{"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashToken(key), now}})
+		statements = append(statements, statement{
+			"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+			[]any{signup.DeviceID, signup.OwnerID, signup.AccountID, signup.DeviceName, hashToken(key), now},
+		})
 	}
 
 	for _, statement := range statements {
@@ -109,8 +126,8 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 
 // Signin registers a device on the user's account, or reissues the key of the user's own device with that id
 // unless it is the account's web device (its first), and returns who the new API key acts as and the key.
-func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceName string) (Actor, string, error) {
-	userID, err := s.Authenticate(ctx, email, password)
+func (s *Store) Signin(ctx context.Context, dto Signin) (Actor, string, error) {
+	userID, err := s.Authenticate(ctx, dto.Email, dto.Password)
 	if err != nil {
 		return Actor{}, "", err
 	}
@@ -132,8 +149,8 @@ func (s *Store) Signin(ctx context.Context, email, password, deviceID, deviceNam
 	`
 
 	key := newToken()
-	actor := Actor{UserID: userID, DeviceID: deviceID}
-	err = s.GetContext(ctx, &actor.AccountID, query, deviceID, deviceName, hashToken(key), formatTime(time.Now()), userID)
+	actor := Actor{UserID: userID, DeviceID: dto.DeviceID}
+	err = s.GetContext(ctx, &actor.AccountID, query, dto.DeviceID, dto.DeviceName, hashToken(key), formatTime(time.Now()), userID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Actor{}, "", ErrDuplicateID
 	}

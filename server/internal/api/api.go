@@ -65,20 +65,14 @@ func actorFrom(ctx context.Context) store.Actor {
 }
 
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		DeviceName string `json:"device_name"`
-		AccountID  string `json:"account_id"`
-		OwnerID    string `json:"owner_id"`
-		DeviceID   string `json:"device_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || !isValidAuth(body.Email, body.Password, body.AccountID, body.OwnerID, body.DeviceID) {
+	var body store.Signup
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil || !isValidAuth(body.Email, body.Password, body.AccountID, body.OwnerID, body.DeviceID) {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
 
-	key, err := h.db.CreateAccount(r.Context(), store.Signup(body), h.isSignupAllowed)
+	key, err := h.db.CreateAccount(r.Context(), body, h.isSignupAllowed)
 	switch {
 	case errors.Is(err, store.ErrSignupClosed):
 		writeReason(w, http.StatusForbidden, "SIGNUP_CLOSED")
@@ -92,18 +86,14 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) signin(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Email      string `json:"email"`
-		Password   string `json:"password"`
-		DeviceID   string `json:"device_id"`
-		DeviceName string `json:"device_name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || !isValidAuth(body.Email, body.Password, body.DeviceID) {
+	var body store.Signin
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil || !isValidAuth(body.Email, body.Password, body.DeviceID) {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
 
-	actor, key, err := h.db.Signin(r.Context(), body.Email, body.Password, body.DeviceID, body.DeviceName)
+	actor, key, err := h.db.Signin(r.Context(), body)
 	switch {
 	case errors.Is(err, store.ErrInvalidCredentials):
 		writeReason(w, http.StatusUnauthorized, "INVALID_CREDENTIALS")
@@ -143,7 +133,8 @@ func (h handler) push(w http.ResponseWriter, r *http.Request) {
 		DeviceID string            `json:"device_id"`
 		Ops      []json.RawMessage `json:"ops"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.DeviceID != actor.DeviceID {
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil || body.DeviceID != actor.DeviceID {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
