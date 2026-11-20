@@ -8,11 +8,17 @@ import (
 )
 
 // launchPanel is the Mês prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
-// on screen, which the answer swaps with the new row flashing; a 422 swaps only the preview. headScript focuses it on
-// "/", completes "@" and "#" on tab and blurs it on esc.
+// on screen, which the answer morphs, so only what changed moves and the new row flashes, then clears the line; a 422
+// swaps only the preview. headScript focuses it on "/", completes "@" and "#" on tab and blurs it on esc.
 templ launchPanel(page month) {
 	@panel(i18n.T(ctx, "launch.title"), "", launchKeys()) {
-		<form hx-post="/launch" hx-target="#month" hx-swap="outerHTML" hx-status:422="target:#launch-preview swap:innerHTML">
+		<form
+			hx-post="/launch"
+			hx-target="#month"
+			hx-swap="outerMorph"
+			hx-status:422="target:#launch-preview swap:innerHTML"
+			hx-on:htmx:after:request="event.target === this && event.detail.ctx.response.status === 200 && this.reset()"
+		>
 			<input type="hidden" name="month" value={ page.yearMonth() }/>
 			<input type="hidden" name="category" value={ page.Filter.ID }/>
 			<label class="prompt launch-prompt">

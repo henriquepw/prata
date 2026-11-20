@@ -102,7 +102,6 @@ templ monthBar(page month) {
 				<a href={ templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID)) } class="lnk">{ i18n.T(ctx, "month.current") }</a>
 			}
 		</div>
-		<span class="month-keys hide-m"><kbd>[</kbd> <kbd>]</kbd> { i18n.T(ctx, "month.switch") }</span>
 	</div>
 }
 

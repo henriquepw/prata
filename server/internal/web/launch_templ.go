@@ -17,8 +17,8 @@ import (
 )
 
 // launchPanel is the Mês prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
-// on screen, which the answer swaps with the new row flashing; a 422 swaps only the preview. headScript focuses it on
-// "/", completes "@" and "#" on tab and blurs it on esc.
+// on screen, which the answer morphs, so only what changed moves and the new row flashes, then clears the line; a 422
+// swaps only the preview. headScript focuses it on "/", completes "@" and "#" on tab and blurs it on esc.
 func launchPanel(page month) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
@@ -48,14 +48,14 @@ func launchPanel(page month) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form hx-post=\"/launch\" hx-target=\"#month\" hx-swap=\"outerHTML\" hx-status:422=\"target:#launch-preview swap:innerHTML\"><input type=\"hidden\" name=\"month\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<form hx-post=\"/launch\" hx-target=\"#month\" hx-swap=\"outerMorph\" hx-status:422=\"target:#launch-preview swap:innerHTML\" hx-on:htmx:after:request=\"event.target === this && event.detail.ctx.response.status === 200 && this.reset()\"><input type=\"hidden\" name=\"month\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templruntime.NewAttributeExpression(page.yearMonth()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 16, Col: 61}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 22, Col: 61}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var3)
 			if templ_7745c5c3_Err != nil {
@@ -68,7 +68,7 @@ func launchPanel(page month) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(page.Filter.ID).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 17, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 23, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -91,7 +91,7 @@ func launchPanel(page month) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "launch.placeholder")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 27, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 33, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -104,7 +104,7 @@ func launchPanel(page month) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "launch.input")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 28, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 34, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -157,7 +157,7 @@ func launchKeys() templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "launch.focus"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 46, Col: 68}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 52, Col: 68}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -170,7 +170,7 @@ func launchKeys() templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "launch.submit"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 46, Col: 121}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 52, Col: 121}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -211,7 +211,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "launch.hint"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 53, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 59, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
@@ -229,7 +229,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToLower(i18n.T(ctx, "kind."+l.Kind)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 56, Col: 76}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 62, Col: 76}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
@@ -247,7 +247,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "launch.no_amount"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 58, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 64, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -301,7 +301,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, signed(l.Kind, l.Amount)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 60, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 66, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 				if templ_7745c5c3_Err != nil {
@@ -325,7 +325,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(l.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 65, Col: 26}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 71, Col: 26}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 				if templ_7745c5c3_Err != nil {
@@ -344,7 +344,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToLower(i18n.T(ctx, "field.no_category")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 68, Col: 91}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 74, Col: 91}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -368,7 +368,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(l.Tag.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 73, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 79, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -386,7 +386,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 			var templ_7745c5c3_Var20 string
 			templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(dayOf(l.Date).Format(dateLayout(ctx)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 75, Col: 91}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 81, Col: 91}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 			if templ_7745c5c3_Err != nil {
@@ -404,7 +404,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "launch.unknown", word))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 77, Col: 74}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 83, Col: 74}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -433,7 +433,7 @@ func launchPreview(line string, l launchLine) templ.Component {
 				var templ_7745c5c3_Var22 string
 				templ_7745c5c3_Var22, templ_7745c5c3_Err = templ.JoinStringErrs(suggestion)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 85, Col: 19}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/launch.templ`, Line: 91, Col: 19}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var22))
 				if templ_7745c5c3_Err != nil {
