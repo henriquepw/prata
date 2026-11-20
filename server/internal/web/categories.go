@@ -126,16 +126,16 @@ func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[
 	}
 
 	if changes[0].Kind != store.KindDelete {
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: listPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: returnPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// listPath is the list that shows what a sheet submit wrote: the Mês for a transaction, and otherwise its own, as
-// "/tags" for POST /tags/{id}.
-func listPath(entity string, r *http.Request) string {
+// returnPath is the page a sheet submit returns to, which shows what it wrote: the Mês for a transaction, and otherwise
+// its own list, as "/tags" for POST /tags/{id}.
+func returnPath(entity string, r *http.Request) string {
 	if entity == "TRANSACTION" {
 		return "/"
 	}
