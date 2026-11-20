@@ -120,7 +120,7 @@ templ authPage(title, action string, form authForm) {
 			<footer class="login-foot">
 				<span>prata v1</span>
 				@online()
-				<span data-clock={ prefsFrom(ctx).DateFormat }></span>
+				<span data-clock={ sessionFrom(ctx).DateFormat }></span>
 			</footer>
 			@templ.Raw("<script>" + authScript + "</script>")
 		</main>

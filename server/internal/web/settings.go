@@ -13,8 +13,8 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p := prefsFrom(r.Context())
-	render(w, r, http.StatusOK, settingsPage(s, settingsForm{Preferences: p.Preferences, Currency: p.Currency, Errors: map[string]string{}}))
+	session := sessionFrom(r.Context())
+	render(w, r, http.StatusOK, settingsPage(s, settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}))
 }
 
 // saveSettings stores the Preferences, Idioma included, and the account's Moeda and reloads the page in them, or

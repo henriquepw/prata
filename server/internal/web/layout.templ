@@ -151,7 +151,7 @@ templ layout(s shell) {
 				<header class="sbar">
 					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }<span class="cursor" aria-hidden="true">▋</span></div>
 					<div class="sbar-right">
-						<time data-clock={ prefsFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
+						<time data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
 						<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(openLauncher) }>{ i18n.T(ctx, "layout.search") }</button>
 					</div>
 				</header>

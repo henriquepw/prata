@@ -11,24 +11,9 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
-// prefs are what a request's pages follow: the user's Preferências and the account's Moeda. requireSession puts
-// them in the context; pages without a session follow defaultPrefs.
-type prefs struct {
-	store.Preferences
-	Currency string
-}
-
-var defaultPrefs = prefs{store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}, "BRL"}
-
-type prefsKey struct{}
-
-func prefsFrom(ctx context.Context) prefs {
-	if p, ok := ctx.Value(prefsKey{}).(prefs); ok {
-		return p
-	}
-
-	return defaultPrefs
-}
+// visitorSession holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
+// Idioma comes from visitor.
+var visitorSession = store.Session{Preferences: store.Preferences{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}, Currency: "BRL"}
 
 // language is an Idioma: its schema value and its name, written in itself.
 type language struct{ Value, Label string }
@@ -66,7 +51,7 @@ func findCurrency(value string) (currency, bool) {
 
 // currencySymbol is the symbol of the request's Moeda, as "R$".
 func currencySymbol(ctx context.Context) string {
-	c, _ := findCurrency(prefsFrom(ctx).Currency)
+	c, _ := findCurrency(sessionFrom(ctx).Currency)
 
 	return c.Symbol
 }
@@ -91,7 +76,7 @@ func findNumberFormat(value string) (numberFormat, bool) {
 
 // dateLayout is the Go layout of the request's Formato de data, as "02/01/2006".
 func dateLayout(ctx context.Context) string {
-	f, _ := findDateFormat(prefsFrom(ctx).DateFormat)
+	f, _ := findDateFormat(sessionFrom(ctx).DateFormat)
 
 	return f.Layout
 }
@@ -112,7 +97,7 @@ func money(ctx context.Context, cents int64) string {
 
 // amount writes non-negative cents in the request's Formato numérico, as "1.234,56", for display and form fields.
 func amount(ctx context.Context, cents int64) string {
-	f, _ := findNumberFormat(prefsFrom(ctx).NumberFormat)
+	f, _ := findNumberFormat(sessionFrom(ctx).NumberFormat)
 	whole := strconv.FormatInt(cents/100, 10)
 	for i := len(whole) - 3; i > 0; i -= 3 {
 		whole = whole[:i] + f.Thousands + whole[i:]
@@ -125,7 +110,7 @@ func amount(ctx context.Context, cents int64) string {
 // Thousands separators must split the whole part in groups of three, so "1,50" typed for "1.234,56" fails
 // instead of reading as 150.
 func parseAmount(ctx context.Context, s string) (int64, bool) {
-	f, _ := findNumberFormat(prefsFrom(ctx).NumberFormat)
+	f, _ := findNumberFormat(sessionFrom(ctx).NumberFormat)
 	whole, frac, _ := strings.Cut(s, f.Decimal)
 	groups := strings.Split(whole, f.Thousands)
 	if len(frac) > 2 || slices.ContainsFunc(groups[1:], func(g string) bool { return len(g) != 3 }) {

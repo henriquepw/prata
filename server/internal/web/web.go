@@ -158,7 +158,7 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID str
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
-// visitors without a live session to /login. The session and its prefs ride in the request context.
+// visitors without a live session to /login. The session and its Idioma ride in the request context.
 func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
@@ -180,7 +180,6 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 
 		setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
 		ctx := context.WithValue(r.Context(), sessionKey{}, session)
-		ctx = context.WithValue(ctx, prefsKey{}, prefs{session.Preferences, session.Currency})
 		ctx = i18n.WithLanguage(ctx, session.Language)
 		next(w, r.WithContext(ctx))
 	})
@@ -217,8 +216,13 @@ func preferredLanguage(header string) string {
 	return preferred
 }
 
+// sessionFrom is the request's session, or visitorSession on a page without one.
 func sessionFrom(ctx context.Context) store.Session {
-	return ctx.Value(sessionKey{}).(store.Session)
+	if session, ok := ctx.Value(sessionKey{}).(store.Session); ok {
+		return session
+	}
+
+	return visitorSession
 }
 
 // setSessionCookie writes the session cookie, or clears it when token is empty.
