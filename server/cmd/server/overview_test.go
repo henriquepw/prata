@@ -182,4 +182,26 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 			t.Errorf("categories ticker lacks %q: %s", text, body)
 		}
 	}
+
+	overview := get(w.handler, "/", w.cookie).Body.String()
+	for _, status := range []string{"[atrasada]", "[pendente]"} {
+		i := strings.Index(overview, status)
+		if cell := overview[strings.LastIndex(overview[:max(i, 0)], "<td"):max(i, 0)]; i < 0 || strings.Contains(cell, "hide-m") {
+			t.Errorf("overview hides %s on mobile: %s", status, overview)
+		}
+	}
+}
+
+func TestWebDecode_ReadsTheRealValueAndHidesTheScramble(t *testing.T) {
+	w := newWebClient(t)
+	body := get(w.handler, "/", w.cookie).Body.String()
+	for _, value := range []string{"Pendentes", "Uso por categoria", "R$ 0,00"} {
+		if want := `<span class="sr-only">` + value + `</span><span aria-hidden="true" data-decode>` + value + `</span>`; !strings.Contains(body, want) {
+			t.Errorf("overview lacks %q: %s", want, body)
+		}
+	}
+
+	if strings.Contains(body, "data-decode aria-label") {
+		t.Errorf("overview still decodes into aria-label: %s", body)
+	}
 }

@@ -91,9 +91,6 @@ templ homePage(s shell, page overview) {
 								@table.Head(table.HeadProps{Class: "w-full"}) {
 									Descrição
 								}
-								@table.Head(table.HeadProps{Class: "hide-m"}) {
-									Status
-								}
 								@table.Head(table.HeadProps{Class: "text-right"}) {
 									Valor
 								}
@@ -110,8 +107,6 @@ templ homePage(s shell, page overview) {
 									}
 									@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 										{ orEmpty(pending.Recurrence.Description) }
-									}
-									@table.Cell(table.CellProps{Class: "hide-m"}) {
 										if pending.Overdue {
 											@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 												[atrasada]

@@ -5,13 +5,13 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 )
 
-// decodeScript scrambles every [data-decode] (panel titles and KPI values) into the real value in its aria-label
-// within 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion
-// leaves the value as rendered.
+// decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
+// 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion leaves the
+// value as rendered.
 const decodeScript = `(() => {
   const scramble = c => /\d/.test(c) ? Math.random() * 10 | 0 : /\p{L}/u.test(c) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.random() * 26 | 0] : c
   const decode = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelectorAll('[data-decode]').forEach(e => {
-    const value = e.getAttribute('aria-label'), start = performance.now()
+    const value = e.textContent, start = performance.now()
     e.removeAttribute('data-decode')
     const step = now => {
       const n = Math.floor(Math.min(1, (now - start) / 300) * value.length)
@@ -29,7 +29,9 @@ const decodeScript = `(() => {
 templ panel(title, class string, action templ.Component) {
 	<section class={ "panel", class }>
 		<header class="panel-head">
-			<h2 class="panel-title" data-decode aria-label={ title }>{ title }</h2>
+			<h2 class="panel-title">
+				@decoded(title)
+			</h2>
 			if action != nil {
 				@action
 			}
@@ -41,9 +43,16 @@ templ panel(title, class string, action templ.Component) {
 // kpi is a loose KPI box: the decoded amount over its label.
 templ kpi(label string, cents int64) {
 	<div class="kpi">
-		<div class="kpi-value" data-decode aria-label={ money(cents) }>{ money(cents) }</div>
+		<div class="kpi-value">
+			@decoded(money(cents))
+		</div>
 		<div class="kpi-label">{ label }</div>
 	</div>
+}
+
+// decoded is text that decodes on screen: screen readers read it from the sr-only copy and skip the scramble.
+templ decoded(text string) {
+	<span class="sr-only">{ text }</span><span aria-hidden="true" data-decode>{ text }</span>
 }
 
 // newAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.

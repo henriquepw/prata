@@ -47,7 +47,7 @@ templ transactionsPage(s shell, month time.Time, transactions []store.Transactio
 					<div class="month-bar">
 						<div class="flex items-center gap-[1ch]">
 							<a href={ templ.SafeURL(monthURL(month, -1)) } class="lnk" aria-label="Mês anterior">‹</a>
-							<span class="uppercase tracking-[.08em]" data-decode aria-label={ label }>{ label }</span>
+							<span class="uppercase tracking-[.08em]">{ label }</span>
 							<a href={ templ.SafeURL(monthURL(month, 1)) } class="lnk" aria-label="Próximo mês">›</a>
 						</div>
 						<div class="hide-m text-xs tabular-nums">
