@@ -1,6 +1,9 @@
 package web
 
-import "github.com/henriquepw/prata/server/internal/web/components/button"
+import (
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
+)
 
 // decodeScript scrambles every [data-decode] (panel titles and KPI values) into the real value in its aria-label
 // within 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion
@@ -48,4 +51,14 @@ templ newAction(url string) {
 	@button.Button(button.Props{Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet"}}) {
 		+ nova [n]
 	}
+}
+
+// empty is a list's one-line empty state, as in "¯\_(ツ)_/¯ nenhuma categoria ainda".
+templ empty(text string) {
+	<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { text }</p>
+}
+
+// sheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
+func sheetRow(url string, flash bool) table.RowProps {
+	return table.RowProps{Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet", "tabindex": "0", "data-flash": flash}}
 }

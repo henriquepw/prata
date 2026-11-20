@@ -2,9 +2,9 @@ package web
 
 import (
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -31,32 +31,42 @@ type categoryForm struct {
 
 templ categoriesPage(s shell, categories []store.Category) {
 	@layout(s) {
-		<div class="mb-6 flex items-center justify-between">
-			<h1 class="text-2xl font-semibold tracking-tight">Categorias</h1>
-			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-get": "/categories/new", "hx-target": "#sheet"}}) {
-				Nova categoria
-			}
-		</div>
-		if len(categories) == 0 {
-			<p class="text-sm text-muted-foreground">Nenhuma categoria ainda.</p>
-		} else {
-			<ul class="divide-y border">
-				for _, category := range categories {
-					<li>
-						<button type="button" hx-get={ "/categories/" + category.ID } hx-target="#sheet" class="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-muted/50">
-							<span class={ "inline-block size-2.5 shrink-0 rounded-full", colorClass(category.Color) }></span>
-							<span class="flex-1">{ category.Name }</span>
-							<span class="tabular-nums text-muted-foreground">
-								if category.MonthlyLimit == 0 {
-									sem limite
-								} else {
-									R$ { formatCents(category.MonthlyLimit) }
+		@panel("Categorias", "", newAction("/categories/new")) {
+			if len(categories) == 0 {
+				@empty("nenhuma categoria ainda")
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head(table.HeadProps{Class: "w-full"}) {
+								Nome
+							}
+							@table.Head(table.HeadProps{Class: "text-right"}) {
+								Limite mensal
+							}
+						}
+					}
+					@table.Body() {
+						for _, category := range categories {
+							@table.Row(sheetRow("/categories/"+category.ID, category.ID == s.Flash)) {
+								@table.Cell() {
+									<span class="flex items-center gap-[1ch]">
+										<span class={ "inline-block size-[.7em] shrink-0", colorClass(category.Color) } aria-hidden="true"></span>
+										{ category.Name }
+									</span>
 								}
-							</span>
-						</button>
-					</li>
+								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
+									if category.MonthlyLimit == 0 {
+										sem limite
+									} else {
+										{ money(category.MonthlyLimit) }
+									}
+								}
+							}
+						}
+					}
 				}
-			</ul>
+			}
 		}
 	}
 }

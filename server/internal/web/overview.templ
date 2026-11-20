@@ -80,7 +80,7 @@ templ homePage(s shell, page overview) {
 					<p role="alert" class="mb-[1lh] text-destructive">! { page.Error }</p>
 				}
 				if len(s.Balance.Pending) == 0 {
-					<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma ocorrência pendente</p>
+					@empty("nenhuma ocorrência pendente")
 				} else {
 					@table.Table(table.Props{Class: "@max-[640px]:[&_:is(td,th)]:px-1"}) {
 						@table.Header() {
@@ -140,7 +140,7 @@ templ homePage(s shell, page overview) {
 			}
 			@panel("Uso por categoria", "", nil) {
 				if len(page.Usages) == 0 {
-					<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> nenhuma categoria ainda</p>
+					@empty("nenhuma categoria ainda")
 				} else {
 					<ul class="usages">
 						for _, usage := range page.Usages {
