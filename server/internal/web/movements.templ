@@ -21,7 +21,8 @@ templ movementsPage(s shell, view movementsView) {
 // last import under it. A response, a 422 included, swaps the screen's main.
 templ importPanel(view movementsView) {
 	@panel(i18n.T(ctx, "movements.import"), "", nil) {
-		<form hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+		<form id="import-form" hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+			<input type="hidden" name="confirm_currency"/>
 			@hintField("file", i18n.T(ctx, "movements.file"), i18n.T(ctx, "movements.file_hint"), view.Error) {
 				@input.Input(input.Props{ID: "file", Name: "file", Type: "file", Required: true, Attributes: ariaInvalid(view.Error)})
 			}
@@ -43,6 +44,28 @@ templ importPanel(view movementsView) {
 		}
 	}
 }
+
+// currencyDialog asks, in #sheet, to import a file whose Moeda is not the Conta's: confirming resubmits the import
+// form, whose file input still holds the file, with confirm_currency set.
+templ currencyDialog(v currencyView) {
+	<div id="currency-dialog" class="panel sheet-panel">
+		<header class="panel-head">
+			<h2 class="panel-title">{ i18n.T(ctx, "movements.currency.title") }</h2>
+			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+		</header>
+		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.File, v.Account) }</p>
+		<footer class="mt-auto flex flex-wrap justify-end gap-[1ch]">
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+				{ i18n.T(ctx, "sheet.cancel") }
+			}
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"data-focus": true, "onclick": templ.JSUnsafeFuncCall(confirmCurrency)}}) {
+				<span>&gt; { i18n.T(ctx, "movements.currency.confirm") }</span>
+			}
+		</footer>
+	</div>
+}
+
+const confirmCurrency = "const f = document.getElementById('import-form'); f.elements.confirm_currency.value = '1'; this.closest('dialog').close(); f.requestSubmit()"
 
 // movementsPanel lists the pending movements.
 templ movementsPanel(view movementsView) {

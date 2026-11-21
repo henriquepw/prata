@@ -13,8 +13,9 @@ import (
 
 // AccountRef is an account a user can reach.
 type AccountRef struct {
-	ID   string `db:"id"`
-	Name string `db:"name"`
+	ID       string `db:"id"`
+	Name     string `db:"name"`
+	Currency string `db:"currency"`
 }
 
 // Movement is a line read from a Conta bancária that waits for review, shown with the name of its account.
@@ -33,7 +34,7 @@ type Movement struct {
 // UserAccounts are the accounts the user belongs to.
 func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, error) {
 	query := `
-		SELECT c.id, c.name
+		SELECT c.id, c.name, c.currency
 		FROM account_users a
 		JOIN accounts c ON c.id = a.account_id
 		WHERE a.user_id = ? AND c.deleted_at IS NULL
