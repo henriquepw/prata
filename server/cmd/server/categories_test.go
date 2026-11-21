@@ -15,6 +15,8 @@ type webClient struct {
 	*client
 	cookie *http.Cookie
 	cursor int64
+	// defaultID is the default category the account was born with.
+	defaultID string
 }
 
 func newWebClient(t *testing.T) *webClient {
@@ -22,7 +24,14 @@ func newWebClient(t *testing.T) *webClient {
 	handler := newHandler(openStore(t), config{})
 	device := newClient(t, handler, newSignup())
 
-	return &webClient{client: device, cookie: login(t, handler)}
+	w := &webClient{client: device, cookie: login(t, handler)}
+	for _, o := range w.newOps() { // the categories every account is born with
+		if o.Payload["is_default"] == float64(1) {
+			w.defaultID = o.EntityID
+		}
+	}
+
+	return w
 }
 
 // submit sends the form like htmx does, with extra cookies such as tz, and returns the response.
@@ -150,4 +159,125 @@ func TestWebCategories_SigninWithWebDeviceIDIsRefused(t *testing.T) {
 	}
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Feira", "GREEN", "0"))
+}
+
+func TestSignup_SeedsTheInitialCategoriesInThePull(t *testing.T) {
+	handler := newHandler(openStore(t), config{})
+	device := newClient(t, handler, newSignup())
+
+	type marks struct{ daily, isDefault float64 }
+	got := map[string]marks{}
+	for _, o := range device.pull(0, 500).Ops {
+		if o.Entity != "CATEGORY" || o.Kind != "CREATE" || o.Payload["monthly_limit"] != float64(0) {
+			t.Errorf("signup op = %+v, want a CATEGORY CREATE with limit 0", o)
+		}
+
+		got[o.Payload["name"].(string)] = marks{o.Payload["is_daily"].(float64), o.Payload["is_default"].(float64)}
+	}
+
+	want := map[string]marks{"Gastos fixos": {0, 0}, "Investimento": {0, 0}, "Meta": {0, 0}, "Livre": {1, 1}}
+	if !maps.Equal(got, want) {
+		t.Errorf("initial categories = %v, want %v", got, want)
+	}
+}
+
+func TestWebCategories_DefaultCategoryIsNotDeletable(t *testing.T) {
+	w := newWebClient(t)
+
+	response := w.submit(http.MethodDelete, "/categories/"+w.defaultID, nil)
+	if response.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("delete default = %d, want %d: %s", response.Code, http.StatusUnprocessableEntity, response.Body)
+	}
+
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("ops after refused delete = %+v, want none", ops)
+	}
+
+	edit := get(w.handler, "/categories/"+w.defaultID, w.cookie).Body.String()
+	if !strings.Contains(edit, "Livre") || strings.Contains(edit, `hx-delete`) {
+		t.Errorf("default category sheet = %s, want it alive without a delete action", edit)
+	}
+
+	w.mustSubmit(http.MethodPost, "/categories/"+w.defaultID, categoryForm("Geral", "GRAY", "0"))
+	if page := get(w.handler, "/categories", w.cookie).Body.String(); !strings.Contains(page, "Geral") {
+		t.Errorf("list after renaming the default = %s, want Geral", page)
+	}
+}
+
+func TestWebCategories_DeleteMovesTransactionsAndRecurrencesToTheDefault(t *testing.T) {
+	w := newWebClient(t)
+	w.push(newCategory(w.client))
+	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-01", categoryID, ""))
+	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("Aluguel", "OUTCOME", "1500", categoryID, "5", "2026-01-01", ""))
+	created := w.newOps()
+	transactionID, recurrenceID := created[1].EntityID, created[2].EntityID
+
+	w.mustSubmit(http.MethodDelete, "/categories/"+categoryID, nil)
+
+	moved := map[string]bool{}
+	ops := w.newOps()
+	for _, o := range ops[:len(ops)-1] {
+		if o.Kind != "UPDATE" || o.Payload["category_id"] != w.defaultID {
+			t.Errorf("move op = %+v, want an UPDATE to the default category", o)
+		}
+
+		moved[o.Entity+"/"+o.EntityID] = true
+	}
+
+	if last := ops[len(ops)-1]; len(ops) != 3 || last.Entity != "CATEGORY" || last.Kind != "DELETE" || last.EntityID != categoryID ||
+		!moved["TRANSACTION/"+transactionID] || !moved["RECURRENCE/"+recurrenceID] {
+		t.Errorf("ops after delete = %+v, want both moves then the DELETE", ops)
+	}
+}
+
+func TestWebCategories_DailyMarkIsEditedInTheForm(t *testing.T) {
+	w := newWebClient(t)
+	w.mustSubmit(http.MethodPost, "/categories", url.Values{"name": {"Mercado"}, "color": {"GREEN"}, "monthly_limit": {"0"}, "is_daily": {"1"}})
+	created := w.newOps()[0]
+	if created.Payload["is_daily"] != float64(1) || created.Payload["is_default"] != nil {
+		t.Errorf("create payload = %v, want daily and no default mark", created.Payload)
+	}
+
+	edit := get(w.handler, "/categories/"+created.EntityID, w.cookie).Body.String()
+	if !strings.Contains(edit, `name="is_daily" value="1" checked`) {
+		t.Errorf("edit form = %s, want the daily choice on", edit)
+	}
+
+	w.mustSubmit(http.MethodPost, "/categories/"+created.EntityID, url.Values{"name": {"Mercado"}, "color": {"GREEN"}, "monthly_limit": {"0"}, "is_daily": {"0"}})
+	if ops := w.newOps(); len(ops) != 1 || ops[0].Payload["is_daily"] != float64(0) {
+		t.Errorf("ops after turning daily off = %+v, want one UPDATE with is_daily 0", ops)
+	}
+}
+
+func TestPush_DefaultCategoryIsNotDeletableAndMarksSync(t *testing.T) {
+	c := newClient(t, newHandler(openStore(t), config{}), newSignup())
+
+	var defaultID string
+	for _, o := range c.pull(0, 500).Ops {
+		if o.Payload["is_default"] == float64(1) {
+			defaultID = o.EntityID
+		}
+	}
+
+	pushed := c.push(c.op("CATEGORY", defaultID, "DELETE", nil))
+	if len(pushed.Rejected) != 1 || pushed.Rejected[0].Reason != "INVALID_OPERATION" {
+		t.Fatalf("push deleting the default = %+v, want INVALID_OPERATION", pushed)
+	}
+
+	category := newCategory(c)
+	category.Payload["is_daily"] = 1
+	c.push(category, c.op("CATEGORY", categoryID, "UPDATE", map[string]any{"is_daily": 0, "updated_at": "2026-08-24T10:00:00Z"}))
+
+	var created, updated op
+	for _, o := range c.pull(seededOps, 500).Ops {
+		if o.Kind == "CREATE" {
+			created = o
+		} else {
+			updated = o
+		}
+	}
+
+	if created.Payload["is_daily"] != float64(1) || updated.Payload["is_daily"] != float64(0) {
+		t.Errorf("pulled marks = %v then %v, want is_daily 1 then 0", created.Payload, updated.Payload)
+	}
 }

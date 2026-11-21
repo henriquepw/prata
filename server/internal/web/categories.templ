@@ -32,6 +32,8 @@ type categoryForm struct {
 	Name         string
 	Color        string
 	MonthlyLimit string
+	IsDaily      bool
+	IsDefault    bool
 	Errors       map[string]string
 }
 
@@ -83,7 +85,7 @@ templ categorySheet(form categoryForm) {
 	@sheet(sheetProps{
 		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "categories.new", "categories.edit")),
 		Action:    utils.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
-		DeleteURL: utils.IfElse(form.ID == "", "", "/categories/"+form.ID),
+		DeleteURL: utils.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID),
 		Confirm:   i18n.T(ctx, "categories.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
@@ -93,6 +95,14 @@ templ categorySheet(form categoryForm) {
 				@choiceOption("color", color.Value, color.Value == form.Color) {
 					<span class={ color.Class } aria-hidden="true">■</span> { strings.ToLower(i18n.T(ctx, "color."+color.Value)) }
 				}
+			}
+		}
+		@choiceField("is_daily", i18n.T(ctx, "categories.daily"), "") {
+			@choiceOption("is_daily", "1", form.IsDaily) {
+				{ i18n.T(ctx, "categories.daily_yes") }
+			}
+			@choiceOption("is_daily", "0", !form.IsDaily) {
+				{ i18n.T(ctx, "categories.daily_no") }
 			}
 		}
 		@hintField("monthly_limit", i18n.T(ctx, "categories.monthly_limit"), i18n.T(ctx, "categories.monthly_limit_hint"), form.Errors["monthly_limit"]) {

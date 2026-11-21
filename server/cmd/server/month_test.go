@@ -287,7 +287,7 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 	}
 }
 
-func TestWebMonth_ConfirmDropsDeletedCategory(t *testing.T) {
+func TestWebMonth_ConfirmUsesTheDefaultCategoryOfDeletedCategory(t *testing.T) {
 	w := newWebClient(t)
 	recurrenceID := ulid.Make().String()
 	w.push(newCategory(w.client), w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
@@ -301,8 +301,8 @@ func TestWebMonth_ConfirmDropsDeletedCategory(t *testing.T) {
 	}
 
 	ops := w.newOps()
-	if len(ops) != 1 || ops[0].Payload["category_id"] != nil {
-		t.Errorf("ops after confirm = %+v, want one TRANSACTION CREATE without the deleted category", ops)
+	if len(ops) != 1 || ops[0].Payload["category_id"] != w.defaultID {
+		t.Errorf("ops after confirm = %+v, want one TRANSACTION CREATE in the default category", ops)
 	}
 }
 

@@ -12,7 +12,6 @@ func TestWebLists_AreConsolePanelsWithEmptyStates(t *testing.T) {
 	w.mustSubmit(http.MethodDelete, "/devices/"+w.deviceID, nil)
 
 	for path, empty := range map[string]string{
-		"/categories":  "nenhuma categoria ainda",
 		"/tags":        "nenhuma tag ainda",
 		"/recurrences": "nenhuma recorrência ainda",
 		"/devices":     "nenhum dispositivo conectado",

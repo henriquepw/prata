@@ -21,13 +21,13 @@ func newEnglishClient(t *testing.T) *webClient {
 
 func TestWebEnglish_Categories(t *testing.T) {
 	w := newEnglishClient(t)
-	w.assertBody("/categories", "Categories", "+ new [n]", "no categories yet")
+	w.assertBody("/categories", "Categories", "+ new [n]", "Livre")
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	id := w.newOps()[0].EntityID
 	w.assertBody("/categories", "Mercado", "Name", "Monthly limit", "no limit")
-	w.assertBody("/categories/"+id, "Edit category", "Color", "green", "Monthly limit", "empty = no limit", "Cancel", "Delete",
-		"delete this category? Its transactions will show as no category.", "yes, delete", "no", "&gt; Save", `data-busy="saving"`, `aria-label="Close"`)
+	w.assertBody("/categories/"+id, "Edit category", "Color", "green", "Monthly limit", "empty = no limit", "Cancel", "Delete", "Daily",
+		"delete this category? Its transactions and recurrences move to the default category.", "yes, delete", "no", "&gt; Save", `data-busy="saving"`, `aria-label="Close"`)
 	w.assertBody("/categories/new", "New category")
 }
 
@@ -64,7 +64,7 @@ func TestWebEnglish_Month(t *testing.T) {
 	tz := &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}
 	w.assertBody("/?month=2026-07", "July 2026", "Previous balance", "+ Income", "− Expenses", "= Realized", "± To confirm",
 		"= Projected", `aria-label="Previous month"`, `aria-label="Next month"`, "[this month]", "switch month", "Statement",
-		"no transactions this month", "no categories yet")
+		"no transactions this month")
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""), tz)
@@ -121,7 +121,7 @@ func TestWebTicker_OverdueCountIsPluralInEachLanguage(t *testing.T) {
 func TestWebEnglish_Devices(t *testing.T) {
 	w := newEnglishClient(t)
 	w.assertBody("/devices", "Devices", "Name", "Last seen", "Created at", "Revoke",
-		"revoke laptop?", "yes, revoke", "Activity log", "no operations yet")
+		"revoke laptop?", "yes, revoke", "Activity log")
 }
 
 func TestWebEnglish_ValidationErrorsAre422InEnglish(t *testing.T) {

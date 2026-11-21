@@ -10,6 +10,9 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// seededOps is how many ops signup leaves in the oplog: the account's initial categories.
+const seededOps = 4
+
 func newActor(t *testing.T) (*store.Store, store.Actor) {
 	t.Helper()
 	ctx := context.Background()
@@ -58,7 +61,7 @@ func TestCommitOps_OverlaysDomainRow(t *testing.T) {
 	}
 	read := func() category {
 		var row category
-		if err := db.Get(&row, "SELECT name, color, monthly_limit, account_id, deleted_at, server_seq FROM categories"); err != nil {
+		if err := db.Get(&row, "SELECT name, color, monthly_limit, account_id, deleted_at, server_seq FROM categories WHERE id = '01JXQ8Z7000000000000000000'"); err != nil {
 			t.Fatal(err)
 		}
 
@@ -77,8 +80,8 @@ func TestCommitOps_OverlaysDomainRow(t *testing.T) {
 	}
 
 	commit(t, db, actor, "01JXQ8ZB000000000000000003", "DELETE", ``)
-	if got := read(); got.DeletedAt == nil || *got.DeletedAt != "2026-08-24T10:00:00Z" || got.Name != "Feira" || got.ServerSeq != 3 {
-		t.Errorf("after DELETE row = %+v, want a tombstone at the op's created_at with server_seq 3", got)
+	if got := read(); got.DeletedAt == nil || *got.DeletedAt != "2026-08-24T10:00:00Z" || got.Name != "Feira" || got.ServerSeq != seededOps+3 {
+		t.Errorf("after DELETE row = %+v, want a tombstone at the op's created_at after the seeded ops", got)
 	}
 }
 
@@ -100,7 +103,7 @@ func TestPull_RecordsRequestedCursorAndLastSeen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if page.NextCursor != 1 || device.Cursor != 0 || device.LastSeenAt == nil {
+	if page.NextCursor != seededOps+1 || device.Cursor != 0 || device.LastSeenAt == nil {
 		t.Errorf("device = %+v after pull to %d, want cursor 0 (only the next request confirms) and last_seen_at set", device, page.NextCursor)
 	}
 }
@@ -121,7 +124,7 @@ func TestCommitChanges_IsAllOrNothing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(page.Ops) != 0 {
+	if len(page.Ops) != seededOps {
 		t.Errorf("ops after rejection = %+v, want the CREATE rolled back too", page.Ops)
 	}
 }

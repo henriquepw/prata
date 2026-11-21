@@ -122,7 +122,7 @@ func TestWebRecurrences_InvalidFormIs422AndWritesNothing(t *testing.T) {
 	}
 }
 
-func TestWebRecurrences_EditKeepsDeletedCategory(t *testing.T) {
+func TestWebRecurrences_EditAfterCategoryDeletedKeepsTheDefaultCategory(t *testing.T) {
 	w := newWebClient(t)
 	w.push(newCategory(w.client))
 	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("Aluguel", "OUTCOME", "1500", categoryID, "5", "2026-01-01", ""))
@@ -130,7 +130,7 @@ func TestWebRecurrences_EditKeepsDeletedCategory(t *testing.T) {
 	w.mustSubmit(http.MethodDelete, "/categories/"+categoryID, nil)
 	w.newOps()
 
-	w.mustSubmit(http.MethodPost, "/recurrences/"+created.EntityID, recurrenceForm("Aluguel", "OUTCOME", "1500", "", "10", "2026-01-01", ""))
+	w.mustSubmit(http.MethodPost, "/recurrences/"+created.EntityID, recurrenceForm("Aluguel", "OUTCOME", "1500", w.defaultID, "10", "2026-01-01", ""))
 	ops := w.newOps()
 	if len(ops) != 1 || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"rule", "updated_at"}) {
 		t.Errorf("ops after editing the day = %+v, want one UPDATE with only rule and updated_at", ops)

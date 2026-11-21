@@ -10,6 +10,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -44,6 +45,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		Name:         strings.TrimSpace(r.PostFormValue("name")),
 		Color:        r.PostFormValue("color"),
 		MonthlyLimit: strings.TrimSpace(r.PostFormValue("monthly_limit")),
+		IsDaily:      r.PostFormValue("is_daily") == "1",
 		Errors:       map[string]string{},
 	}
 	if form.Name == "" {
@@ -60,7 +62,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
-		Fields: map[string]any{"name": form.Name, "color": form.Color, "monthly_limit": limit}}
+		Fields: map[string]any{"name": form.Name, "color": form.Color, "monthly_limit": limit, "is_daily": int64(utils.IfElse(form.IsDaily, 1, 0))}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
 	} else if _, ok := h.category(w, r); !ok {
@@ -82,7 +84,8 @@ func (h handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 
 // storedCategoryForm fills the sheet with the stored category.
 func storedCategoryForm(ctx context.Context, category store.Category) categoryForm {
-	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, MonthlyLimit: amount(ctx, category.MonthlyLimit), Errors: map[string]string{}}
+	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, MonthlyLimit: amount(ctx, category.MonthlyLimit),
+		IsDaily: category.IsDaily, IsDefault: category.IsDefault, Errors: map[string]string{}}
 }
 
 // category reads the live category in the path, answering 404 when the account has none.

@@ -46,18 +46,18 @@ func TestWebDevices_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) {
 		t.Errorf("activity log has %d lines, want 12: %s", got, body)
 	}
 
-	if strings.Contains(body, "Viagem") {
-		t.Errorf("activity log shows the 13th newest op: %s", body)
+	if strings.Contains(body, "Viagem") || strings.Contains(body, `"Compra 1"`) {
+		t.Errorf("activity log shows an op older than the 12th newest: %s", body)
 	}
 
 	rest := body
+	// the four seeded categories of the signup are the newest ops
 	for _, want := range []string{
 		"[14:32]", `phone · transação "Uber" alterada`,
 		"[10:10]", `laptop · transação "Compra 10" criada`,
 		"[10:06]", `laptop · transação "Compra 6" criada`,
 		"[10:05]", "phone · transação excluída",
 		"[10:05]", `laptop · transação "Compra 5" criada`,
-		"[10:01]", `laptop · transação "Compra 1" criada`,
 	} {
 		i := strings.Index(rest, html.EscapeString(want))
 		if i < 0 {

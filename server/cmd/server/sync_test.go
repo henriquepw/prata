@@ -9,11 +9,15 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"slices"
 	"strconv"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
 )
+
+// seededOps is how many ops the first account's signup leaves in the oplog: its initial categories.
+const seededOps = 4
 
 const (
 	categoryID    = "01JXQ8Z7000000000000000000"
@@ -148,7 +152,7 @@ func TestPush_AcksOpsThatComeBackInPull(t *testing.T) {
 		t.Fatalf("acks = %+v, want in push order with increasing server_seq", pushed.Acks)
 	}
 
-	pulled := c.pull(0, 500)
+	pulled := c.pull(seededOps, 500)
 	if !pulled.UpToDate || pulled.NextCursor != pushed.Acks[1].ServerSeq || len(pulled.Ops) != 2 {
 		t.Fatalf("pull = %+v, want both ops, up to date at the last seq", pulled)
 	}
@@ -166,7 +170,7 @@ func TestPush_ResendReturnsSameSeqWithoutDuplicating(t *testing.T) {
 	if len(again.Acks) != 1 || again.Acks[0].ServerSeq != first.Acks[0].ServerSeq {
 		t.Fatalf("resend acks = %+v, want server_seq %d", again.Acks, first.Acks[0].ServerSeq)
 	}
-	if got := len(c.pull(0, 500).Ops); got != 1 {
+	if got := len(c.pull(seededOps, 500).Ops); got != 1 {
 		t.Errorf("pulled %d ops, want 1", got)
 	}
 }
@@ -266,7 +270,7 @@ func TestPull_PreservesUnknownPayloadFields(t *testing.T) {
 	category.Payload["icon"] = map[string]any{"name": "cart"}
 	c.push(category)
 
-	got := c.pull(0, 500).Ops[0].Payload["icon"]
+	got := c.pull(seededOps, 500).Ops[0].Payload["icon"]
 	if icon, ok := got.(map[string]any); !ok || icon["name"] != "cart" {
 		t.Errorf("pulled icon = %v, want the original field", got)
 	}
@@ -277,7 +281,7 @@ func TestPull_PagesByLimitUntilUpToDate(t *testing.T) {
 	c.push(newCategory(c), newTransaction(c), c.op("CATEGORY", categoryID, "DELETE", nil))
 
 	var seqs []int64
-	cursor, pages := int64(0), 0
+	cursor, pages := int64(seededOps), 0
 	for {
 		page := c.pull(cursor, 2)
 		pages++
@@ -291,8 +295,9 @@ func TestPull_PagesByLimitUntilUpToDate(t *testing.T) {
 		}
 	}
 
-	if pages != 2 || len(seqs) != 3 || seqs[0] >= seqs[1] || seqs[1] >= seqs[2] || cursor != seqs[2] {
-		t.Errorf("pulled seqs %v in %d pages ending at %d, want 3 increasing seqs in 2 pages", seqs, pages, cursor)
+	// the category's delete is preceded by the move of its transaction to the default category
+	if pages != 2 || len(seqs) != 4 || !slices.IsSorted(seqs) || cursor != seqs[3] {
+		t.Errorf("pulled seqs %v in %d pages ending at %d, want 4 increasing seqs in 2 pages", seqs, pages, cursor)
 	}
 	if page := c.pull(cursor, 2); len(page.Ops) != 0 || !page.UpToDate || page.NextCursor != cursor {
 		t.Errorf("pull at the end = %+v, want empty and up to date at %d", page, cursor)
@@ -326,8 +331,8 @@ func TestSync_IsolatesAccounts(t *testing.T) {
 	})
 	ana.push(newCategory(ana))
 
-	if page := bia.pull(0, 500); len(page.Ops) != 0 {
-		t.Errorf("bia pulled %+v, want none of ana's ops", page.Ops)
+	if page := bia.pull(0, 500); len(page.Ops) != seededOps || slices.ContainsFunc(page.Ops, func(o op) bool { return o.EntityID == categoryID }) {
+		t.Errorf("bia pulled %+v, want only her own initial categories", page.Ops)
 	}
 	if pushed := bia.push(bia.op("CATEGORY", categoryID, "UPDATE", map[string]any{"name": "Roubada"})); len(pushed.Rejected) != 1 || pushed.Rejected[0].Reason != "NOT_OWNER" {
 		t.Errorf("bia updating ana's row = %+v, want NOT_OWNER", pushed)
@@ -459,8 +464,9 @@ func TestSnapshot_ReturnsAccountStateWithTombstones(t *testing.T) {
 	phone := signinClient(t, laptop, "01JXQ8Z9000000000000000000")
 
 	got := phone.snapshot()
-	if len(got.Categories) != 1 || got.Categories[0]["id"] != categoryID || got.Categories[0]["deleted_at"] != "2026-08-23T14:02:11Z" {
-		t.Errorf("categories = %v, want the deleted category as a tombstone", got.Categories)
+	i := slices.IndexFunc(got.Categories, func(c map[string]any) bool { return c["id"] == categoryID })
+	if len(got.Categories) != seededOps+1 || i < 0 || got.Categories[i]["deleted_at"] != "2026-08-23T14:02:11Z" {
+		t.Errorf("categories = %v, want the initial ones and the deleted category as a tombstone", got.Categories)
 	}
 	if len(got.Transactions) != 1 || got.Transactions[0]["amount"] != float64(4590) {
 		t.Errorf("transactions = %v, want the transaction", got.Transactions)

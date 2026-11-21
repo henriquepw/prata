@@ -81,6 +81,7 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		args  []any
 	}
 	now := formatTime(time.Now())
+	webDeviceID := ulid.Make().String()
 	statements := []statement{
 		{
 			"INSERT INTO users (id, email, secret, language, created_at, updated_at) VALUES (?, ?, ?, COALESCE(NULLIF(?, ''), 'pt-BR'), ?, ?)",
@@ -96,7 +97,7 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		},
 		{
 			"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
-			[]any{ulid.Make().String(), signup.OwnerID, signup.AccountID, now},
+			[]any{webDeviceID, signup.OwnerID, signup.AccountID, now},
 		},
 	}
 
@@ -117,6 +118,10 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 
 			return "", fmt.Errorf("creating account: %w", err)
 		}
+	}
+
+	if err := seedCategories(ctx, tx, Actor{AccountID: signup.AccountID, UserID: signup.OwnerID, DeviceID: webDeviceID}, now); err != nil {
+		return "", err
 	}
 
 	if err := tx.Commit(); err != nil {

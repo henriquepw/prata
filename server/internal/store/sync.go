@@ -73,7 +73,7 @@ type table struct {
 
 var tables = map[string]table{
 	"CATEGORY": {"categories", map[string]bool{
-		"name": false, "color": false, "monthly_limit": true,
+		"name": false, "color": false, "monthly_limit": true, "is_daily": true, "is_default": true,
 		"created_at": false, "updated_at": false, "deleted_at": false,
 	}},
 	"TAG": {"tags", map[string]bool{
@@ -136,6 +136,19 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 		}
 	}
 
+	if reason == "" && op.Entity == "CATEGORY" && op.Kind == KindDelete {
+		query = "SELECT EXISTS (SELECT 1 FROM categories WHERE id = ? AND is_default = 1)"
+
+		var isDefault bool
+		if err := tx.GetContext(ctx, &isDefault, query, op.EntityID); err != nil {
+			return Result{}, fmt.Errorf("reading category %s: %w", op.EntityID, err)
+		}
+
+		if isDefault {
+			reason = ReasonInvalidOperation
+		}
+	}
+
 	if reason != "" {
 		return Result{Reason: reason}, nil
 	}
@@ -145,7 +158,14 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 	}
 
 	result := Result{}
-	result.Seq, err = record(ctx, tx, actor, op, values)
+	if op.Entity == "CATEGORY" && op.Kind == KindDelete {
+		err = moveToDefaultCategory(ctx, tx, actor, op)
+	}
+
+	if err == nil {
+		result.Seq, err = record(ctx, tx, actor, op, values)
+	}
+
 	if isConstraint(err) {
 		result = Result{Reason: ReasonInvalidOperation}
 		_, err = tx.ExecContext(ctx, "ROLLBACK TO op")
@@ -160,6 +180,47 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 	}
 
 	return result, nil
+}
+
+// moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op to the account's
+// default category, as UPDATE ops from the same device; an account without a default category moves nothing.
+func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
+	query := "SELECT id FROM categories WHERE account_id = ? AND is_default = 1 AND deleted_at IS NULL"
+
+	var defaultID string
+	err := tx.GetContext(ctx, &defaultID, query, actor.AccountID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+
+	if err != nil {
+		return fmt.Errorf("reading default category: %w", err)
+	}
+
+	for _, entity := range []string{"TRANSACTION", "RECURRENCE"} {
+		query = "SELECT id FROM " + tables[entity].name + " WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL"
+
+		var ids []string
+		if err := tx.SelectContext(ctx, &ids, query, actor.AccountID, op.EntityID); err != nil {
+			return fmt.Errorf("listing %s rows of the category: %w", entity, err)
+		}
+
+		for _, id := range ids {
+			values := map[string]any{"category_id": defaultID, "updated_at": op.CreatedAt}
+			payload, err := json.Marshal(values)
+			if err != nil {
+				return fmt.Errorf("encoding %s move: %w", entity, err)
+			}
+
+			move := Op{ID: ulid.Make().String(), Entity: entity, EntityID: id, Kind: KindUpdate, Payload: payload,
+				ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: op.OwnerID, CreatedAt: op.CreatedAt}
+			if _, err := record(ctx, tx, actor, move, values); err != nil {
+				return fmt.Errorf("moving %s %s: %w", entity, id, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // validate checks the op against the protocol and the actor, and returns the known payload fields as SQL values;

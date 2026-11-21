@@ -188,8 +188,8 @@ func TestWebTransactions_DeletedCategoryAndTag(t *testing.T) {
 	w.mustSubmit(http.MethodDelete, "/tags/"+tagID, nil)
 	w.newOps()
 
-	if body := get(w.handler, "/?month=2026-07", w.cookie).Body.String(); !strings.Contains(body, "Sem categoria") {
-		t.Errorf("list shows the deleted category, want Sem categoria: %s", body)
+	if body := get(w.handler, "/?month=2026-07", w.cookie).Body.String(); !strings.Contains(body, "Livre") {
+		t.Errorf("list lacks the default category the transaction moved to: %s", body)
 	}
 
 	if body := get(w.handler, "/transactions/new", w.cookie).Body.String(); strings.Contains(body, "Mercado") || strings.Contains(body, "Viagem") {
@@ -206,7 +206,7 @@ func TestWebTransactions_DeletedCategoryAndTag(t *testing.T) {
 	}
 }
 
-func TestWebTransactions_EditKeepsDeletedCategoryAndTag(t *testing.T) {
+func TestWebTransactions_EditAfterCategoryDeletedKeepsTheDefaultCategory(t *testing.T) {
 	w := newWebClient(t)
 	w.push(newCategory(w.client), newTag(w.client))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-01", categoryID, tagID))
@@ -215,7 +215,7 @@ func TestWebTransactions_EditKeepsDeletedCategoryAndTag(t *testing.T) {
 	w.mustSubmit(http.MethodDelete, "/tags/"+tagID, nil)
 	w.newOps()
 
-	w.mustSubmit(http.MethodPost, "/transactions/"+created.EntityID, transactionForm("Feira livre", "OUTCOME", "10", "2026-07-01", "", ""))
+	w.mustSubmit(http.MethodPost, "/transactions/"+created.EntityID, transactionForm("Feira livre", "OUTCOME", "10", "2026-07-01", w.defaultID, ""))
 	ops := w.newOps()
 	if len(ops) != 1 || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"description", "updated_at"}) {
 		t.Errorf("ops after editing the description = %+v, want one UPDATE with only description and updated_at", ops)
