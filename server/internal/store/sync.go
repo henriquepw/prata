@@ -203,28 +203,39 @@ func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID string) (stri
 	return id, nil
 }
 
-// withDefaultCategory puts the account's default category in an OUTCOME transaction or recurrence that CREATEs
-// without a category or UPDATEs its category to null, in values and in the op's payload, so every device pulls
-// the category the server stored; an account without a default category changes nothing.
+// withDefaultCategory puts the account's default category in an OUTCOME transaction or recurrence left without a
+// category by the op, in values and in the op's payload, so every device pulls the category the server stored: a
+// CREATE without one, an UPDATE that sets it to null, or an UPDATE that turns an uncategorised row into an OUTCOME.
+// An account without a default category changes nothing.
 func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[string]any) (Op, error) {
 	if (op.Entity != "TRANSACTION" && op.Entity != "RECURRENCE") || op.Kind == KindDelete {
 		return op, nil
 	}
 
-	category, set := values["category_id"].(*string)
-	if (set && category != nil) || (!set && op.Kind != KindCreate) {
-		return op, nil
-	}
+	category, _ := values["category_id"].(*string)
+	kind, _ := values["kind"].(*string)
+	_, hasCategory := values["category_id"]
+	if op.Kind == KindUpdate && (kind == nil || !hasCategory) {
+		query := "SELECT kind, category_id FROM " + tables[op.Entity].name + " WHERE id = ?"
 
-	kind, set := values["kind"].(*string)
-	if !set && op.Kind == KindUpdate {
-		query := "SELECT kind FROM " + tables[op.Entity].name + " WHERE id = ?"
-		if err := tx.GetContext(ctx, &kind, query, op.EntityID); err != nil {
-			return op, fmt.Errorf("reading %s %s kind: %w", op.Entity, op.EntityID, err)
+		var stored struct {
+			Kind       string  `db:"kind"`
+			CategoryID *string `db:"category_id"`
+		}
+		if err := tx.GetContext(ctx, &stored, query, op.EntityID); err != nil {
+			return op, fmt.Errorf("reading %s %s: %w", op.Entity, op.EntityID, err)
+		}
+
+		if kind == nil {
+			kind = &stored.Kind
+		}
+
+		if !hasCategory {
+			category = stored.CategoryID
 		}
 	}
 
-	if kind == nil || *kind != "OUTCOME" {
+	if category != nil || kind == nil || *kind != "OUTCOME" {
 		return op, nil
 	}
 

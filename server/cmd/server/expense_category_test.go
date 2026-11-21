@@ -138,3 +138,24 @@ func TestWeb_NoScreenSaysSemCategoria(t *testing.T) {
 		}
 	}
 }
+
+func TestPush_UpdateTurningAnIncomeIntoAnExpenseGoesToTheDefault(t *testing.T) {
+	c := newClient(t, newHandler(openStore(t), config{}), newSignup())
+
+	var defaultID string
+	for _, o := range c.pull(0, 500).Ops {
+		if o.Payload["is_default"] == float64(1) {
+			defaultID = o.EntityID
+		}
+	}
+
+	income := newTransaction(c)
+	income.Payload["kind"], income.Payload["category_id"] = "INCOME", nil
+	c.push(income)
+	c.push(c.op("TRANSACTION", transactionID, "UPDATE", map[string]any{"kind": "OUTCOME", "updated_at": "2026-08-24T10:00:00Z"}))
+
+	ops := c.pull(seededOps+1, 500).Ops
+	if len(ops) != 1 || ops[0].Payload["category_id"] != defaultID {
+		t.Errorf("ops = %+v, want the UPDATE carrying the default category", ops)
+	}
+}
