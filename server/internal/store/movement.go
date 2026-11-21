@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/importfile"
@@ -125,6 +126,17 @@ func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, s
 // confirmed in the same transaction. An income keeps no category and an expense without one gets the default. It
 // returns ErrNotFound when the movement is not pending in the account, so a second confirm creates nothing.
 func (s *Store) ConfirmMovement(ctx context.Context, session Session, id, description, categoryID string, loc *time.Location) (Reason, error) {
+	return s.confirmMovement(ctx, session, id, description, categoryID, nil, loc)
+}
+
+// ConfirmMovementAsOccurrence is ConfirmMovement for the occurrence of the recurrence on date (YYYY-MM-DD): the
+// transaction confirms it, with the movement's amount and date. An occurrence already confirmed is rejected by the
+// unique (recurrence_id, occurrence_date), so no second transaction is made.
+func (s *Store) ConfirmMovementAsOccurrence(ctx context.Context, session Session, id, recurrenceID, date, description, categoryID string, loc *time.Location) (Reason, error) {
+	return s.confirmMovement(ctx, session, id, description, categoryID, map[string]any{"recurrence_id": recurrenceID, "occurrence_date": date}, loc)
+}
+
+func (s *Store) confirmMovement(ctx context.Context, session Session, id, description, categoryID string, occurrence map[string]any, loc *time.Location) (Reason, error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return "", fmt.Errorf("starting confirm: %w", err)
@@ -146,6 +158,21 @@ func (s *Store) ConfirmMovement(ctx context.Context, session Session, id, descri
 	}
 
 	fields := map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339)}
+	if occurrence != nil {
+		query = "SELECT EXISTS (SELECT 1 FROM recurrences WHERE id = ? AND account_id = ? AND kind = ? AND deleted_at IS NULL)"
+
+		var sameKind bool
+		if err := tx.GetContext(ctx, &sameKind, query, occurrence["recurrence_id"], session.AccountID, movement.Kind); err != nil {
+			return "", fmt.Errorf("checking recurrence: %w", err)
+		}
+
+		if !sameKind {
+			return ReasonInvalidOperation, nil
+		}
+	}
+
+	maps.Copy(fields, occurrence)
+
 	if description != "" {
 		fields["description"] = description
 	}

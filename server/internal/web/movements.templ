@@ -116,6 +116,7 @@ templ movementsPanel(view movementsView) {
 							}
 							@table.Cell() {
 								@reviewForm(m, view.Categories)
+								@occurrenceConfirm(m, occurrencesFor(m, view.Pending))
 							}
 						}
 					}
@@ -146,4 +147,23 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 			<span>{ i18n.T(ctx, "movements.ignore") }</span>
 		}
 	</form>
+}
+
+// occurrenceConfirm confirms a movement as one of the pending occurrences of its kind, equal amounts and closest dates
+// first. A response swaps the screen's main.
+templ occurrenceConfirm(m store.Movement, occurrences []occurrence) {
+	if len(occurrences) > 0 {
+		<form hx-post={ "/movements/" + m.ID + "/occurrence" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mt-1 flex flex-wrap items-center gap-[1ch]">
+			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "movements.occurrence")}}) {
+				for _, o := range occurrences {
+					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
+						{ movementDate(ctx, o.Date) } { orEmpty(o.Recurrence.Description) } { money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
+					}
+				}
+			}
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline}) {
+				<span>&gt; { i18n.T(ctx, "movements.confirm_occurrence") }</span>
+			}
+		</form>
+	}
 }

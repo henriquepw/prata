@@ -1,17 +1,20 @@
 package web
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // maxImport is the size limit of an imported file.
@@ -23,6 +26,7 @@ type movementsView struct {
 	Accounts   []store.AccountRef
 	Categories []store.Category
 	Movements  []store.Movement
+	Pending    []occurrence
 	Summary    string
 	Error      string
 }
@@ -140,6 +144,11 @@ func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status 
 		return
 	}
 
+	if view.Pending, err = h.pendingThisMonth(r); err != nil {
+		internalError(w, "listing pending occurrences", err)
+		return
+	}
+
 	s, ok := h.shell(w, r, "nav.movements")
 	if !ok {
 		return
@@ -192,6 +201,77 @@ func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
 func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.IgnoreMovement(r.Context(), sessionFrom(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
 		internalError(w, "ignoring movement", err)
+		return
+	}
+
+	h.renderMovements(w, r, http.StatusOK, movementsView{})
+}
+
+// pendingThisMonth are the account's pending occurrences up to the end of the current month, the ones the ticker counts.
+func (h handler) pendingThisMonth(r *http.Request) ([]occurrence, error) {
+	now := time.Now().In(location(r))
+	month, _, _ := monthWindow(now)
+
+	return h.pending(r.Context(), sessionFrom(r.Context()).AccountID, now, month.AddDate(0, 1, -1))
+}
+
+// occurrencesFor are the pending occurrences of the movement's kind, the ones of an equal amount first and then the
+// closest in date to the movement's.
+func occurrencesFor(m store.Movement, pending []occurrence) []occurrence {
+	day, _ := time.Parse(time.DateOnly, m.OccurredAt)
+	distance := func(o occurrence) time.Duration {
+		date, _ := time.Parse(time.DateOnly, o.Date)
+
+		return max(date.Sub(day), day.Sub(date))
+	}
+	isEqual := func(o occurrence) bool { return o.Recurrence.Amount == m.Amount }
+
+	matches := slices.DeleteFunc(slices.Clone(pending), func(o occurrence) bool { return o.Recurrence.Kind != m.Kind })
+	slices.SortStableFunc(matches, func(a, b occurrence) int {
+		return cmp.Or(
+			cmp.Compare(utils.IfElse(isEqual(a), 0, 1), utils.IfElse(isEqual(b), 0, 1)),
+			cmp.Compare(distance(a), distance(b)),
+		)
+	})
+
+	return matches
+}
+
+// confirmMovementAsOccurrence makes the pending movement in the path the confirmation of the occurrence of the form,
+// "<recurrence id>:<date>", then answers the screen. Only a pending occurrence of the movement's kind is accepted
+// (422 otherwise), and one confirmed meanwhile, by another movement or by hand, creates nothing (409).
+func (h handler) confirmMovementAsOccurrence(w http.ResponseWriter, r *http.Request) {
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return
+	}
+
+	recurrenceID, date, _ := strings.Cut(r.PostFormValue("occurrence"), ":")
+	pending, err := h.pendingThisMonth(r)
+	if err != nil {
+		internalError(w, "listing pending occurrences", err)
+		return
+	}
+
+	i := slices.IndexFunc(pending, func(o occurrence) bool { return o.Recurrence.ID == recurrenceID && o.Date == date })
+	if i < 0 {
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	}
+
+	categoryID := orEmpty(pending[i].Recurrence.CategoryID)
+	if !hasCategory(categories, categoryID) {
+		categoryID = ""
+	}
+
+	reason, err := h.db.ConfirmMovementAsOccurrence(r.Context(), sessionFrom(r.Context()), r.PathValue("id"), recurrenceID, date, "", categoryID, location(r))
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		internalError(w, "confirming movement as occurrence", err)
+		return
+	}
+
+	if reason != "" {
+		http.Error(w, http.StatusText(http.StatusConflict), http.StatusConflict)
 		return
 	}
 

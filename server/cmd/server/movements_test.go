@@ -388,3 +388,92 @@ func TestMovements_NubankCSVIsBRLAndAsksConfirmationOnAnotherCurrencyAccount(t *
 
 	assertContains(t, w.uploadFile(w.accountID(), "nubank.csv", csvCard).Body.String(), "sem conversão", "BRL", "USD")
 }
+
+// expenseRecurrences pushes two monthly expense recurrences on day 5 from 2024-01 (Padaria for the movement's amount,
+// Internet for another) and an income one, returning their ids.
+func expenseRecurrences(w *webClient) (padaria, internet, salary string) {
+	padaria, internet, salary = ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
+	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	w.push(
+		monthlyRecurrence(w.client, padaria, "OUTCOME", 4590, "Padaria mensal", "5", start, ""),
+		monthlyRecurrence(w.client, internet, "OUTCOME", 5000, "Internet", "5", start, ""),
+		monthlyRecurrence(w.client, salary, "INCOME", 150000, "Salário fixo", "5", start, ""),
+	)
+
+	return padaria, internet, salary
+}
+
+func TestMovements_ConfirmAsOccurrenceListsPendingOfTheSameKindEqualAmountAndClosestDateFirst(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	padaria, internet, salary := expenseRecurrences(w)
+
+	w.submit(http.MethodPost, "/movements/"+w.movementID("Salário")+"/ignore", url.Values{})
+	body := get(w.handler, "/movements", w.cookie).Body.String()
+
+	assertInOrder(t, body, `"`+padaria+":2024-01-05", `"`+padaria+":2024-02-05", `"`+internet+":2024-01-05")
+	if strings.Contains(body, salary+":") {
+		t.Errorf("income occurrence offered for an expense: %s", body)
+	}
+
+	w.submit(http.MethodPost, "/recurrences/"+padaria+"/occurrences/2024-01-05", url.Values{"month": {"2024-01"}})
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, padaria+":2024-01-05") {
+		t.Errorf("confirmed occurrence still offered: %s", body)
+	}
+}
+
+func TestMovements_ConfirmAsOccurrenceCreatesTheOccurrencesTransactionOnce(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	padaria, _, _ := expenseRecurrences(w)
+	w.newOps()
+	id, second := w.movementID("Padaria Pão Quente"), w.movementID("Salário")
+
+	form := url.Values{"occurrence": {padaria + ":2024-01-05"}}
+	if response := w.submit(http.MethodPost, "/movements/"+id+"/occurrence", form); response.Code >= 400 {
+		t.Fatalf("confirm as occurrence = %d: %s", response.Code, response.Body)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 1 {
+		t.Fatalf("ops = %+v, want one", ops)
+	}
+
+	payload := ops[0].Payload
+	if ops[0].Entity != "TRANSACTION" || payload["recurrence_id"] != padaria || payload["occurrence_date"] != "2024-01-05" ||
+		payload["amount"] != float64(4590) || payload["kind"] != "OUTCOME" || !strings.HasPrefix(payload["occurred_at"].(string), "2024-01-05") {
+		t.Errorf("op = %+v, want the occurrence confirmed with the movement's amount", ops[0])
+	}
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria Pão") {
+		t.Errorf("confirmed movement still pending: %s", body)
+	}
+
+	// another movement cannot confirm the same occurrence, nor an occurrence of another kind, nor a made-up one
+	for _, occurrence := range []string{padaria + ":2024-01-05", padaria + ":2024-01-06", "nope:2024-01-05"} {
+		w.submit(http.MethodPost, "/movements/"+second+"/occurrence", url.Values{"occurrence": {occurrence}})
+	}
+
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("refused confirmations made ops %+v, want none", ops)
+	}
+
+	// the manual confirmation of the same occurrence is refused too
+	response := w.submit(http.MethodPost, "/recurrences/"+padaria+"/occurrences/2024-01-05", url.Values{"month": {"2024-01"}})
+	if response.Code != http.StatusConflict {
+		t.Errorf("manual confirm = %d, want %d", response.Code, http.StatusConflict)
+	}
+}
+
+func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	_, _, salary := expenseRecurrences(w)
+	w.newOps()
+
+	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/occurrence", url.Values{"occurrence": {salary + ":2024-01-05"}})
+
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("ops = %+v, want none", ops)
+	}
+}
