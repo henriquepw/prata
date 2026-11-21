@@ -2,7 +2,7 @@
 package importfile
 
 import (
-	"bytes"
+	"cmp"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"golang.org/x/text/encoding/charmap"
 )
 
 // ErrUnrecognized means the file is not in a format this package reads.
@@ -45,15 +47,15 @@ type Row struct {
 
 // Parse reads a file in any format this package knows, which it recognizes by the content.
 func Parse(content []byte) ([]Statement, error) {
-	if statements, err := ParseOFX(content); err == nil {
+	if statements, err := parseOFX(content); err == nil {
 		return statements, nil
 	}
 
-	return ParseNubankCSV(content)
+	return parseNubankCSV(content)
 }
 
-// line is a Row as read, with the TRNTYPE the file gives it.
-type line struct {
+// ofxLine is a Row as read, with the TRNTYPE the file gives it.
+type ofxLine struct {
 	Row
 	Type string
 }
@@ -61,16 +63,18 @@ type line struct {
 // tag matches an OFX tag with the text after it, which is the whole value in SGML (1.x) and in XML (2.x) alike.
 var tag = regexp.MustCompile(`<([A-Za-z0-9.]+)>\s*([^<]*)`)
 
-// ParseOFX reads an OFX 1.x or 2.x file of bank accounts and credit cards, in the encoding it declares.
-func ParseOFX(content []byte) ([]Statement, error) {
+// parseOFX reads an OFX 1.x or 2.x file of bank accounts and credit cards, in UTF-8 or Windows-1252. A statement
+// without a BANKID, as a card's, takes the institution from the sign-on ORG.
+func parseOFX(content []byte) ([]Statement, error) {
 	text := decode(content)
 	if !strings.Contains(strings.ToUpper(text), "<OFX>") {
 		return nil, ErrUnrecognized
 	}
 
 	var statements []Statement
-	var row *line
-	var rows []line
+	var row *ofxLine
+	var rows []ofxLine
+	var org string
 	flush := func() {
 		if len(statements) == 0 {
 			return
@@ -78,14 +82,17 @@ func ParseOFX(content []byte) ([]Statement, error) {
 
 		last := &statements[len(statements)-1]
 		for _, r := range rows {
-			last.Rows = append(last.Rows, finish(r.Row, r.Type, last.Kind))
+			last.Rows = append(last.Rows, withKind(r.Row, r.Type, last.Kind))
 		}
+
 		rows = nil
 	}
 
 	for _, m := range tag.FindAllStringSubmatch(text, -1) {
 		name, value := strings.ToUpper(m[1]), html.UnescapeString(strings.TrimSpace(m[2]))
 		switch name {
+		case "ORG":
+			org = value
 		case "STMTRS", "CCSTMTRS":
 			flush()
 			row = nil
@@ -95,7 +102,7 @@ func ParseOFX(content []byte) ([]Statement, error) {
 		case "CCACCTFROM":
 			statements[len(statements)-1].Kind = Card
 		case "STMTTRN":
-			rows = append(rows, line{})
+			rows = append(rows, ofxLine{})
 			row = &rows[len(rows)-1]
 		}
 
@@ -107,10 +114,6 @@ func ParseOFX(content []byte) ([]Statement, error) {
 		switch name {
 		case "BANKID":
 			current.Institution = value
-		case "ORG":
-			if current.Institution == "" {
-				current.Institution = value
-			}
 		case "ACCTID":
 			current.Account = value
 		case "CURDEF":
@@ -131,6 +134,7 @@ func ParseOFX(content []byte) ([]Statement, error) {
 			if err != nil {
 				return nil, ErrUnrecognized
 			}
+
 			row.Amount = cents
 		case "DTPOSTED":
 			if len(value) < 8 {
@@ -141,6 +145,7 @@ func ParseOFX(content []byte) ([]Statement, error) {
 			if err != nil {
 				return nil, ErrUnrecognized
 			}
+
 			row.Date = date.Format(time.DateOnly)
 		case "NAME":
 			row.Description = value
@@ -150,13 +155,15 @@ func ParseOFX(content []byte) ([]Statement, error) {
 			}
 		}
 	}
+
 	flush()
 
 	if len(statements) == 0 {
 		return nil, ErrUnrecognized
 	}
 
-	for _, statement := range statements {
+	for i, statement := range statements {
+		statements[i].Institution = cmp.Or(statement.Institution, org)
 		for _, row := range statement.Rows {
 			if row.ID == "" || row.Date == "" {
 				return nil, ErrUnrecognized
@@ -167,42 +174,38 @@ func ParseOFX(content []byte) ([]Statement, error) {
 	return statements, nil
 }
 
-// finish sets the Kind and the positive Amount of a line: the sign of the file, except on a card line that says
+// withKind sets the Kind and the positive Amount of a line: the sign of the file, except on a card line that says
 // DEBIT or CREDIT, which decides it.
-func finish(row Row, trnType, kind string) Row {
-	row.Kind = "OUTCOME"
-	if row.Amount > 0 {
-		row.Kind = "INCOME"
-	}
-
+func withKind(row Row, trnType, kind string) Row {
+	row.Kind, row.Amount = bySign(row.Amount)
 	if kind == Card && trnType == "DEBIT" {
 		row.Kind = "OUTCOME"
 	} else if kind == Card && trnType == "CREDIT" {
 		row.Kind = "INCOME"
 	}
 
-	if row.Amount < 0 {
-		row.Amount = -row.Amount
-	}
-
 	return row
 }
 
-// decode turns the file into UTF-8: Latin-1 when the header declares CHARSET 1252 or ISO-8859-1, or when the bytes
-// are not valid UTF-8.
+// bySign is the Kind of a signed amount, INCOME when positive, with the amount made positive.
+func bySign(amount int64) (string, int64) {
+	if amount > 0 {
+		return "INCOME", amount
+	}
+
+	return "OUTCOME", -amount
+}
+
+// decode turns the file into UTF-8, reading it as Windows-1252 (a superset of Latin-1, what CHARSET:1252 and
+// ISO-8859-1 files hold) when it is not valid UTF-8.
 func decode(content []byte) string {
-	header, _, _ := bytes.Cut(content, []byte("<"))
-	declared := strings.ToUpper(string(header))
-	if utf8.Valid(content) && !strings.Contains(declared, "1252") && !strings.Contains(declared, "8859") {
+	if utf8.Valid(content) {
 		return string(content)
 	}
 
-	runes := make([]rune, len(content))
-	for i, b := range content {
-		runes[i] = rune(b)
-	}
+	text, _ := charmap.Windows1252.NewDecoder().String(string(content))
 
-	return string(runes)
+	return text
 }
 
 // parseCents reads a signed decimal amount, as "-1234.56" or "-1234,56", as cents.
@@ -218,9 +221,9 @@ func parseCents(value string) (int64, error) {
 // nubank is the institution of the CSVs it exports.
 const nubank = "Nubank"
 
-// ParseNubankCSV reads the Nubank card statement (date,title,amount) or account statement
+// parseNubankCSV reads the Nubank card statement (date,title,amount) or account statement
 // (Data,Valor,Identificador,Descrição), told apart by the header. Amounts are BRL.
-func ParseNubankCSV(content []byte) ([]Statement, error) {
+func parseNubankCSV(content []byte) ([]Statement, error) {
 	records, err := csv.NewReader(strings.NewReader(strings.TrimPrefix(decode(content), "\ufeff"))).ReadAll()
 	if err != nil || len(records) == 0 {
 		return nil, ErrUnrecognized
@@ -267,11 +270,7 @@ func ParseNubankCSV(content []byte) ([]Statement, error) {
 			seen[key]++
 		}
 
-		row.Kind, row.Amount = "OUTCOME", row.Amount*sign
-		if row.Amount < 0 {
-			row.Kind, row.Amount = "INCOME", -row.Amount
-		}
-
+		row.Kind, row.Amount = bySign(-row.Amount * sign)
 		statement.Rows = append(statement.Rows, row)
 	}
 

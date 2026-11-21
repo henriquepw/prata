@@ -1,6 +1,8 @@
 package web
 
 import (
+	"cmp"
+
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
@@ -53,7 +55,7 @@ templ currencyDialog(v currencyView) {
 			<h2 class="panel-title">{ i18n.T(ctx, "movements.currency.title") }</h2>
 			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
-		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.File, v.Account) }</p>
+		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.FileCurrency, v.AccountCurrency) }</p>
 		<footer class="mt-auto flex flex-wrap justify-end gap-[1ch]">
 			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
 				{ i18n.T(ctx, "sheet.cancel") }
@@ -110,7 +112,7 @@ templ movementsPanel(view movementsView) {
 								{ movementDate(ctx, m.OccurredAt) }
 							}
 							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-								{ m.Description }
+								@description(&m.Description)
 							}
 							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
 								{ money(ctx, signed(m.Kind, m.Amount)) }
@@ -123,7 +125,7 @@ templ movementsPanel(view movementsView) {
 							}
 							@table.Cell() {
 								@reviewForm(m, view.Categories)
-								@occurrenceConfirm(m, occurrencesFor(m, view.Pending))
+								@occurrenceConfirm(m, occurrencesFor(m, view.Occurrences))
 							}
 						}
 					}
@@ -139,15 +141,9 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 	<form hx-post={ "/movements/" + m.ID + "/confirm" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="flex flex-wrap items-center gap-[1ch]">
 		@input.Input(input.Props{Name: "description", Value: m.Description, Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.description")}})
 		if m.Kind == "OUTCOME" {
-			@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.category")}}) {
-				for _, category := range categories {
-					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
-						{ category.Name }
-					}
-				}
-			}
+			@categorySelect(categories)
 		}
-		@button.Button(button.Props{Type: button.TypeSubmit}) {
+		@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
 			<span>&gt; { i18n.T(ctx, "movements.confirm") }</span>
 		}
 		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
@@ -156,20 +152,25 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 	</form>
 }
 
+// categorySelect picks the category of an expense, the default one preselected.
+templ categorySelect(categories []store.Category) {
+	@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.category")}}) {
+		for _, category := range categories {
+			@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
+				{ category.Name }
+			}
+		}
+	}
+}
+
 const selectAll = "for (const c of document.querySelectorAll('input[form=batch][name=id]')) c.checked = this.checked"
 
 // batchForm confirms or ignores the checked movements, which carry form="batch" from their rows. The category
 // (the default one is preselected) goes to the expenses; incomes keep none. A response swaps the screen's main.
 templ batchForm(categories []store.Category) {
 	<form id="batch" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mb-2 flex flex-wrap items-center gap-[1ch]">
-		@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.category")}}) {
-			for _, category := range categories {
-				@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
-					{ category.Name }
-				}
-			}
-		}
-		@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/movements/confirm"}}) {
+		@categorySelect(categories)
+		@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/movements/confirm", "data-busy": i18n.T(ctx, "form.confirming")}}) {
 			<span>&gt; { i18n.T(ctx, "movements.confirm_selected") }</span>
 		}
 		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/ignore"}}) {
@@ -186,11 +187,11 @@ templ occurrenceConfirm(m store.Movement, occurrences []occurrence) {
 			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "movements.occurrence")}}) {
 				for _, o := range occurrences {
 					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
-						{ movementDate(ctx, o.Date) } { orEmpty(o.Recurrence.Description) } { money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
+						{ movementDate(ctx, o.Date) } { cmp.Or(orEmpty(o.Recurrence.Description), i18n.T(ctx, "field.no_description")) } { money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
 					}
 				}
 			}
-			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline}) {
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
 				<span>&gt; { i18n.T(ctx, "movements.confirm_occurrence") }</span>
 			}
 		</form>

@@ -9,6 +9,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/oklog/ulid/v2 v2.1.1
 	golang.org/x/crypto v0.57.0
+	golang.org/x/text v0.42.0
 	modernc.org/sqlite v1.51.0
 )
 

@@ -20,10 +20,9 @@ type AccountRef struct {
 	Currency string `db:"currency"`
 }
 
-// Movement is a line read from a Conta bancária that waits for review, shown with the name of its account.
+// Movement is a line read from a Conta bancária that waits for review.
 type Movement struct {
 	ID              string `db:"id"`
-	AccountName     string `db:"account_name"`
 	Institution     string `db:"institution"`
 	BankAccount     string `db:"bank_account"`
 	BankAccountKind string `db:"bank_account_kind"`
@@ -54,13 +53,10 @@ func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, 
 // PendingMovements are the pending movements of the account, newest first.
 func (s *Store) PendingMovements(ctx context.Context, accountID string) ([]Movement, error) {
 	query := `
-		SELECT
-			m.id, c.name AS account_name, m.institution, m.bank_account, m.bank_account_kind,
-			m.description, m.kind, m.amount, m.occurred_at
-		FROM movements m
-		JOIN accounts c ON c.id = m.account_id
-		WHERE m.account_id = ? AND m.status = 'PENDING'
-		ORDER BY m.occurred_at DESC, m.id
+		SELECT id, institution, bank_account, bank_account_kind, description, kind, amount, occurred_at
+		FROM movements
+		WHERE account_id = ? AND status = 'PENDING'
+		ORDER BY occurred_at DESC, id
 	`
 
 	var movements []Movement
@@ -143,7 +139,11 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 	}
 	defer tx.Rollback()
 
-	query := "SELECT kind, amount, occurred_at FROM movements WHERE id = ? AND account_id = ? AND status = 'PENDING'"
+	query := `
+		SELECT kind, amount, occurred_at
+		FROM movements
+		WHERE id = ? AND account_id = ? AND status = 'PENDING'
+	`
 
 	var movement Movement
 	if err := tx.GetContext(ctx, &movement, query, id, session.AccountID); errors.Is(err, sql.ErrNoRows) {
@@ -159,7 +159,13 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 
 	fields := transactionFields(movement, day)
 	if occurrence != nil {
-		query = "SELECT EXISTS (SELECT 1 FROM recurrences WHERE id = ? AND account_id = ? AND kind = ? AND deleted_at IS NULL)"
+		query = `
+			SELECT EXISTS (
+				SELECT 1
+				FROM recurrences
+				WHERE id = ? AND account_id = ? AND kind = ? AND deleted_at IS NULL
+			)
+		`
 
 		var sameKind bool
 		if err := tx.GetContext(ctx, &sameKind, query, occurrence["recurrence_id"], session.AccountID, movement.Kind); err != nil {

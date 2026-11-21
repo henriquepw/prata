@@ -13,6 +13,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
+	"golang.org/x/text/encoding/charmap"
 )
 
 const ofxBank = "OFXHEADER:100\r\nDATA:OFXSGML\r\nVERSION:102\r\nENCODING:USASCII\r\nCHARSET:1252\r\n\r\n" +
@@ -23,20 +24,20 @@ const ofxBank = "OFXHEADER:100\r\nDATA:OFXSGML\r\nVERSION:102\r\nENCODING:USASCI
 	"<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20240106<TRNAMT>1500.00<FITID>A2<MEMO>Salário\r\n" +
 	"</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>"
 
-const ofxCard = `<?xml version="1.0" encoding="UTF-8"?><OFX><CREDITCARDMSGSRSV1><CCSTMTTRNRS><CCSTMTRS><CURDEF>BRL</CURDEF>
+const ofxCard = `<?xml version="1.0" encoding="UTF-8"?><OFX><SIGNONMSGSRSV1><SONRS><FI><ORG>Banco Inter</ORG></FI></SONRS></SIGNONMSGSRSV1><CREDITCARDMSGSRSV1><CCSTMTTRNRS><CCSTMTRS><CURDEF>BRL</CURDEF>
 <CCACCTFROM><ACCTID>9999</ACCTID></CCACCTFROM><BANKTRANLIST>
 <STMTTRN><TRNTYPE>DEBIT</TRNTYPE><DTPOSTED>20240110</DTPOSTED><TRNAMT>-80.00</TRNAMT><FITID>C1</FITID><MEMO>Mercado &amp; Cia</MEMO></STMTTRN>
 <STMTTRN><TRNTYPE>CREDIT</TRNTYPE><DTPOSTED>20240111</DTPOSTED><TRNAMT>20.00</TRNAMT><FITID>C2</FITID><MEMO>Estorno</MEMO></STMTTRN>
 </BANKTRANLIST></CCSTMTRS></CCSTMTTRNRS></CREDITCARDMSGSRSV1></OFX>`
 
-// latin1 is s as the bytes of a Latin-1 file.
-func latin1(s string) string {
-	var b strings.Builder
-	for _, r := range s {
-		b.WriteByte(byte(r))
+// windows1252 is s as the bytes of a Windows-1252 (CHARSET:1252) file.
+func windows1252(s string) string {
+	encoded, err := charmap.Windows1252.NewEncoder().String(s)
+	if err != nil {
+		panic(err)
 	}
 
-	return b.String()
+	return encoded
 }
 
 // upload sends the file like the browser does, as a multipart form with the destination account.
@@ -113,7 +114,7 @@ func assertContains(t *testing.T, body string, texts ...string) {
 func TestMovements_ImportOFXBankStatement(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.upload(w.accountID(), latin1(ofxBank))
+	response := w.upload(w.accountID(), windows1252(ofxBank))
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -130,6 +131,18 @@ func TestMovements_ImportOFXBankStatement(t *testing.T) {
 	}
 }
 
+func TestMovements_ImportOFXKeepsWindows1252Punctuation(t *testing.T) {
+	w := newWebClient(t)
+
+	ofx := strings.Replace(ofxBank, "Padaria Pão Quente", "Padaria “Pão” – Quente", 1)
+	response := w.upload(w.accountID(), windows1252(ofx))
+	if response.Code != http.StatusOK {
+		t.Fatalf("import = %d: %s", response.Code, response.Body)
+	}
+
+	assertContains(t, response.Body.String(), "Padaria “Pão” – Quente")
+}
+
 func TestMovements_CardPurchaseIsAnExpenseAndCreditIsIncome(t *testing.T) {
 	w := newWebClient(t)
 
@@ -138,7 +151,7 @@ func TestMovements_CardPurchaseIsAnExpenseAndCreditIsIncome(t *testing.T) {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
 
-	assertContains(t, response.Body.String(), "2 novos", "Mercado &amp; Cia", "−R$ 80,00", "R$ 20,00", "9999")
+	assertContains(t, response.Body.String(), "2 novos", "Mercado &amp; Cia", "−R$ 80,00", "R$ 20,00", "Banco Inter", "9999")
 }
 
 func TestMovements_ReimportingAddsNothingAndAnotherAccountIsNew(t *testing.T) {
@@ -243,7 +256,7 @@ func (w *webClient) movementID(description string) string {
 
 func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 	id := w.movementID("Padaria Pão Quente")
 
@@ -274,7 +287,7 @@ func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 		t.Errorf("pending list after confirm = %s, want only Salário", body)
 	}
 
-	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
 		t.Errorf("reimport brought a confirmed movement back: %s", body)
@@ -283,7 +296,7 @@ func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 
 func TestMovements_ConfirmedExpenseWithoutCategoryGoesToTheDefaultAndIncomeKeepsNone(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/confirm", url.Values{"description": {"Padaria"}})
@@ -297,14 +310,14 @@ func TestMovements_ConfirmedExpenseWithoutCategoryGoesToTheDefaultAndIncomeKeeps
 
 func TestMovements_IgnoreHidesItForGood(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 
 	if response := w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/ignore", url.Values{}); response.Code >= 400 {
 		t.Fatalf("ignore = %d: %s", response.Code, response.Body)
 	}
 
-	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
 		t.Errorf("ignored movement is back: %s", body)
@@ -317,7 +330,7 @@ func TestMovements_IgnoreHidesItForGood(t *testing.T) {
 
 func TestMovements_ReviewRoutesRequireSessionAndMembership(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	id := w.movementID("Padaria Pão Quente")
 
 	for _, action := range []string{"confirm", "ignore"} {
@@ -397,7 +410,7 @@ func expenseRecurrences(w *webClient) (padaria, internet, salary string) {
 
 func TestMovements_ConfirmAsOccurrenceListsPendingOfTheSameKindEqualAmountAndClosestDateFirst(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	padaria, internet, salary := expenseRecurrences(w)
 
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Salário")+"/ignore", url.Values{})
@@ -416,7 +429,7 @@ func TestMovements_ConfirmAsOccurrenceListsPendingOfTheSameKindEqualAmountAndClo
 
 func TestMovements_ConfirmAsOccurrenceCreatesTheOccurrencesTransactionOnce(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	padaria, _, _ := expenseRecurrences(w)
 	w.newOps()
 	id, second := w.movementID("Padaria Pão Quente"), w.movementID("Salário")
@@ -459,7 +472,7 @@ func TestMovements_ConfirmAsOccurrenceCreatesTheOccurrencesTransactionOnce(t *te
 
 func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	_, _, salary := expenseRecurrences(w)
 	w.newOps()
 
@@ -472,7 +485,7 @@ func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
 
 func TestMovements_BatchConfirmCreatesOneTransactionEachInOnePullAndSkipsReviewed(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 
 	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}, "category_id": {w.categories["Meta"]}}
@@ -503,7 +516,7 @@ func TestMovements_BatchConfirmCreatesOneTransactionEachInOnePullAndSkipsReviewe
 
 func TestMovements_BatchConfirmWithoutCategoryUsesTheDefault(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 
 	w.submit(http.MethodPost, "/movements/confirm", url.Values{"id": {w.movementID("Padaria Pão Quente")}})
@@ -515,7 +528,7 @@ func TestMovements_BatchConfirmWithoutCategoryUsesTheDefault(t *testing.T) {
 
 func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 	w.newOps()
 
 	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}}
@@ -525,7 +538,7 @@ func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 		}
 	}
 
-	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") || strings.Contains(body, "Salário") {
 		t.Errorf("ignored movements are back: %s", body)
@@ -538,7 +551,7 @@ func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 
 func TestMovements_BatchRoutesRequireSessionAndSelectAllIsOffered(t *testing.T) {
 	w := newWebClient(t)
-	body := w.upload(w.accountID(), latin1(ofxBank)).Body.String()
+	body := w.upload(w.accountID(), windows1252(ofxBank)).Body.String()
 	assertContains(t, body, `name="id"`, `form="batch"`, `hx-post="/movements/confirm"`, `hx-post="/movements/ignore"`)
 
 	for _, action := range []string{"confirm", "ignore"} {
@@ -568,7 +581,7 @@ func (w *webClient) addAccount(name, currency string) string {
 func TestMovements_ReviewListsOnlyTheActiveAccountsMovements(t *testing.T) {
 	w := newWebClient(t)
 	casa := w.addAccount("Casa", "BRL")
-	w.upload(casa, latin1(ofxBank))
+	w.upload(casa, windows1252(ofxBank))
 	w.upload(w.accountID(), ofxCard)
 
 	body := get(w.handler, "/movements", w.cookie).Body.String()
@@ -597,7 +610,7 @@ func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T)
 		before[i] = get(w.handler, path, w.cookie).Body.String()
 	}
 
-	w.upload(w.accountID(), latin1(ofxBank))
+	w.upload(w.accountID(), windows1252(ofxBank))
 
 	for i, path := range paths {
 		if after := get(w.handler, path, w.cookie).Body.String(); after != before[i] {
@@ -609,6 +622,6 @@ func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T)
 func TestMovements_Latin1CSVKeepsItsAccents(t *testing.T) {
 	w := newWebClient(t)
 
-	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", latin1(csvAccount)).Body.String(),
+	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", windows1252(csvAccount)).Body.String(),
 		"Compra no débito - Padaria", "Transferência recebida - Empresa")
 }

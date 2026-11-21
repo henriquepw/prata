@@ -23,18 +23,18 @@ const maxImport = 1 << 20
 // movementsView is the review screen: the accounts to import into, the pending movements and, after an import, its
 // summary or the reason it was refused.
 type movementsView struct {
-	Accounts   []store.AccountRef
-	Categories []store.Category
-	Movements  []store.Movement
-	Pending    []occurrence
-	Summary    string
-	Error      string
+	Accounts    []store.AccountRef
+	Categories  []store.Category
+	Movements   []store.Movement
+	Occurrences []occurrence
+	Summary     string
+	Error       string
 }
 
 // currencyView is the dialog that asks whether to import a file whose Moeda differs from the Conta's.
 type currencyView struct {
-	File    string
-	Account string
+	FileCurrency    string
+	AccountCurrency string
 }
 
 func (h handler) movements(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +107,7 @@ func (h handler) askCurrency(w http.ResponseWriter, r *http.Request, statements 
 			w.Header().Set("HX-Retarget", "#sheet")
 			w.Header().Set("HX-Reswap", "innerHTML")
 			w.Header().Set("HX-Reselect", "#currency-dialog")
-			render(w, r, http.StatusOK, currencyDialog(currencyView{File: statement.Currency, Account: accounts[i].Currency}))
+			render(w, r, http.StatusOK, currencyDialog(currencyView{FileCurrency: statement.Currency, AccountCurrency: accounts[i].Currency}))
 
 			return true, nil
 		}
@@ -155,7 +155,7 @@ func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status 
 		return
 	}
 
-	if view.Pending, err = h.pendingThisMonth(r); err != nil {
+	if view.Occurrences, err = h.pendingThisMonth(r); err != nil {
 		internalError(w, "listing pending occurrences", err)
 		return
 	}
@@ -181,14 +181,8 @@ func movementDate(ctx context.Context, stored string) string {
 // confirmMovement makes the pending movement in the path a transaction with the description and category of the
 // form, then answers the screen. A movement already reviewed is not made twice.
 func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categoryID, ok := h.formCategory(w, r)
 	if !ok {
-		return
-	}
-
-	categoryID := r.PostFormValue("category_id")
-	if categoryID != "" && !hasCategory(categories, categoryID) {
-		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -208,6 +202,22 @@ func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
 	h.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
+// formCategory is the category_id of the form, empty or one of the account's live categories; any other answers 422.
+func (h handler) formCategory(w http.ResponseWriter, r *http.Request) (string, bool) {
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return "", false
+	}
+
+	categoryID := r.PostFormValue("category_id")
+	if categoryID != "" && !hasCategory(categories, categoryID) {
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return "", false
+	}
+
+	return categoryID, true
+}
+
 // ignoreMovement drops the pending movement in the path from review for good, then answers the screen.
 func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
 	if err := h.db.IgnoreMovement(r.Context(), sessionFrom(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
@@ -221,14 +231,8 @@ func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
 // confirmMovements makes every pending movement among the selected ids a transaction with the bank's description
 // and the batch category, as one commit, then answers the screen.
 func (h handler) confirmMovements(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categoryID, ok := h.formCategory(w, r)
 	if !ok {
-		return
-	}
-
-	categoryID := r.PostFormValue("category_id")
-	if categoryID != "" && !hasCategory(categories, categoryID) {
-		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return
 	}
 
