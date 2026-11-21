@@ -116,6 +116,7 @@ type month struct {
 	Overdue                            []occurrence
 	TodayAt                            int
 	Usages                             []store.CategoryUsage
+	Daily                              daily
 	Filter                             store.CategoryUsage
 	Flash, Error                       string
 	Focus                              bool
@@ -127,6 +128,69 @@ type day struct {
 	Total        int64
 	Pending      []occurrence
 	Transactions []store.Transaction
+}
+
+// daily is the daily limit panel: a cell per day of the month, Lead blank cells before the first to line it up on its
+// weekday, all empty (and Defined false) while the account has no Receita mensal.
+type daily struct {
+	Defined bool
+	Lead    int
+	Cells   []dailyCell
+}
+
+// dailyCell is a day of the month as YYYY-MM-DD: the Spent on the daily categories, the Limit and the Tone of it, one
+// of gray, green, yellow or red.
+type dailyCell struct {
+	Date         string
+	Day          int
+	Spent, Limit int64
+	Tone         string
+}
+
+// readDaily is the fixed daily limit of each day of first's month: the monthly limits of the daily categories over the
+// days of the month, against what transactions spent on them on that day in the location of first. A day is gray when
+// it is after today or spent nothing, else green up to 80% of the limit, yellow up to 100% and red above it.
+func readDaily(income int64, first time.Time, today string, usages []store.CategoryUsage, transactions []store.Transaction) daily {
+	if income == 0 {
+		return daily{}
+	}
+
+	isDaily, budget := map[string]bool{}, int64(0)
+
+	for _, usage := range usages {
+		if usage.IsDaily {
+			isDaily[usage.ID], budget = true, budget+usage.MonthlyLimit
+		}
+	}
+
+	spent := map[string]int64{}
+	for _, t := range transactions {
+		if t.Kind == "OUTCOME" && isDaily[orEmpty(t.CategoryID)] {
+			spent[formatDate(t.OccurredAt, first.Location(), time.DateOnly)] += t.Amount
+		}
+	}
+
+	days := first.AddDate(0, 1, -1).Day()
+	limit := budget / int64(days)
+	d := daily{Defined: true, Lead: int(first.Weekday())}
+
+	for i := range days {
+		date := first.AddDate(0, 0, i).Format(time.DateOnly)
+		cell := dailyCell{Date: date, Day: i + 1, Spent: spent[date], Limit: limit, Tone: "gray"}
+		switch {
+		case date > today || cell.Spent == 0:
+		case cell.Spent*100 <= limit*80:
+			cell.Tone = "green"
+		case cell.Spent <= limit:
+			cell.Tone = "yellow"
+		default:
+			cell.Tone = "red"
+		}
+
+		d.Cells = append(d.Cells, cell)
+	}
+
+	return d
 }
 
 // yearMonth is the month shown, as YYYY-MM.
@@ -173,6 +237,7 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 	}
 
 	page.Previous = previous
+	page.Daily = readDaily(sessionFrom(ctx).MonthlyIncome, first, page.Today, page.Usages, transactions)
 	page.Income, page.Outcome = totals(transactions)
 	days := map[string]*day{}
 	at := func(date string) *day {

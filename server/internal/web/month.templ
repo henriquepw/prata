@@ -120,6 +120,24 @@ templ monthContent(page month) {
 			@kpi(i18n.T(ctx, "month.projected"), page.realized()+page.Pending)
 		</div>
 		@launchPanel(page)
+		@panel(i18n.T(ctx, "month.daily"), "", nil) {
+			if !page.Daily.Defined {
+				@empty(i18n.T(ctx, "month.daily_empty"))
+			} else {
+				<ol class="daily">
+					for range page.Daily.Lead {
+						<li aria-hidden="true"></li>
+					}
+					for _, cell := range page.Daily.Cells {
+						<li class="daily-day" data-date={ cell.Date } data-tone={ cell.Tone }>
+							<b>{ strconv.Itoa(cell.Day) }</b>
+							<span class="tabular-nums">{ money(ctx, cell.Spent) }</span>
+							<span class="tabular-nums text-muted-foreground">{ money(ctx, cell.Limit) }</span>
+						</li>
+					}
+				</ol>
+			}
+		}
 		<div class="split">
 			@panel(i18n.T(ctx, "month.statement"), "", statementActions(page)) {
 				if len(page.Days) == 0 && len(page.Overdue) == 0 {

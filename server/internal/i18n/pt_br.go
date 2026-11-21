@@ -209,6 +209,8 @@ var ptBR = map[string]string{
 	"month.realized":         "= Realizado",
 	"month.pending":          "± A confirmar",
 	"month.projected":        "= Projetado",
+	"month.daily":            "Limite diário",
+	"month.daily_empty":      "defina a receita mensal para ver o limite diário",
 	"month.statement":        "Extrato",
 	"month.empty":            "nenhuma transação neste mês",
 	"month.empty_category":   "nenhuma transação nesta categoria",

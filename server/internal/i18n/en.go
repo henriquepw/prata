@@ -209,6 +209,8 @@ var en = map[string]string{
 	"month.realized":         "= Realized",
 	"month.pending":          "± To confirm",
 	"month.projected":        "= Projected",
+	"month.daily":            "Daily limit",
+	"month.daily_empty":      "set the monthly income to see the daily limit",
 	"month.statement":        "Statement",
 	"month.empty":            "no transactions this month",
 	"month.empty_category":   "no transactions in this category",

@@ -946,6 +946,41 @@
     animation: flash 600ms var(--ease);
   }
 
+  /* Daily limit: the month as a week-wide grid, a cell per day with its day, spent and limit, tinted by how much of the
+     limit the day used. */
+  .daily {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+  }
+
+  .daily-day {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2lh;
+    padding: 0.5lh 1ch;
+    border: 1px solid var(--line-faint);
+    font-size: 11px;
+    overflow: hidden;
+  }
+
+  .daily-day[data-tone="green"] {
+    background: color-mix(in oklab, var(--cat-green) 35%, transparent);
+  }
+
+  .daily-day[data-tone="yellow"] {
+    background: color-mix(in oklab, var(--cat-yellow) 40%, transparent);
+  }
+
+  .daily-day[data-tone="red"] {
+    background: color-mix(in oklab, var(--destructive) 40%, transparent);
+  }
+
+  .daily-day[data-tone="gray"] {
+    background: var(--line-faint);
+    color: var(--muted-foreground);
+  }
+
   /* Split: a screen's panel and the one beside it, 3:1, the side one wrapping below when they don't fit. */
   .split {
     display: flex;

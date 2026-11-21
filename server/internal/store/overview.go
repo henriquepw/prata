@@ -41,7 +41,8 @@ func (s *Store) BalanceBefore(ctx context.Context, accountID, before string) (in
 // [from, to), RFC 3339 in UTC.
 func (s *Store) CategoryUsages(ctx context.Context, accountID, from, to string) ([]CategoryUsage, error) {
 	query := `
-		SELECT c.id, c.name, c.color, c.monthly_limit, COALESCE(SUM(t.amount), 0) AS used
+		SELECT c.id, c.name, c.color, c.monthly_limit, c.is_daily,
+			COALESCE(SUM(t.amount), 0) AS used
 		FROM categories c
 		LEFT JOIN transactions t ON t.category_id = c.id
 			AND t.deleted_at IS NULL
