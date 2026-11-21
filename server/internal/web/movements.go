@@ -197,3 +197,44 @@ func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
 
 	h.renderMovements(w, r, http.StatusOK, movementsView{})
 }
+
+// confirmMovements makes every pending movement among the selected ids a transaction with the bank's description
+// and the batch category, as one commit, then answers the screen.
+func (h handler) confirmMovements(w http.ResponseWriter, r *http.Request) {
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return
+	}
+
+	categoryID := r.PostFormValue("category_id")
+	if categoryID != "" && !hasCategory(categories, categoryID) {
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	}
+
+	reason, err := h.db.ConfirmMovements(r.Context(), sessionFrom(r.Context()), r.PostForm["id"], categoryID, location(r))
+	if err != nil {
+		internalError(w, "confirming movements", err)
+		return
+	}
+
+	if reason != "" {
+		slog.Warn("movements confirm rejected", "reason", reason)
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	}
+
+	h.renderMovements(w, r, http.StatusOK, movementsView{})
+}
+
+// ignoreMovements drops every pending movement among the selected ids from review for good, then answers the screen.
+func (h handler) ignoreMovements(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+
+	if err := h.db.IgnoreMovements(r.Context(), sessionFrom(r.Context()), r.PostForm["id"]); err != nil {
+		internalError(w, "ignoring movements", err)
+		return
+	}
+
+	h.renderMovements(w, r, http.StatusOK, movementsView{})
+}

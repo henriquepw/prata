@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/importfile"
+	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -182,4 +183,98 @@ func (s *Store) IgnoreMovement(ctx context.Context, session Session, id string) 
 	}
 
 	return nil
+}
+
+// ConfirmMovements turns every pending movement of the session's account among ids into a transaction from the web
+// device, with the bank's description, kind, amount and date (local midnight in loc) and, on an expense, the given
+// category (the default one when empty), as one commit marking them confirmed in the same SQL transaction. Movements
+// not pending in the account are skipped, so repeating the batch creates nothing.
+func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []string, categoryID string, loc *time.Location) (Reason, error) {
+	if len(ids) == 0 {
+		return "", nil
+	}
+
+	tx, err := s.BeginTxx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("starting confirm: %w", err)
+	}
+	defer tx.Rollback()
+
+	query, args, err := sqlx.In(`
+		SELECT id, description, kind, amount, occurred_at
+		FROM movements
+		WHERE id IN (?) AND account_id = ? AND status = 'PENDING'
+		ORDER BY occurred_at, id
+	`, ids, session.AccountID)
+	if err != nil {
+		return "", fmt.Errorf("building confirm: %w", err)
+	}
+
+	var movements []Movement
+	if err := tx.SelectContext(ctx, &movements, query, args...); err != nil {
+		return "", fmt.Errorf("reading movements: %w", err)
+	}
+
+	if len(movements) == 0 {
+		return "", nil
+	}
+
+	changes := make([]Change, 0, len(movements))
+	for _, movement := range movements {
+		day, err := time.ParseInLocation(time.DateOnly, movement.OccurredAt, loc)
+		if err != nil {
+			return "", fmt.Errorf("reading movement date: %w", err)
+		}
+
+		fields := map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339), "description": movement.Description}
+		if categoryID != "" && movement.Kind == "OUTCOME" {
+			fields["category_id"] = categoryID
+		}
+
+		changes = append(changes, Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields})
+	}
+
+	reason, err := commitChanges(ctx, tx, session, changes)
+	if err != nil || reason != "" {
+		return reason, err
+	}
+
+	query, args, err = sqlx.In("UPDATE movements SET status = 'CONFIRMED' WHERE id IN (?)", movementIDs(movements))
+	if err != nil {
+		return "", fmt.Errorf("building confirm: %w", err)
+	}
+
+	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+		return "", fmt.Errorf("confirming movements: %w", err)
+	}
+
+	return "", tx.Commit()
+}
+
+// IgnoreMovements marks every pending movement of the session's account among ids as ignored, for good. Movements
+// not pending in the account are skipped.
+func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	query, args, err := sqlx.In("UPDATE movements SET status = 'IGNORED' WHERE id IN (?) AND account_id = ? AND status = 'PENDING'", ids, session.AccountID)
+	if err != nil {
+		return fmt.Errorf("building ignore: %w", err)
+	}
+
+	if _, err := s.ExecContext(ctx, query, args...); err != nil {
+		return fmt.Errorf("ignoring movements: %w", err)
+	}
+
+	return nil
+}
+
+func movementIDs(movements []Movement) []string {
+	ids := make([]string, len(movements))
+	for i, movement := range movements {
+		ids[i] = movement.ID
+	}
+
+	return ids
 }
