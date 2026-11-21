@@ -77,7 +77,7 @@ func TestSettingsSheet(t *testing.T) {
 	})
 
 	t.Run("a valid form refreshes the page", func(t *testing.T) {
-		rec := do(routes, cookie, http.MethodPost, "/settings", true, url.Values{"language": {"en"}, "date_format": {"DD/MM/YYYY"}, "number_format": {"1.234,56"}, "currency": {"BRL"}})
+		rec := do(routes, cookie, http.MethodPost, "/settings", true, url.Values{"language": {"en"}, "date_format": {"DD/MM/YYYY"}, "number_format": {"1.234,56"}, "currency": {"BRL"}, "daily_limit_mode": {"FIXED"}})
 		if rec.Code != http.StatusNoContent || rec.Header().Get("HX-Refresh") != "true" {
 			t.Errorf("status %d, headers %v", rec.Code, rec.Header())
 		}

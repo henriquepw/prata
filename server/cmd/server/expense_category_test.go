@@ -159,3 +159,26 @@ func TestPush_UpdateTurningAnIncomeIntoAnExpenseGoesToTheDefault(t *testing.T) {
 		t.Errorf("ops = %+v, want the UPDATE carrying the default category", ops)
 	}
 }
+
+func TestPush_IncomeIsStoredWithoutCategory(t *testing.T) {
+	w := newWebClient(t)
+	w.push(newCategory(w.client))
+
+	income := newTransaction(w.client)
+	income.Payload["kind"] = "INCOME"
+	w.push(income)
+	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-01", categoryID, ""))
+	created := w.newOps()
+	expenseID := created[len(created)-1].EntityID
+	w.push(w.op("TRANSACTION", expenseID, "UPDATE", map[string]any{"kind": "INCOME", "updated_at": "2026-08-24T10:00:00Z"}))
+
+	ops := w.pull(seededOps, 500).Ops
+	pushed, turned := ops[1], ops[len(ops)-1]
+	if category, ok := pushed.Payload["category_id"]; pushed.EntityID != transactionID || !ok || category != nil {
+		t.Errorf("pulled income = %+v, want category_id null", pushed)
+	}
+
+	if category, ok := turned.Payload["category_id"]; turned.EntityID != expenseID || !ok || category != nil {
+		t.Errorf("pulled expense turned income = %+v, want category_id null", turned)
+	}
+}

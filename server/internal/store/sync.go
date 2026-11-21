@@ -1,6 +1,7 @@
 package store
 
 import (
+	"cmp"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -103,6 +104,10 @@ func (s *Store) CommitOps(ctx context.Context, actor Actor, ops []Op) ([]Result,
 
 	results := make([]Result, len(ops))
 	for i, op := range ops {
+		if op, err = keepDivision(ctx, tx, actor, op); err != nil {
+			return nil, err
+		}
+
 		if results[i], err = commitOp(ctx, tx, actor, op); err != nil {
 			return nil, err
 		}
@@ -136,16 +141,9 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 		}
 	}
 
-	if reason == "" && op.Entity == "CATEGORY" && op.Kind == KindDelete {
-		query = "SELECT EXISTS (SELECT 1 FROM categories WHERE id = ? AND is_default = 1)"
-
-		var isDefault bool
-		if err := tx.GetContext(ctx, &isDefault, query, op.EntityID); err != nil {
-			return Result{}, fmt.Errorf("reading category %s: %w", op.EntityID, err)
-		}
-
-		if isDefault {
-			reason = ReasonInvalidOperation
+	if reason == "" && op.Entity == "CATEGORY" {
+		if reason, err = checkDefault(ctx, tx, op, values); err != nil {
+			return Result{}, err
 		}
 	}
 
@@ -153,7 +151,7 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 		return Result{Reason: reason}, nil
 	}
 
-	if op, err = withDefaultCategory(ctx, tx, actor, op, values); err != nil {
+	if op, err = withEntryCategory(ctx, tx, actor, op, values); err != nil {
 		return Result{}, err
 	}
 
@@ -164,6 +162,10 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 	result := Result{}
 	if op.Entity == "CATEGORY" && op.Kind == KindDelete {
 		err = moveToDefaultCategory(ctx, tx, actor, op)
+	}
+
+	if isDefault, _ := values["is_default"].(*int64); op.Entity == "CATEGORY" && isDefault != nil && *isDefault == 1 {
+		err = demoteDefault(ctx, tx, actor, op)
 	}
 
 	if err == nil {
@@ -203,11 +205,11 @@ func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID string) (stri
 	return id, nil
 }
 
-// withDefaultCategory puts the account's default category in an OUTCOME transaction or recurrence left without a
-// category by the op, in values and in the op's payload, so every device pulls the category the server stored: a
-// CREATE without one, an UPDATE that sets it to null, or an UPDATE that turns an uncategorised row into an OUTCOME.
-// An account without a default category changes nothing.
-func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[string]any) (Op, error) {
+// withEntryCategory puts the account's default category in an OUTCOME transaction or recurrence left without a
+// category by the op, and takes the category out of an INCOME one, in values and in the op's payload: a CREATE, an
+// UPDATE that sets the category, or an UPDATE that turns a row into the other kind. An account without a default
+// category leaves an OUTCOME without one.
+func withEntryCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[string]any) (Op, error) {
 	if (op.Entity != "TRANSACTION" && op.Entity != "RECURRENCE") || op.Kind == KindDelete {
 		return op, nil
 	}
@@ -216,7 +218,7 @@ func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, v
 	kind, _ := values["kind"].(*string)
 	_, hasCategory := values["category_id"]
 	if op.Kind == KindUpdate && (kind == nil || !hasCategory) {
-		query := "SELECT kind, category_id FROM " + tables[op.Entity].name + " WHERE id = ?"
+		query := fmt.Sprintf("SELECT kind, category_id FROM %s WHERE id = ?", tables[op.Entity].name)
 
 		var stored struct {
 			Kind       string  `db:"kind"`
@@ -235,7 +237,14 @@ func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, v
 		}
 	}
 
-	if category != nil || kind == nil || *kind != "OUTCOME" {
+	switch {
+	case kind == nil:
+		return op, nil
+	case *kind == "INCOME" && category != nil:
+		values["category_id"] = (*string)(nil)
+
+		return withField(op, "category_id", nil)
+	case *kind != "OUTCOME" || category != nil:
 		return op, nil
 	}
 
@@ -244,19 +253,99 @@ func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, v
 		return op, err
 	}
 
+	values["category_id"] = &id
+
+	return withField(op, "category_id", id)
+}
+
+// withField sets field to value in the op's payload, so every device pulls the value the server stored.
+func withField(op Op, field string, value any) (Op, error) {
 	var payload map[string]json.RawMessage
 	if err := json.Unmarshal(op.Payload, &payload); err != nil {
 		return op, fmt.Errorf("decoding op %s payload: %w", op.ID, err)
 	}
 
-	payload["category_id"], _ = json.Marshal(id)
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return op, fmt.Errorf("encoding op %s %s: %w", op.ID, field, err)
+	}
+
+	payload[field] = encoded
 	if op.Payload, err = json.Marshal(payload); err != nil {
 		return op, fmt.Errorf("encoding op %s payload: %w", op.ID, err)
 	}
 
-	values["category_id"] = &id
-
 	return op, nil
+}
+
+// checkDefault keeps the account with exactly one live default category: it rejects an op that deletes the default
+// category or takes the mark away from it; marking another one takes the mark from it instead (demoteDefault).
+func checkDefault(ctx context.Context, tx *sqlx.Tx, op Op, values map[string]any) (Reason, error) {
+	query := "SELECT EXISTS (SELECT 1 FROM categories WHERE id = ? AND is_default = 1 AND deleted_at IS NULL)"
+
+	var isDefault bool
+	if err := tx.GetContext(ctx, &isDefault, query, op.EntityID); err != nil {
+		return "", fmt.Errorf("reading category %s: %w", op.EntityID, err)
+	}
+
+	mark, hasMark := values["is_default"].(*int64)
+	deleted, _ := values["deleted_at"].(*string)
+	if isDefault && (op.Kind == KindDelete || deleted != nil || hasMark && (mark == nil || *mark != 1)) {
+		return ReasonInvalidOperation, nil
+	}
+
+	return "", nil
+}
+
+// demoteDefault takes the default mark from the account's current default category when op marks another one, as an
+// UPDATE from the same device.
+func demoteDefault(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
+	id, err := defaultCategoryID(ctx, tx, actor.AccountID)
+	if err != nil || id == "" || id == op.EntityID {
+		return err
+	}
+
+	values := map[string]any{"is_default": 0, "updated_at": op.CreatedAt}
+	if err := recordUpdate(ctx, tx, actor, op, "CATEGORY", id, values); err != nil {
+		return fmt.Errorf("taking the default mark from category %s: %w", id, err)
+	}
+
+	return nil
+}
+
+// keepDivision keeps a client's push from breaking the division of a defined Receita mensal: the monthly limit of a
+// CATEGORY CREATE or UPDATE stays the stored one, 0 for a new category, in the payload too so the client pulls it back.
+// The web divides the Receita mensal through SaveBudget, which does not push.
+func keepDivision(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Op, error) {
+	var payload map[string]json.RawMessage
+	if op.Entity != "CATEGORY" || op.Kind == KindDelete || json.Unmarshal(op.Payload, &payload) != nil {
+		return op, nil
+	}
+
+	if _, ok := payload["monthly_limit"]; !ok {
+		return op, nil
+	}
+
+	query := "SELECT monthly_income FROM accounts WHERE id = ?"
+
+	var income int64
+	if err := tx.GetContext(ctx, &income, query, actor.AccountID); err != nil {
+		return op, fmt.Errorf("reading monthly income: %w", err)
+	}
+
+	if income == 0 {
+		return op, nil
+	}
+
+	query = "SELECT monthly_limit FROM categories WHERE id = ? AND account_id = ?"
+
+	var limit int64
+	err := tx.GetContext(ctx, &limit, query, op.EntityID, actor.AccountID)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return op, fmt.Errorf("reading category %s: %w", op.EntityID, err)
+	}
+
+	return withField(op, "monthly_limit", limit)
 }
 
 // moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op, and its monthly
@@ -288,7 +377,11 @@ func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op)
 	}
 
 	for _, entity := range []string{"TRANSACTION", "RECURRENCE"} {
-		query := "SELECT id FROM " + tables[entity].name + " WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL"
+		query := fmt.Sprintf(`
+			SELECT id
+			FROM %s
+			WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL
+		`, tables[entity].name)
 
 		var ids []string
 		if err := tx.SelectContext(ctx, &ids, query, actor.AccountID, op.EntityID); err != nil {
@@ -649,6 +742,11 @@ func changeOp(ctx context.Context, tx *sqlx.Tx, actor Actor, change Change, now 
 		}
 
 		if len(rows) == 1 {
+			// An income keeps no category (withEntryCategory), so a category sent with one changes nothing.
+			if _, ok := fields["category_id"]; ok && cmp.Or(fields["kind"], rows[0]["kind"]) == "INCOME" {
+				fields["category_id"] = nil
+			}
+
 			maps.DeleteFunc(fields, func(field string, value any) bool { return rows[0][field] == value })
 		}
 

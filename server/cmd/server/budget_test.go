@@ -194,3 +194,37 @@ func TestWebBudget_DeletedCategoryLimitGoesToTheDefaultCategory(t *testing.T) {
 		t.Errorf("Livre limit after deleting Meta = %v, want 200 + 100 in cents", updates)
 	}
 }
+
+func TestPush_KeepsTheDivisionOfADefinedIncome(t *testing.T) {
+	w := definedBudget(t)
+
+	raise := w.op("CATEGORY", w.categories["Meta"], "UPDATE", map[string]any{"monthly_limit": 99900, "updated_at": "2026-08-24T10:00:00Z"})
+	if pushed := w.push(newCategory(w.client), raise); len(pushed.Rejected) != 0 {
+		t.Fatalf("push = %+v, want both accepted", pushed)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 2 || ops[0].Payload["monthly_limit"] != float64(0) || ops[1].Payload["monthly_limit"] != float64(10000) {
+		t.Errorf("pulled ops = %+v, want the new category with 0 and Meta kept at 100 in cents", ops)
+	}
+
+	if body := get(w.handler, "/budget", w.cookie).Body.String(); !strings.Contains(body, "fechado em 100%") {
+		t.Errorf("sheet after push = %s, want the division still closed", body)
+	}
+}
+
+func TestWebBudget_SwitchingTheModeKeepsWhatWasTyped(t *testing.T) {
+	w := newWebClient(t)
+	form := w.budgetForm("1.000,00", "percent", map[string]string{"Gastos fixos": "500,00", "Investimento": "200,00", "Meta": "100,00", "Livre": "100,00"})
+
+	sheet := get(w.handler, "/budget?"+form.Encode(), w.cookie).Body.String()
+	for _, want := range []string{`value="1.000,00"`, `value="50,00"`, `value="20,00"`, `value="10,00"`} {
+		if !strings.Contains(sheet, want) {
+			t.Errorf("sheet in %% = %s, want %s", sheet, want)
+		}
+	}
+
+	if !strings.Contains(sheet, "10,00%") {
+		t.Errorf("sheet in %% = %s, want the 10%% still missing", sheet)
+	}
+}

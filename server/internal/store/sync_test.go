@@ -60,8 +60,14 @@ func TestCommitOps_OverlaysDomainRow(t *testing.T) {
 		ServerSeq    int64   `db:"server_seq"`
 	}
 	read := func() category {
+		query := `
+			SELECT name, color, monthly_limit, account_id, deleted_at, server_seq
+			FROM categories
+			WHERE id = '01JXQ8Z7000000000000000000'
+		`
+
 		var row category
-		if err := db.Get(&row, "SELECT name, color, monthly_limit, account_id, deleted_at, server_seq FROM categories WHERE id = '01JXQ8Z7000000000000000000'"); err != nil {
+		if err := db.Get(&row, query); err != nil {
 			t.Fatal(err)
 		}
 

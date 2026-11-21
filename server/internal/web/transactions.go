@@ -21,7 +21,6 @@ func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form.Kind, form.OccurredAt = "OUTCOME", time.Now().In(location(r)).Format(time.DateOnly)
-	form.CategoryID = entryCategory(form.Kind, "", form.Categories)
 	if current, err := url.Parse(r.Header.Get("HX-Current-URL")); err == nil && hasCategory(form.Categories, current.Query().Get("category")) {
 		form.CategoryID = current.Query().Get("category")
 	}
@@ -57,7 +56,7 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	form.Kind = r.PostFormValue("kind")
 	form.Amount = strings.TrimSpace(r.PostFormValue("amount"))
 	form.OccurredAt = r.PostFormValue("occurred_at")
-	form.CategoryID = entryCategory(form.Kind, r.PostFormValue("category_id"), form.Categories)
+	form.CategoryID = r.PostFormValue("category_id")
 	form.TagID = r.PostFormValue("tag_id")
 
 	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
@@ -143,7 +142,6 @@ func storedTransactionForm(ctx context.Context, form transactionForm, transactio
 		form.CategoryID = id
 	}
 
-	form.CategoryID = entryCategory(form.Kind, form.CategoryID, form.Categories)
 	if id := orEmpty(transaction.TagID); hasTag(form.Tags, id) {
 		form.TagID = id
 	}

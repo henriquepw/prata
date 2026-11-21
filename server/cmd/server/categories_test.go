@@ -8,12 +8,15 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/henriquepw/prata/server/internal/store"
 )
 
 // webClient pairs a logged-in web session with a device of the same account that pulls what the web writes.
 type webClient struct {
 	*client
 	cookie *http.Cookie
+	db     *store.Store
 	cursor int64
 	// defaultID is the default category the account was born with.
 	defaultID string
@@ -23,10 +26,11 @@ type webClient struct {
 
 func newWebClient(t *testing.T) *webClient {
 	t.Helper()
-	handler := newHandler(openStore(t), config{})
+	db := openStore(t)
+	handler := newHandler(db, config{})
 	device := newClient(t, handler, newSignup())
 
-	w := &webClient{client: device, cookie: login(t, handler), categories: map[string]string{}}
+	w := &webClient{client: device, cookie: login(t, handler), db: db, categories: map[string]string{}}
 	for _, o := range w.newOps() { // the categories every account is born with
 		w.categories[o.Payload["name"].(string)] = o.EntityID
 		if o.Payload["is_default"] == float64(1) {
@@ -284,5 +288,47 @@ func TestPush_DefaultCategoryIsNotDeletableAndMarksSync(t *testing.T) {
 
 	if created.Payload["is_daily"] != float64(1) || updated.Payload["is_daily"] != float64(0) {
 		t.Errorf("pulled marks = %v then %v, want is_daily 1 then 0", created.Payload, updated.Payload)
+	}
+}
+
+func TestWebCategories_MarkingAnotherDefaultTakesTheMarkFromTheCurrentOne(t *testing.T) {
+	w := newWebClient(t)
+	meta := w.categories["Meta"]
+
+	if sheet := get(w.handler, "/categories/"+w.defaultID, w.cookie).Body.String(); strings.Contains(sheet, `name="is_default"`) {
+		t.Errorf("default category sheet = %s, want no default choice", sheet)
+	}
+
+	w.mustSubmit(http.MethodPost, "/categories/"+meta, url.Values{"name": {"Meta"}, "color": {"YELLOW"}, "is_daily": {"0"}, "is_default": {"1"}})
+	ops := w.newOps()
+	if len(ops) != 2 || ops[0].EntityID != w.defaultID || ops[0].Payload["is_default"] != float64(0) ||
+		ops[1].EntityID != meta || ops[1].Payload["is_default"] != float64(1) {
+		t.Fatalf("ops after marking Meta = %+v, want Livre unmarked then Meta marked", ops)
+	}
+
+	w.mustSubmit(http.MethodDelete, "/categories/"+w.defaultID, nil)
+	if response := w.submit(http.MethodDelete, "/categories/"+meta, nil); response.Code != http.StatusUnprocessableEntity {
+		t.Errorf("delete new default = %d, want %d", response.Code, http.StatusUnprocessableEntity)
+	}
+}
+
+func TestPush_KeepsExactlyOneDefaultCategory(t *testing.T) {
+	w := newWebClient(t)
+
+	unmark := w.op("CATEGORY", w.defaultID, "UPDATE", map[string]any{"is_default": 0, "updated_at": "2026-08-24T10:00:00Z"})
+	trash := w.op("CATEGORY", w.defaultID, "UPDATE", map[string]any{"deleted_at": "2026-08-24T10:00:00Z", "updated_at": "2026-08-24T10:00:00Z"})
+	if pushed := w.push(unmark, trash); len(pushed.Rejected) != 2 {
+		t.Fatalf("push unmarking and trashing the default = %+v, want both rejected", pushed)
+	}
+
+	category := newCategory(w.client)
+	category.Payload["is_default"] = 1
+	if pushed := w.push(category); len(pushed.Rejected) != 0 {
+		t.Fatalf("push creating a default = %+v, want accepted", pushed)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 2 || ops[0].EntityID != w.defaultID || ops[0].Payload["is_default"] != float64(0) || ops[1].EntityID != categoryID {
+		t.Errorf("pulled ops = %+v, want Livre unmarked then the new default", ops)
 	}
 }

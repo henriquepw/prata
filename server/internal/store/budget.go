@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 )
 
-// ErrBudgetOpen means the division does not add up to the Receita mensal.
-var ErrBudgetOpen = errors.New("division does not close the monthly income")
+// ErrDivisionNotClosed means the division does not add up to the Receita mensal.
+var ErrDivisionNotClosed = errors.New("division does not close the monthly income")
 
 // Budget is the Receita mensal and its division as the user typed them, keyed by category id: Limits are cents, or
 // hundredths of a percent when Percent.
@@ -17,6 +18,9 @@ type Budget struct {
 	Percent bool
 	Limits  map[string]int64
 }
+
+// HundredPercent is 100% in hundredths of a percent, the unit of a division typed in percent.
+const HundredPercent = 10000
 
 // BasisPoints is limit as hundredths of a percent of total, 0 when total is.
 func BasisPoints(limit, total int64) int64 {
@@ -27,10 +31,27 @@ func BasisPoints(limit, total int64) int64 {
 	return (limit*20000 + total) / (2 * total)
 }
 
-// SaveBudget stores the Receita mensal and the monthly limits of the live categories in one transaction. With
-// the limits untouched, it rescales them to the new Receita mensal in proportion; otherwise, with a Receita mensal
-// defined, they must add up to it, or nothing is stored and it returns ErrBudgetOpen. The cents lost to rounding go to
-// the default category.
+// Division is the stored monthly limit of each of categories, in cents, or in hundredths of a percent of what they add
+// up to when percent.
+func Division(categories []Category, percent bool) map[string]int64 {
+	var stored int64
+	for _, category := range categories {
+		stored += category.MonthlyLimit
+	}
+
+	limits := map[string]int64{}
+	for _, category := range categories {
+		limits[category.ID] = category.MonthlyLimit
+		if percent {
+			limits[category.ID] = BasisPoints(category.MonthlyLimit, stored)
+		}
+	}
+
+	return limits
+}
+
+// SaveBudget stores the Receita mensal and the monthly limits of the live categories, as divide sets them, in one
+// transaction; a division that does not close stores nothing and returns ErrDivisionNotClosed.
 func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) error {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
@@ -49,62 +70,9 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 		return fmt.Errorf("listing categories: %w", err)
 	}
 
-	var stored, typed int64
-	unchanged := true
-	for _, category := range categories {
-		stored += category.MonthlyLimit
-		typed += budget.Limits[category.ID]
-	}
-
-	for _, category := range categories {
-		current := category.MonthlyLimit
-		if budget.Percent {
-			current = BasisPoints(current, stored)
-		}
-
-		unchanged = unchanged && budget.Limits[category.ID] == current
-	}
-
-	limits := map[string]int64{}
-	for _, category := range categories {
-		limits[category.ID] = budget.Limits[category.ID]
-	}
-
-	switch {
-	case budget.Income == 0 && budget.Percent:
-		return ErrBudgetOpen
-	case budget.Income > 0 && budget.Percent && !unchanged:
-		if typed != 10000 {
-			return ErrBudgetOpen
-		}
-
-		for _, category := range categories {
-			limits[category.ID] = budget.Income * limits[category.ID] / 10000
-		}
-	case budget.Income > 0 && unchanged:
-		for _, category := range categories {
-			limits[category.ID] = category.MonthlyLimit * budget.Income / max(stored, 1)
-		}
-	}
-
-	if budget.Income > 0 {
-		var total int64
-		defaultID := ""
-		for _, category := range categories {
-			total += limits[category.ID]
-			if category.IsDefault {
-				defaultID = category.ID
-			}
-		}
-
-		if budget.Percent || unchanged {
-			limits[defaultID] += budget.Income - total
-			total = budget.Income
-		}
-
-		if total != budget.Income || defaultID == "" {
-			return ErrBudgetOpen
-		}
+	limits, err := divide(categories, budget)
+	if err != nil {
+		return err
 	}
 
 	query = "UPDATE accounts SET monthly_income = ?, updated_at = ? WHERE id = ?"
@@ -114,7 +82,8 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 
 	changes := make([]Change, 0, len(categories))
 	for _, category := range categories {
-		changes = append(changes, Change{Entity: "CATEGORY", EntityID: category.ID, Kind: KindUpdate, Fields: map[string]any{"monthly_limit": limits[category.ID]}})
+		changes = append(changes, Change{Entity: "CATEGORY", EntityID: category.ID, Kind: KindUpdate,
+			Fields: map[string]any{"monthly_limit": limits[category.ID]}})
 	}
 
 	reason, err := commitChanges(ctx, tx, session, changes)
@@ -127,4 +96,59 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 	}
 
 	return tx.Commit()
+}
+
+// divide is the monthly limit, in cents, of each of categories for budget. Typed limits equal to the stored ones mean
+// the Receita mensal alone changed: the stored limits are rescaled to it in proportion. Otherwise the typed limits are
+// the division, converted from percent when Percent, and must add up to the Receita mensal, or 100%. Without a
+// Receita mensal the limits are loose, in value only. The cents lost to rounding go to the default category.
+func divide(categories []Category, budget Budget) (map[string]int64, error) {
+	var stored, typed int64
+	for _, category := range categories {
+		stored += category.MonthlyLimit
+	}
+
+	current := Division(categories, budget.Percent)
+	untouched := true
+	limits := map[string]int64{}
+	for _, category := range categories {
+		limits[category.ID] = budget.Limits[category.ID]
+		typed += limits[category.ID]
+		untouched = untouched && limits[category.ID] == current[category.ID]
+	}
+
+	if budget.Income == 0 && budget.Percent {
+		return nil, ErrDivisionNotClosed
+	}
+
+	if budget.Income == 0 {
+		return limits, nil
+	}
+
+	switch {
+	case untouched:
+		for _, category := range categories {
+			limits[category.ID] = category.MonthlyLimit * budget.Income / max(stored, 1)
+		}
+	case budget.Percent && typed != HundredPercent, !budget.Percent && typed != budget.Income:
+		return nil, ErrDivisionNotClosed
+	case budget.Percent:
+		for _, category := range categories {
+			limits[category.ID] = budget.Income * limits[category.ID] / HundredPercent
+		}
+	}
+
+	i := slices.IndexFunc(categories, func(c Category) bool { return c.IsDefault })
+	if i < 0 {
+		return nil, ErrDivisionNotClosed
+	}
+
+	var total int64
+	for _, limit := range limits {
+		total += limit
+	}
+
+	limits[categories[i].ID] += budget.Income - total
+
+	return limits, nil
 }

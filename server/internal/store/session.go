@@ -31,12 +31,13 @@ type Session struct {
 	ExpiresAt     time.Time
 }
 
-// Preferences are a user's Idioma, Formato de data and Formato numérico, spelled as the schema stores them
-// ("pt-BR", "DD/MM/YYYY", "1.234,56").
+// Preferences are a user's Idioma, Formato de data, Formato numérico and Modo do limite diário, spelled as the schema
+// stores them ("pt-BR", "DD/MM/YYYY", "1.234,56", "DYNAMIC").
 type Preferences struct {
-	Language     string `db:"language"`
-	DateFormat   string `db:"date_format"`
-	NumberFormat string `db:"number_format"`
+	Language       string `db:"language"`
+	DateFormat     string `db:"date_format"`
+	NumberFormat   string `db:"number_format"`
+	DailyLimitMode string `db:"daily_limit_mode"`
 }
 
 // Authenticate returns the id of the user with this email and password.
@@ -83,8 +84,9 @@ func (s *Store) CreateSession(ctx context.Context, userID string, now time.Time)
 // An expired session is deleted and rejected.
 func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time) (Session, error) {
 	query := `
-		SELECT s.id, s.user_id, u.email, u.language, u.date_format, u.number_format, a.account_id, c.currency,
-			c.monthly_income, s.expires_at
+		SELECT
+			s.id, s.user_id, u.email, u.language, u.date_format, u.number_format, u.daily_limit_mode,
+			a.account_id, c.currency, c.monthly_income, s.expires_at
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		JOIN account_users a ON a.user_id = s.user_id
@@ -136,12 +138,11 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	}
 
 	return Session{
-		UserID:      row.UserID,
-		Email:       row.Email,
-		AccountID:   row.AccountID,
-		Preferences: row.Preferences,
-		Currency:    row.Currency,
-
+		UserID:        row.UserID,
+		Email:         row.Email,
+		AccountID:     row.AccountID,
+		Preferences:   row.Preferences,
+		Currency:      row.Currency,
 		MonthlyIncome: row.MonthlyIncome,
 		ExpiresAt:     expiresAt.UTC(),
 	}, nil
@@ -157,9 +158,15 @@ func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, pref
 	defer tx.Rollback()
 
 	now := formatTime(time.Now())
-	query := "UPDATE users SET language = ?, date_format = ?, number_format = ?, updated_at = ? WHERE id = ?"
+	query := `
+		UPDATE users
+		SET language = ?, date_format = ?, number_format = ?, daily_limit_mode = ?, updated_at = ?
+		WHERE id = ?
+	`
 
-	if _, err := tx.ExecContext(ctx, query, preferences.Language, preferences.DateFormat, preferences.NumberFormat, now, userID); err != nil {
+	_, err = tx.ExecContext(ctx, query,
+		preferences.Language, preferences.DateFormat, preferences.NumberFormat, preferences.DailyLimitMode, now, userID)
+	if err != nil {
 		return fmt.Errorf("saving preferences: %w", err)
 	}
 

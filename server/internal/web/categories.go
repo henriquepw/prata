@@ -46,6 +46,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		Color:        r.PostFormValue("color"),
 		MonthlyLimit: strings.TrimSpace(r.PostFormValue("monthly_limit")),
 		IsDaily:      r.PostFormValue("is_daily") == "1",
+		MarkDefault:  r.PostFormValue("is_default") == "1",
 		Errors:       map[string]string{},
 	}
 	if form.Name == "" {
@@ -74,8 +75,15 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		if _, ok := change.Fields["monthly_limit"]; !ok {
 			change.Fields["monthly_limit"] = int64(0)
 		}
-	} else if _, ok := h.category(w, r); !ok {
+	} else if stored, ok := h.category(w, r); ok {
+		form.IsDefault = stored.IsDefault
+	} else {
 		return
+	}
+
+	// Marking another category as the default takes the mark from the current one (store.CommitChanges).
+	if form.MarkDefault && !form.IsDefault {
+		change.Fields["is_default"] = int64(1)
 	}
 
 	h.commit(w, r, form.Errors, categorySheet(form), change)

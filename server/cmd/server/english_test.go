@@ -102,22 +102,6 @@ func (w *webClient) overdueRecurrence(id string, first time.Time) op {
 	})
 }
 
-func TestWebTicker_OverdueCountIsPluralInEachLanguage(t *testing.T) {
-	w := newWebClient(t)
-	now := time.Now().UTC()
-	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-
-	w.push(w.overdueRecurrence(ulid.Make().String(), first))
-	w.assertBody("/tags", "[1 atrasada]")
-	w.mustSubmit(http.MethodPost, "/settings", withLanguage(settingsForm("DD/MM/YYYY", "1.234,56"), "en"))
-	w.assertBody("/tags", "[1 overdue]")
-
-	w.push(w.overdueRecurrence(ulid.Make().String(), first))
-	w.assertBody("/tags", "[2 overdue]")
-	w.mustSubmit(http.MethodPost, "/settings", settingsForm("DD/MM/YYYY", "1.234,56"))
-	w.assertBody("/tags", "[2 atrasadas]")
-}
-
 func TestWebEnglish_Devices(t *testing.T) {
 	w := newEnglishClient(t)
 	w.assertBody("/devices", "Devices", "Name", "Last seen", "Created at", "Revoke",

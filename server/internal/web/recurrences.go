@@ -47,7 +47,6 @@ func (h handler) newRecurrence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := recurrenceForm{Kind: "OUTCOME", StartAt: time.Now().In(location(r)).Format(time.DateOnly), Categories: categories}
-	form.CategoryID = entryCategory(form.Kind, "", categories)
 	render(w, r, http.StatusOK, recurrenceSheet(form))
 }
 
@@ -79,7 +78,7 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		Description: strings.TrimSpace(r.PostFormValue("description")),
 		Kind:        r.PostFormValue("kind"),
 		Amount:      strings.TrimSpace(r.PostFormValue("amount")),
-		CategoryID:  entryCategory(r.PostFormValue("kind"), r.PostFormValue("category_id"), categories),
+		CategoryID:  r.PostFormValue("category_id"),
 		Day:         strings.TrimSpace(r.PostFormValue("day")),
 		StartAt:     r.PostFormValue("start_at"),
 		EndAt:       r.PostFormValue("end_at"),
@@ -157,8 +156,6 @@ func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, cate
 	if id := orEmpty(recurrence.CategoryID); hasCategory(categories, id) {
 		form.CategoryID = id
 	}
-
-	form.CategoryID = entryCategory(form.Kind, form.CategoryID, categories)
 
 	return form
 }

@@ -9,7 +9,14 @@ import (
 )
 
 func settingsForm(dateFormat, numberFormat string) url.Values {
-	return url.Values{"language": {"pt-BR"}, "date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}}
+	return url.Values{"language": {"pt-BR"}, "date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}, "daily_limit_mode": {"DYNAMIC"}}
+}
+
+// withCurrency sets the form's Moeda.
+func withCurrency(form url.Values, currency string) url.Values {
+	form.Set("currency", currency)
+
+	return form
 }
 
 // withLanguage sets the form's Idioma.
@@ -22,7 +29,7 @@ func withLanguage(form url.Values, language string) url.Values {
 // assertSelected checks /settings shows each value as the selected option.
 func (w *webClient) assertSelected(values ...string) {
 	w.t.Helper()
-	body := get(w.handler, "/settings", w.cookie).Body.String()
+	body := w.submit(http.MethodGet, "/settings", nil).Body.String()
 	for _, value := range values {
 		if !strings.Contains(body, `value="`+value+`" selected`) {
 			w.t.Errorf("settings lacks %q selected: %s", value, body)
@@ -33,7 +40,7 @@ func (w *webClient) assertSelected(values ...string) {
 func TestWebSettings_ShowsAndSavesTheFormats(t *testing.T) {
 	w := newWebClient(t)
 
-	page := get(w.handler, "/settings", w.cookie)
+	page := w.submit(http.MethodGet, "/settings", nil)
 	if body := page.Body.String(); page.Code != http.StatusOK || !strings.Contains(body, "Formato de data") || !strings.Contains(body, "Formato numérico") ||
 		!strings.Contains(body, "DD/MM/AAAA") || !strings.Contains(body, "1,234.56") {
 		t.Errorf("settings = %d, want both formats with their options: %s", page.Code, body)
@@ -50,7 +57,7 @@ func TestWebSettings_InvalidValueIs422AndSavesNothing(t *testing.T) {
 	for name, form := range map[string]url.Values{
 		"unknown date format":   settingsForm("DD.MM.YYYY", "1,234.56"),
 		"unknown number format": settingsForm("MM/DD/YYYY", "1 234,56"),
-		"unknown currency":      {"language": {"pt-BR"}, "date_format": {"MM/DD/YYYY"}, "number_format": {"1,234.56"}, "currency": {"JPY"}},
+		"unknown currency":      withCurrency(settingsForm("MM/DD/YYYY", "1,234.56"), "JPY"),
 		"unknown language":      withLanguage(settingsForm("MM/DD/YYYY", "1,234.56"), "fr"),
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -73,6 +80,17 @@ func (w *webClient) assertBody(path string, texts ...string) {
 	for _, text := range texts {
 		if body := page.Body.String(); page.Code != http.StatusOK || !strings.Contains(body, text) {
 			w.t.Errorf("%s = %d, want %q in: %s", path, page.Code, text, body)
+		}
+	}
+}
+
+// assertSettings checks the Configurações sheet, opened as htmx does, is 200 and has every text.
+func (w *webClient) assertSettings(texts ...string) {
+	w.t.Helper()
+	sheet := w.submit(http.MethodGet, "/settings", nil)
+	for _, text := range texts {
+		if body := sheet.Body.String(); sheet.Code != http.StatusOK || !strings.Contains(body, text) {
+			w.t.Errorf("/settings = %d, want %q in: %s", sheet.Code, text, body)
 		}
 	}
 }
@@ -141,14 +159,12 @@ func TestWebSettings_CurrencySymbolFollowsTheAccountCurrency(t *testing.T) {
 	w := newWebClient(t)
 	tz := &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}
 
-	w.assertBody("/settings", "Moeda", "não serão convertidos")
+	w.assertSettings("Moeda", "não serão convertidos")
 	w.assertSelected("BRL")
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Salário", "INCOME", "1.234,56", time.Now().Format(time.DateOnly), "", ""), tz)
 	w.assertBody("/", "R$ 1.234,56")
 
-	form := settingsForm("DD/MM/YYYY", "1,234.56")
-	form.Set("currency", "USD")
-	w.mustSubmit(http.MethodPost, "/settings", form)
+	w.mustSubmit(http.MethodPost, "/settings", withCurrency(settingsForm("DD/MM/YYYY", "1,234.56"), "USD"))
 	w.assertSelected("USD")
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1,234.56", "2026-07-15", "", ""), tz)
 
@@ -168,7 +184,7 @@ func TestWebSettings_InLauncherAndNav(t *testing.T) {
 	w := newWebClient(t)
 
 	body := get(w.handler, "/", w.cookie).Body.String()
-	for _, text := range []string{`href="/settings"`, "Ir para configurações"} {
+	for _, text := range []string{`hx-get="/settings"`, "Abrir configurações", "<kbd>,</kbd> configurações"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("home lacks %q: %s", text, body)
 		}
@@ -184,11 +200,11 @@ func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 	w.assertSelected("en")
 	w.assertBody("/",
 		`<html lang="en">`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]",
-		"Go to month", "Go to settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
-		"<kbd>1-6</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
+		"Go to month", "Open settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
+		"</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
 	w.assertBody("/?month=2026-11", "November 2026", "<kbd>n</kbd> new")
 	w.assertBody("/transactions/new", "[expense]", "[income]")
-	w.assertBody("/settings", "Settings", "Preferences", "Language", "Date format", "Number format", "DD/MM/YYYY",
-		"Account", "Currency", "recorded amounts are not converted", "&gt; Save")
+	w.assertSettings("Settings", "Language", "Date format", "Number format", "DD/MM/YYYY",
+		"Currency", "recorded amounts are not converted", "&gt; Save")
 	w.assertBody("/tags", "Despesa")
 }

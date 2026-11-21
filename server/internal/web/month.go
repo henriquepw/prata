@@ -147,19 +147,21 @@ type dailyCell struct {
 	Tone         string
 }
 
-// readDaily is the fixed daily limit of each day of first's month: the monthly limits of the daily categories over the
-// days of the month, against what transactions spent on them on that day in the location of first. A day is gray when
-// it is after today or spent nothing, else green up to 80% of the limit, yellow up to 100% and red above it.
-func readDaily(income int64, first time.Time, today string, usages []store.CategoryUsage, transactions []store.Transaction) daily {
-	if income == 0 {
+// readDaily is the daily limit of each day of first's month in the session's Modo do limite diário, empty without a
+// Receita mensal: fixed, the monthly limits of the daily categories over the days of the month; dynamic, what is left
+// of them after the spending before the day over the days left counting it, never below zero, kept from today on. Each is set against what transactions spent on the
+// daily categories on that day in the location of first. A day is gray when it is after today or spent nothing, else
+// green up to 80% of the limit, yellow up to 100% and red above it.
+func readDaily(session store.Session, first time.Time, today string, usages []store.CategoryUsage, transactions []store.Transaction) daily {
+	if session.MonthlyIncome == 0 {
 		return daily{}
 	}
 
-	isDaily, budget := map[string]bool{}, int64(0)
+	isDaily, dailyBudget := map[string]bool{}, int64(0)
 
 	for _, usage := range usages {
 		if usage.IsDaily {
-			isDaily[usage.ID], budget = true, budget+usage.MonthlyLimit
+			isDaily[usage.ID], dailyBudget = true, dailyBudget+usage.MonthlyLimit
 		}
 	}
 
@@ -171,11 +173,15 @@ func readDaily(income int64, first time.Time, today string, usages []store.Categ
 	}
 
 	days := first.AddDate(0, 1, -1).Day()
-	limit := budget / int64(days)
+	limit, spentBefore := dailyBudget/int64(days), int64(0)
 	d := daily{Defined: true, Lead: int(first.Weekday())}
 
 	for i := range days {
 		date := first.AddDate(0, 0, i).Format(time.DateOnly)
+		if session.DailyLimitMode == dailyLimitDynamic && (i == 0 || date <= today) {
+			limit = max(0, dailyBudget-spentBefore) / int64(days-i)
+		}
+
 		cell := dailyCell{Date: date, Day: i + 1, Spent: spent[date], Limit: limit, Tone: "gray"}
 		switch {
 		case date > today || cell.Spent == 0:
@@ -187,6 +193,7 @@ func readDaily(income int64, first time.Time, today string, usages []store.Categ
 			cell.Tone = "red"
 		}
 
+		spentBefore += cell.Spent
 		d.Cells = append(d.Cells, cell)
 	}
 
@@ -237,7 +244,7 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 	}
 
 	page.Previous = previous
-	page.Daily = readDaily(sessionFrom(ctx).MonthlyIncome, first, page.Today, page.Usages, transactions)
+	page.Daily = readDaily(sessionFrom(ctx), first, page.Today, page.Usages, transactions)
 	page.Income, page.Outcome = totals(transactions)
 	days := map[string]*day{}
 	at := func(date string) *day {
@@ -362,8 +369,6 @@ func (h handler) occurrence(w http.ResponseWriter, r *http.Request) (occurrenceF
 		form.CategoryID = id
 	}
 
-	form.CategoryID = entryCategory(form.Kind, form.CategoryID, form.Categories)
-
 	return occurrenceForm{transactionForm: form, Recurrence: rec, Date: date}, true
 }
 
@@ -400,8 +405,6 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		form.OccurredAt = r.PostFormValue("occurred_at")
 		form.CategoryID = r.PostFormValue("category_id")
 	}
-
-	form.CategoryID = entryCategory(form.Kind, form.CategoryID, form.Categories)
 
 	cents := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	occurredAt, ok := parseDate(form.OccurredAt, location(r))

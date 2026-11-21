@@ -57,6 +57,15 @@ type numberFormat struct {
 
 var numberFormats = []numberFormat{{option{"1.234,56"}, ".", ","}, {option{"1,234.56"}, ",", "."}}
 
+// The Modos do limite diário: fixed, the same limit every day; dynamic, what is left over the days left.
+const (
+	dailyLimitFixed   = "FIXED"
+	dailyLimitDynamic = "DYNAMIC"
+)
+
+// dailyLimitModes are the Modos do limite diário, whose labels are the i18n keys "daily_limit_mode." + Value.
+var dailyLimitModes = []option{{dailyLimitFixed}, {dailyLimitDynamic}}
+
 // currency is a Moeda: its schema value and its symbol.
 type currency struct {
 	option

@@ -7,16 +7,16 @@ import (
 )
 
 // budgetSheet is the sheet that sets the Receita mensal and divides it among the categories, typing "valor" or
-// "%": changing the mode reopens the sheet in it, from what is stored. Under the list, what is missing or exceeds to close
+// "%": changing the mode reopens the sheet in it, carrying what was typed. Under the list, what is missing or exceeds to close
 // the Receita mensal.
 templ budgetSheet(form budgetForm) {
-	@sheet(sheetProps{Title: i18n.T(ctx, "budget.title"), Action: "/budget", Error: form.Errors["form"]}) {
-		<div hx-get="/budget" hx-trigger="change" hx-include="this" hx-target="#sheet">
+	@sheet(sheetProps{Title: i18n.T(ctx, "budget.title"), Action: "/budget"}) {
+		<div hx-get="/budget" hx-trigger="change" hx-include="closest form" hx-target="#sheet">
 			@choiceField("mode", i18n.T(ctx, "budget.mode"), "") {
-				@choiceOption("mode", "value", !form.percent()) {
+				@choiceOption("mode", budgetInValue, !form.percent()) {
 					{ i18n.T(ctx, "budget.mode_value") }
 				}
-				@choiceOption("mode", "percent", form.percent()) {
+				@choiceOption("mode", budgetInPercent, form.percent()) {
 					%
 				}
 			}

@@ -73,7 +73,7 @@ func TestSessionByToken_ResolvesUserEmailAndAccount(t *testing.T) {
 		UserID:    ownerID,
 		Email:     "ana@example.com",
 		AccountID: accountID,
-		Language:  "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56",
+		Language:  "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", DailyLimitMode: "DYNAMIC",
 		Currency:  "BRL",
 		ExpiresAt: now.Add(30 * 24 * time.Hour),
 	}
@@ -199,7 +199,7 @@ func TestSaveSettings_StoresNothingWhenTheMoedaIsRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	preferences := store.Preferences{Language: "en", DateFormat: "YYYY-MM-DD", NumberFormat: "1,234.56"}
+	preferences := store.Preferences{Language: "en", DateFormat: "YYYY-MM-DD", NumberFormat: "1,234.56", DailyLimitMode: "FIXED"}
 	if err := db.SaveSettings(context.Background(), ownerID, accountID, preferences, "XYZ"); err == nil {
 		t.Fatal("SaveSettings with Moeda XYZ succeeded, want an error")
 	}
@@ -209,7 +209,7 @@ func TestSaveSettings_StoresNothingWhenTheMoedaIsRefused(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	want := store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56"}
+	want := store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", DailyLimitMode: "DYNAMIC"}
 	if session.Preferences != want || session.Currency != "BRL" {
 		t.Errorf("settings = %+v %q, want %+v %q", session.Preferences, session.Currency, want, "BRL")
 	}

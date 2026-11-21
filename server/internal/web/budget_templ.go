@@ -16,7 +16,7 @@ import (
 )
 
 // budgetSheet is the sheet that sets the Receita mensal and divides it among the categories, typing "valor" or
-// "%": changing the mode reopens the sheet in it, from what is stored. Under the list, what is missing or exceeds to close
+// "%": changing the mode reopens the sheet in it, carrying what was typed. Under the list, what is missing or exceeds to close
 // the Receita mensal.
 func budgetSheet(form budgetForm) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
@@ -47,7 +47,7 @@ func budgetSheet(form budgetForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/budget\" hx-trigger=\"change\" hx-include=\"this\" hx-target=\"#sheet\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div hx-get=\"/budget\" hx-trigger=\"change\" hx-include=\"closest form\" hx-target=\"#sheet\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -86,7 +86,7 @@ func budgetSheet(form budgetForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("mode", "value", !form.percent()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = choiceOption("mode", budgetInValue, !form.percent()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -108,7 +108,7 @@ func budgetSheet(form budgetForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("mode", "percent", form.percent()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = choiceOption("mode", budgetInPercent, form.percent()).Render(templ.WithChildren(ctx, templ_7745c5c3_Var6), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -210,7 +210,7 @@ func budgetSheet(form budgetForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{Title: i18n.T(ctx, "budget.title"), Action: "/budget", Error: form.Errors["form"]}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = sheet(sheetProps{Title: i18n.T(ctx, "budget.title"), Action: "/budget"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

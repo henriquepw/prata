@@ -15,7 +15,7 @@ type settingsForm struct {
 	Errors   map[string]string
 }
 
-// settingsSheet is the Configurações sheet: the four fields in one list and "> salvar". A 422 swaps the whole sheet.
+// settingsSheet is the Configurações sheet: the five fields in one list and "> salvar". A 422 swaps the whole sheet.
 templ settingsSheet(form settingsForm) {
 	@sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
 		@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
@@ -41,6 +41,15 @@ templ settingsSheet(form settingsForm) {
 				for _, f := range numberFormats {
 					@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
 						{ f.Value }
+					}
+				}
+			}
+		}
+		@formField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: ariaInvalid(form.Errors["daily_limit_mode"])}) {
+				for _, m := range dailyLimitModes {
+					@nativeselect.Option(nativeselect.OptionProps{Value: m.Value, Selected: m.Value == form.DailyLimitMode}) {
+						{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
 					}
 				}
 			}
