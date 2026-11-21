@@ -32,7 +32,7 @@ var ptBR = map[string]string{
 	"movements.import_submit":      "importar",
 	"movements.importing":          "importando",
 	"movements.file":               "Arquivo",
-	"movements.file_hint":          "OFX, até 1 MB",
+	"movements.file_hint":          "OFX ou CSV do Nubank, até 1 MB",
 	"movements.account":            "Conta",
 	"movements.bank_account":       "Conta bancária",
 	"movements.kind.CHECKING":      "corrente",

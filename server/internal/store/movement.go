@@ -51,21 +51,20 @@ func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, 
 	return accounts, nil
 }
 
-// PendingMovements are the pending movements of the accounts the user belongs to, newest first.
-func (s *Store) PendingMovements(ctx context.Context, userID string) ([]Movement, error) {
+// PendingMovements are the pending movements of the account, newest first.
+func (s *Store) PendingMovements(ctx context.Context, accountID string) ([]Movement, error) {
 	query := `
 		SELECT
 			m.id, c.name AS account_name, m.institution, m.bank_account, m.bank_account_kind,
 			m.description, m.kind, m.amount, m.occurred_at
 		FROM movements m
 		JOIN accounts c ON c.id = m.account_id
-		JOIN account_users a ON a.account_id = m.account_id
-		WHERE a.user_id = ? AND m.status = 'PENDING'
+		WHERE m.account_id = ? AND m.status = 'PENDING'
 		ORDER BY m.occurred_at DESC, m.id
 	`
 
 	var movements []Movement
-	if err := s.SelectContext(ctx, &movements, query, userID); err != nil {
+	if err := s.SelectContext(ctx, &movements, query, accountID); err != nil {
 		return nil, fmt.Errorf("listing movements: %w", err)
 	}
 
@@ -158,7 +157,7 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 		return "", fmt.Errorf("reading movement date: %w", err)
 	}
 
-	fields := map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339)}
+	fields := transactionFields(movement, day)
 	if occurrence != nil {
 		query = "SELECT EXISTS (SELECT 1 FROM recurrences WHERE id = ? AND account_id = ? AND kind = ? AND deleted_at IS NULL)"
 
@@ -178,9 +177,7 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 		fields["description"] = description
 	}
 
-	if categoryID != "" && movement.Kind == "OUTCOME" {
-		fields["category_id"] = categoryID
-	}
+	setExpenseCategory(fields, movement, categoryID)
 
 	reason, err := commitChanges(ctx, tx, session, []Change{{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields}})
 	if err != nil || reason != "" {
@@ -227,12 +224,14 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 	}
 	defer tx.Rollback()
 
-	query, args, err := sqlx.In(`
+	query := `
 		SELECT id, description, kind, amount, occurred_at
 		FROM movements
 		WHERE id IN (?) AND account_id = ? AND status = 'PENDING'
 		ORDER BY occurred_at, id
-	`, ids, session.AccountID)
+	`
+
+	query, args, err := sqlx.In(query, ids, session.AccountID)
 	if err != nil {
 		return "", fmt.Errorf("building confirm: %w", err)
 	}
@@ -253,10 +252,9 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 			return "", fmt.Errorf("reading movement date: %w", err)
 		}
 
-		fields := map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339), "description": movement.Description}
-		if categoryID != "" && movement.Kind == "OUTCOME" {
-			fields["category_id"] = categoryID
-		}
+		fields := transactionFields(movement, day)
+		fields["description"] = movement.Description
+		setExpenseCategory(fields, movement, categoryID)
 
 		changes = append(changes, Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields})
 	}
@@ -266,7 +264,9 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 		return reason, err
 	}
 
-	query, args, err = sqlx.In("UPDATE movements SET status = 'CONFIRMED' WHERE id IN (?)", movementIDs(movements))
+	query = "UPDATE movements SET status = 'CONFIRMED' WHERE id IN (?)"
+
+	query, args, err = sqlx.In(query, movementIDs(movements))
 	if err != nil {
 		return "", fmt.Errorf("building confirm: %w", err)
 	}
@@ -285,7 +285,9 @@ func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []stri
 		return nil
 	}
 
-	query, args, err := sqlx.In("UPDATE movements SET status = 'IGNORED' WHERE id IN (?) AND account_id = ? AND status = 'PENDING'", ids, session.AccountID)
+	query := "UPDATE movements SET status = 'IGNORED' WHERE id IN (?) AND account_id = ? AND status = 'PENDING'"
+
+	query, args, err := sqlx.In(query, ids, session.AccountID)
 	if err != nil {
 		return fmt.Errorf("building ignore: %w", err)
 	}
@@ -295,6 +297,18 @@ func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []stri
 	}
 
 	return nil
+}
+
+// transactionFields are the fields a movement gives its transaction: kind, amount and date.
+func transactionFields(movement Movement, day time.Time) map[string]any {
+	return map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339)}
+}
+
+// setExpenseCategory gives an expense its category; an income keeps none.
+func setExpenseCategory(fields map[string]any, movement Movement, categoryID string) {
+	if categoryID != "" && movement.Kind == "OUTCOME" {
+		fields["category_id"] = categoryID
+	}
 }
 
 func movementIDs(movements []Movement) []string {

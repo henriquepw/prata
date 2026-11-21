@@ -32,7 +32,7 @@ var en = map[string]string{
 	"movements.import_submit":      "import",
 	"movements.importing":          "importing",
 	"movements.file":               "File",
-	"movements.file_hint":          "OFX, up to 1 MB",
+	"movements.file_hint":          "OFX or Nubank CSV, up to 1 MB",
 	"movements.account":            "Account",
 	"movements.bank_account":       "Bank account",
 	"movements.kind.CHECKING":      "checking",

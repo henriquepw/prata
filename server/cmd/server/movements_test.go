@@ -147,15 +147,7 @@ func TestMovements_ReimportingAddsNothingAndAnotherAccountIsNew(t *testing.T) {
 
 	assertContains(t, w.upload(w.accountID(), ofxCard).Body.String(), "0 novos, 2 já importados")
 
-	id, now := ulid.Make().String(), time.Now().UTC().Format(time.RFC3339)
-	for _, query := range []string{
-		"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?1, 'Casa', 'x', ?2, ?2)",
-		"INSERT INTO account_users (id, account_id, user_id, role, created_at) SELECT ?1 || 'u', ?1, id, 'OWNER', ?2 FROM users",
-	} {
-		if _, err := w.db.ExecContext(context.Background(), query, id, now); err != nil {
-			t.Fatal(err)
-		}
-	}
+	id := w.addAccount("Casa", "BRL")
 
 	assertContains(t, w.upload(id, ofxCard).Body.String(), "2 novos, 0 já importados")
 }
@@ -554,4 +546,69 @@ func TestMovements_BatchRoutesRequireSessionAndSelectAllIsOffered(t *testing.T) 
 		w.handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/movements/"+action, nil))
 		assertRedirectsToLogin(t, response)
 	}
+}
+
+// addAccount gives the user another account, created after the first, so the session stays on the first.
+func (w *webClient) addAccount(name, currency string) string {
+	w.t.Helper()
+
+	id, now := ulid.Make().String(), time.Now().UTC().Add(time.Second).Format(time.RFC3339)
+	for _, query := range []string{
+		"INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at) VALUES (?1, ?3, ?4, 'x', ?2, ?2)",
+		"INSERT INTO account_users (id, account_id, user_id, role, created_at) SELECT ?1 || 'u', ?1, id, 'OWNER', ?2 FROM users",
+	} {
+		if _, err := w.db.ExecContext(context.Background(), query, id, now, name, currency); err != nil {
+			w.t.Fatal(err)
+		}
+	}
+
+	return id
+}
+
+func TestMovements_ReviewListsOnlyTheActiveAccountsMovements(t *testing.T) {
+	w := newWebClient(t)
+	casa := w.addAccount("Casa", "BRL")
+	w.upload(casa, latin1(ofxBank))
+	w.upload(w.accountID(), ofxCard)
+
+	body := get(w.handler, "/movements", w.cookie).Body.String()
+	assertContains(t, body, "Mercado")
+
+	if strings.Contains(body, "Padaria") {
+		t.Errorf("movement of another account is listed, and could not be confirmed: %s", body)
+	}
+}
+
+func TestMovements_ImportsIntoAnAccountOfAnotherCurrencyWithoutEncryptionKey(t *testing.T) {
+	w := newWebClient(t)
+	usd := w.addAccount("Dólar", "USD")
+
+	response := w.upload(usd, strings.Replace(ofxCard, "<CURDEF>BRL", "<CURDEF>USD", 1))
+	if response.Header().Get("HX-Retarget") != "" || !strings.Contains(response.Body.String(), "2 novos, 0 já importados") {
+		t.Errorf("import into a USD account = %d: %s", response.Code, response.Body)
+	}
+}
+
+func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T) {
+	w := newWebClient(t)
+	paths := []string{"/", "/transactions", "/budget"}
+	before := make([]string, len(paths))
+	for i, path := range paths {
+		before[i] = get(w.handler, path, w.cookie).Body.String()
+	}
+
+	w.upload(w.accountID(), latin1(ofxBank))
+
+	for i, path := range paths {
+		if after := get(w.handler, path, w.cookie).Body.String(); after != before[i] {
+			t.Errorf("%s changed after an import", path)
+		}
+	}
+}
+
+func TestMovements_Latin1CSVKeepsItsAccents(t *testing.T) {
+	w := newWebClient(t)
+
+	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", latin1(csvAccount)).Body.String(),
+		"Compra no débito - Padaria", "Transferência recebida - Empresa")
 }
