@@ -1,0 +1,96 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
+)
+
+// movementsPage is the review screen: the "Importar arquivo" form over the list of pending movements.
+templ movementsPage(s shell, view movementsView) {
+	@layout(s) {
+		@importPanel(view)
+		@movementsPanel(view)
+	}
+}
+
+// importPanel is the form that sends one file to one of the user's accounts, with the summary or the error of the
+// last import under it. A response, a 422 included, swaps the screen's main.
+templ importPanel(view movementsView) {
+	@panel(i18n.T(ctx, "movements.import"), "", nil) {
+		<form hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+			@hintField("file", i18n.T(ctx, "movements.file"), i18n.T(ctx, "movements.file_hint"), view.Error) {
+				@input.Input(input.Props{ID: "file", Name: "file", Type: "file", Required: true, Attributes: ariaInvalid(view.Error)})
+			}
+			@formField("account_id", i18n.T(ctx, "movements.account"), "") {
+				@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
+					for _, account := range view.Accounts {
+						@nativeselect.Option(nativeselect.OptionProps{Value: account.ID}) {
+							{ account.Name }
+						}
+					}
+				}
+			}
+			@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "movements.importing")}}) {
+				<span>&gt; { i18n.T(ctx, "movements.import_submit") }</span>
+			}
+		</form>
+		if view.Summary != "" {
+			<p role="status" class="text-xs text-muted-foreground">{ view.Summary }</p>
+		}
+	}
+}
+
+// movementsPanel lists the pending movements.
+templ movementsPanel(view movementsView) {
+	@panel(i18n.T(ctx, "nav.movements"), "", nil) {
+		if len(view.Movements) == 0 {
+			@empty(i18n.T(ctx, "movements.empty"))
+		} else {
+			@table.Table() {
+				@table.Header() {
+					@table.Row() {
+						@table.Head() {
+							{ i18n.T(ctx, "field.date") }
+						}
+						@table.Head(table.HeadProps{Class: "w-full"}) {
+							{ i18n.T(ctx, "field.description") }
+						}
+						@table.Head(table.HeadProps{Class: "text-right"}) {
+							{ i18n.T(ctx, "field.amount") }
+						}
+						@table.Head(table.HeadProps{Class: "hide-m"}) {
+							{ i18n.T(ctx, "kind.label") }
+						}
+						@table.Head(table.HeadProps{Class: "hide-m"}) {
+							{ i18n.T(ctx, "movements.bank_account") }
+						}
+					}
+				}
+				@table.Body() {
+					for _, m := range view.Movements {
+						@table.Row() {
+							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+								{ movementDate(ctx, m.OccurredAt) }
+							}
+							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+								{ m.Description }
+							}
+							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
+								{ money(ctx, signed(m.Kind, m.Amount)) }
+							}
+							@table.Cell(table.CellProps{Class: "hide-m"}) {
+								{ i18n.T(ctx, "kind."+m.Kind) }
+							}
+							@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+								{ i18n.T(ctx, "movements.kind."+m.BankAccountKind) } { m.Institution } { m.BankAccount }
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

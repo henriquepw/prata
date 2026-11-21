@@ -93,7 +93,7 @@ func TestHomeChrome(t *testing.T) {
 		t.Errorf("settings link at %d, theme at %d, want the link before theme", settings, theme)
 	}
 
-	for _, want := range []string{`data-key=","`, "1-5"} {
+	for _, want := range []string{`data-key=","`, "1-6"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("home lacks %s", want)
 		}
