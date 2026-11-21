@@ -133,6 +133,18 @@ var en = map[string]string{
 	"confirm.no":           "no",
 
 	// Categories.
+	"budget.open":                    "split income",
+	"budget.title":                   "Monthly income",
+	"budget.income":                  "Monthly income",
+	"budget.income_hint":             "empty = not defined; limits stay loose",
+	"budget.mode":                    "Type in",
+	"budget.mode_value":              "amount",
+	"budget.missing":                 "missing",
+	"budget.over":                    "over by",
+	"budget.closed":                  "closed at 100%",
+	"budget.error.income":            "Enter an amount of zero or more.",
+	"budget.error.income_percent":    "Enter the monthly income to split in %.",
+	"budget.error.open":              "The split must add up exactly to the monthly income.",
 	"categories.empty":               "no categories yet",
 	"categories.monthly_limit":       "Monthly limit",
 	"categories.monthly_limit_hint":  "empty = no limit",

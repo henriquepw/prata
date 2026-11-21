@@ -68,6 +68,8 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("POST /categories", h.requireSession(h.saveCategory))
 	mux.Handle("POST /categories/{id}", h.requireSession(h.saveCategory))
 	mux.Handle("DELETE /categories/{id}", h.requireSession(h.deleteCategory))
+	mux.Handle("GET /budget", h.requireSession(h.budget))
+	mux.Handle("POST /budget", h.requireSession(h.saveBudget))
 	mux.Handle("GET /recurrences", h.requireSession(h.recurrences))
 	mux.Handle("GET /recurrences/new", h.requireSession(h.newRecurrence))
 	mux.Handle("GET /recurrences/{id}", h.requireSession(h.editRecurrence))

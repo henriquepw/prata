@@ -133,6 +133,18 @@ var ptBR = map[string]string{
 	"confirm.no":           "não",
 
 	// Categories.
+	"budget.open":                    "dividir receita",
+	"budget.title":                   "Receita mensal",
+	"budget.income":                  "Receita mensal",
+	"budget.income_hint":             "vazio = não definida; os limites ficam soltos",
+	"budget.mode":                    "Digitar em",
+	"budget.mode_value":              "valor",
+	"budget.missing":                 "falta",
+	"budget.over":                    "excede",
+	"budget.closed":                  "fechado em 100%",
+	"budget.error.income":            "Informe um valor maior ou igual a zero.",
+	"budget.error.income_percent":    "Informe a receita mensal para dividir em %.",
+	"budget.error.open":              "A divisão precisa fechar exatamente a receita mensal.",
 	"categories.empty":               "nenhuma categoria ainda",
 	"categories.monthly_limit":       "Limite mensal",
 	"categories.monthly_limit_hint":  "vazio = sem limite",

@@ -5,6 +5,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -39,7 +40,7 @@ type categoryForm struct {
 
 templ categoriesPage(s shell, categories []store.Category) {
 	@layout(s) {
-		@panel(i18n.T(ctx, "nav.categories"), "", newAction("/categories/new")) {
+		@panel(i18n.T(ctx, "nav.categories"), "", categoriesActions()) {
 			if len(categories) == 0 {
 				@empty(i18n.T(ctx, "categories.empty"))
 			} else {
@@ -76,6 +77,16 @@ templ categoriesPage(s shell, categories []store.Category) {
 	}
 }
 
+// categoriesActions are the categories panel's "dividir receita" and "+ nova [n]".
+templ categoriesActions() {
+	<span class="flex gap-[1ch]">
+		@button.Button(button.Props{Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"hx-get": "/budget", "hx-target": "#sheet"}}) {
+			{ i18n.T(ctx, "budget.open") }
+		}
+		@newAction("/categories/new")
+	</span>
+}
+
 // categoryName is a category's name after its "■" in the category color.
 templ categoryName(name, color string) {
 	<span class="flex items-center gap-[1ch]"><span class={ colorClass(color) } aria-hidden="true">■</span>{ name }</span>
@@ -105,9 +116,11 @@ templ categorySheet(form categoryForm) {
 				{ i18n.T(ctx, "categories.daily_no") }
 			}
 		}
-		@hintField("monthly_limit", i18n.T(ctx, "categories.monthly_limit"), i18n.T(ctx, "categories.monthly_limit_hint"), form.Errors["monthly_limit"]) {
-			@currencyPrefix() {
-				@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+		if sessionFrom(ctx).MonthlyIncome == 0 {
+			@hintField("monthly_limit", i18n.T(ctx, "categories.monthly_limit"), i18n.T(ctx, "categories.monthly_limit_hint"), form.Errors["monthly_limit"]) {
+				@currencyPrefix() {
+					@input.Input(input.Props{ID: "monthly_limit", Name: "monthly_limit", Value: form.MonthlyLimit, Placeholder: amount(ctx, 0), Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["monthly_limit"])})
+				}
 			}
 		}
 	}

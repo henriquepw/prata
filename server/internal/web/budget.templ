@@ -1,0 +1,59 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"strings"
+)
+
+// budgetSheet is the sheet that sets the Receita mensal and divides it among the categories, typing "valor" or
+// "%": changing the mode reopens the sheet in it, from what is stored. Under the list, what is missing or exceeds to close
+// the Receita mensal.
+templ budgetSheet(form budgetForm) {
+	@sheet(sheetProps{Title: i18n.T(ctx, "budget.title"), Action: "/budget", Error: form.Errors["form"]}) {
+		<div hx-get="/budget" hx-trigger="change" hx-include="this" hx-target="#sheet">
+			@choiceField("mode", i18n.T(ctx, "budget.mode"), "") {
+				@choiceOption("mode", "value", !form.percent()) {
+					{ i18n.T(ctx, "budget.mode_value") }
+				}
+				@choiceOption("mode", "percent", form.percent()) {
+					%
+				}
+			}
+		</div>
+		@hintField("income", i18n.T(ctx, "budget.income"), i18n.T(ctx, "budget.income_hint"), form.Errors["income"]) {
+			@currencyPrefix() {
+				@input.Input(input.Props{ID: "income", Name: "income", Value: form.Income, Placeholder: amount(ctx, 0), Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["income"], templ.Attributes{"inputmode": "decimal", "autocomplete": "off"})})
+			}
+		}
+		for _, category := range form.Categories {
+			@hintField("limit_"+category.ID, category.Name, "", form.Errors["limit_"+category.ID]) {
+				<div class="flex items-center gap-[1ch]">
+					@input.Input(input.Props{ID: "limit_" + category.ID, Name: "limit_" + category.ID, Value: form.Limits[category.ID], Placeholder: amount(ctx, 0), Class: "tabular-nums", Attributes: ariaInvalid(form.Errors["limit_"+category.ID], templ.Attributes{"inputmode": "decimal", "autocomplete": "off"})})
+					if form.percent() {
+						<span aria-hidden="true">%</span>
+					}
+				</div>
+			}
+		}
+		@budgetGap(form)
+	}
+}
+
+// budgetGap is the line that says what is missing to close the Receita mensal, or what exceeds; there is none while
+// no Receita mensal is defined and the limits are in value.
+templ budgetGap(form budgetForm) {
+	if form.Income != "" || form.percent() {
+		{{ shown := strings.TrimPrefix(budgetAmount(ctx, form, form.Gap), "−") }}
+		<p class="text-xs tabular-nums" role="status">
+			switch {
+				case form.Gap > 0:
+					{ i18n.T(ctx, "budget.missing") } { shown }
+				case form.Gap < 0:
+					<span class="text-destructive">{ i18n.T(ctx, "budget.over") } { shown }</span>
+				default:
+					{ i18n.T(ctx, "budget.closed") }
+			}
+		</p>
+	}
+}

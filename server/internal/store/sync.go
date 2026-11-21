@@ -259,12 +259,32 @@ func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, v
 	return op, nil
 }
 
-// moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op to the account's
-// default category, as UPDATE ops from the same device; an account without a default category moves nothing.
+// moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op, and its monthly
+// limit, to the account's default category, as UPDATE ops from the same device; an account without a default
+// category moves nothing.
 func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
 	defaultID, err := defaultCategoryID(ctx, tx, actor.AccountID)
 	if err != nil || defaultID == "" {
 		return err
+	}
+
+	query := "SELECT monthly_limit FROM categories WHERE id = ?"
+
+	var limit int64
+	if err := tx.GetContext(ctx, &limit, query, op.EntityID); err != nil {
+		return fmt.Errorf("reading the limit to move: %w", err)
+	}
+
+	if limit > 0 {
+		query = "SELECT monthly_limit + ? FROM categories WHERE id = ?"
+		if err := tx.GetContext(ctx, &limit, query, limit, defaultID); err != nil {
+			return fmt.Errorf("adding up the limits: %w", err)
+		}
+
+		values := map[string]any{"monthly_limit": limit, "updated_at": op.CreatedAt}
+		if err := recordUpdate(ctx, tx, actor, op, "CATEGORY", defaultID, values); err != nil {
+			return fmt.Errorf("adding the limit to the default category: %w", err)
+		}
 	}
 
 	for _, entity := range []string{"TRANSACTION", "RECURRENCE"} {
@@ -277,20 +297,27 @@ func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op)
 
 		for _, id := range ids {
 			values := map[string]any{"category_id": defaultID, "updated_at": op.CreatedAt}
-			payload, err := json.Marshal(values)
-			if err != nil {
-				return fmt.Errorf("encoding %s move: %w", entity, err)
-			}
-
-			move := Op{ID: ulid.Make().String(), Entity: entity, EntityID: id, Kind: KindUpdate, Payload: payload,
-				ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: op.OwnerID, CreatedAt: op.CreatedAt}
-			if _, err := record(ctx, tx, actor, move, values); err != nil {
+			if err := recordUpdate(ctx, tx, actor, op, entity, id, values); err != nil {
 				return fmt.Errorf("moving %s %s: %w", entity, id, err)
 			}
 		}
 	}
 
 	return nil
+}
+
+// recordUpdate records an UPDATE of the row, as the server's own consequence of op, from the same device.
+func recordUpdate(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, entity, id string, values map[string]any) error {
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return fmt.Errorf("encoding %s update: %w", entity, err)
+	}
+
+	update := Op{ID: ulid.Make().String(), Entity: entity, EntityID: id, Kind: KindUpdate, Payload: payload,
+		ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: op.OwnerID, CreatedAt: op.CreatedAt}
+	_, err = record(ctx, tx, actor, update, values)
+
+	return err
 }
 
 // validate checks the op against the protocol and the actor, and returns the known payload fields as SQL values;
@@ -555,6 +582,20 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 	}
 	defer tx.Rollback()
 
+	reason, err := commitChanges(ctx, tx, session, changes)
+	if err != nil || reason != "" {
+		return reason, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("committing web changes: %w", err)
+	}
+
+	return "", nil
+}
+
+// commitChanges is CommitChanges inside the caller's transaction; a rejection leaves the rollback to the caller.
+func commitChanges(ctx context.Context, tx *sqlx.Tx, session Session, changes []Change) (Reason, error) {
 	// The web device is created first at signup, so rowid tells it from a revoked client device named "web".
 	query := `
 		SELECT id
@@ -565,7 +606,7 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 	`
 
 	actor := Actor{AccountID: session.AccountID, UserID: session.UserID}
-	err = tx.GetContext(ctx, &actor.DeviceID, query, actor.AccountID)
+	err := tx.GetContext(ctx, &actor.DeviceID, query, actor.AccountID)
 	if err != nil {
 		return "", fmt.Errorf("finding web device: %w", err)
 	}
@@ -589,10 +630,6 @@ func (s *Store) CommitChanges(ctx context.Context, session Session, changes ...C
 		if result.Reason != "" {
 			return result.Reason, nil
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return "", fmt.Errorf("committing web changes: %w", err)
 	}
 
 	return "", nil

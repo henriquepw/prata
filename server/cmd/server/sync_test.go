@@ -295,9 +295,9 @@ func TestPull_PagesByLimitUntilUpToDate(t *testing.T) {
 		}
 	}
 
-	// the category's delete is preceded by the move of its transaction to the default category
-	if pages != 2 || len(seqs) != 4 || !slices.IsSorted(seqs) || cursor != seqs[3] {
-		t.Errorf("pulled seqs %v in %d pages ending at %d, want 4 increasing seqs in 2 pages", seqs, pages, cursor)
+	// the category's delete is preceded by the move of its limit and of its transaction to the default category
+	if pages != 3 || len(seqs) != 5 || !slices.IsSorted(seqs) || cursor != seqs[4] {
+		t.Errorf("pulled seqs %v in %d pages ending at %d, want 5 increasing seqs in 3 pages", seqs, pages, cursor)
 	}
 	if page := c.pull(cursor, 2); len(page.Ops) != 0 || !page.UpToDate || page.NextCursor != cursor {
 		t.Errorf("pull at the end = %+v, want empty and up to date at %d", page, cursor)

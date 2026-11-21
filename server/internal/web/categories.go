@@ -56,15 +56,24 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
-	limit, ok := parseAmount(r.Context(), form.MonthlyLimit)
-	if !ok || limit < 0 {
-		form.Errors["monthly_limit"] = i18n.T(r.Context(), "categories.error.monthly_limit")
+	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
+		Fields: map[string]any{"name": form.Name, "color": form.Color, "is_daily": int64(utils.IfElse(form.IsDaily, 1, 0))}}
+
+	// With a Receita mensal the limits belong to the division: a new category enters with 0 and an edit leaves it.
+	if sessionFrom(r.Context()).MonthlyIncome == 0 {
+		limit, ok := parseAmount(r.Context(), form.MonthlyLimit)
+		if !ok || limit < 0 {
+			form.Errors["monthly_limit"] = i18n.T(r.Context(), "categories.error.monthly_limit")
+		}
+
+		change.Fields["monthly_limit"] = limit
 	}
 
-	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
-		Fields: map[string]any{"name": form.Name, "color": form.Color, "monthly_limit": limit, "is_daily": int64(utils.IfElse(form.IsDaily, 1, 0))}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
+		if _, ok := change.Fields["monthly_limit"]; !ok {
+			change.Fields["monthly_limit"] = int64(0)
+		}
 	} else if _, ok := h.category(w, r); !ok {
 		return
 	}

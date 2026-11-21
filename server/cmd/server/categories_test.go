@@ -17,6 +17,8 @@ type webClient struct {
 	cursor int64
 	// defaultID is the default category the account was born with.
 	defaultID string
+	// categories maps the names of the categories the account was born with to their ids.
+	categories map[string]string
 }
 
 func newWebClient(t *testing.T) *webClient {
@@ -24,8 +26,9 @@ func newWebClient(t *testing.T) *webClient {
 	handler := newHandler(openStore(t), config{})
 	device := newClient(t, handler, newSignup())
 
-	w := &webClient{client: device, cookie: login(t, handler)}
+	w := &webClient{client: device, cookie: login(t, handler), categories: map[string]string{}}
 	for _, o := range w.newOps() { // the categories every account is born with
+		w.categories[o.Payload["name"].(string)] = o.EntityID
 		if o.Payload["is_default"] == float64(1) {
 			w.defaultID = o.EntityID
 		}
@@ -110,8 +113,10 @@ func TestWebCategories_WritesReachDevicePull(t *testing.T) {
 	}
 
 	w.mustSubmit(http.MethodDelete, "/categories/"+created.EntityID, nil)
-	if ops = w.newOps(); len(ops) != 1 || ops[0].Kind != "DELETE" || ops[0].EntityID != created.EntityID {
-		t.Errorf("ops after delete = %+v, want one DELETE", ops)
+	ops = w.newOps() // the limit of the deleted category moves to the default one first
+	if len(ops) != 2 || ops[0].EntityID != w.defaultID || ops[0].Payload["monthly_limit"] != float64(123456) ||
+		ops[1].Kind != "DELETE" || ops[1].EntityID != created.EntityID {
+		t.Errorf("ops after delete = %+v, want the limit moved to the default category and one DELETE", ops)
 	}
 
 	if body := get(w.handler, "/categories", w.cookie).Body.String(); strings.Contains(body, "Feira") {
@@ -216,7 +221,7 @@ func TestWebCategories_DeleteMovesTransactionsAndRecurrencesToTheDefault(t *test
 
 	moved := map[string]bool{}
 	ops := w.newOps()
-	for _, o := range ops[:len(ops)-1] {
+	for _, o := range ops[1 : len(ops)-1] { // the first op moves the category's limit
 		if o.Kind != "UPDATE" || o.Payload["category_id"] != w.defaultID {
 			t.Errorf("move op = %+v, want an UPDATE to the default category", o)
 		}
@@ -224,7 +229,7 @@ func TestWebCategories_DeleteMovesTransactionsAndRecurrencesToTheDefault(t *test
 		moved[o.Entity+"/"+o.EntityID] = true
 	}
 
-	if last := ops[len(ops)-1]; len(ops) != 3 || last.Entity != "CATEGORY" || last.Kind != "DELETE" || last.EntityID != categoryID ||
+	if last := ops[len(ops)-1]; len(ops) != 4 || ops[0].EntityID != w.defaultID || ops[0].Payload["monthly_limit"] != float64(50000) || last.Entity != "CATEGORY" || last.Kind != "DELETE" || last.EntityID != categoryID ||
 		!moved["TRANSACTION/"+transactionID] || !moved["RECURRENCE/"+recurrenceID] {
 		t.Errorf("ops after delete = %+v, want both moves then the DELETE", ops)
 	}

@@ -80,8 +80,8 @@ func TestCommitOps_OverlaysDomainRow(t *testing.T) {
 	}
 
 	commit(t, db, actor, "01JXQ8ZB000000000000000003", "DELETE", ``)
-	if got := read(); got.DeletedAt == nil || *got.DeletedAt != "2026-08-24T10:00:00Z" || got.Name != "Feira" || got.ServerSeq != seededOps+3 {
-		t.Errorf("after DELETE row = %+v, want a tombstone at the op's created_at after the seeded ops", got)
+	if got := read(); got.DeletedAt == nil || *got.DeletedAt != "2026-08-24T10:00:00Z" || got.Name != "Feira" || got.ServerSeq != seededOps+4 { // the move of its limit to the default category comes first
+		t.Errorf("after DELETE row = %+v, want a tombstone at the op's created_at after the seeded ops and the move of its limit", got)
 	}
 }
 

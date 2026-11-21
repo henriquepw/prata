@@ -14,6 +14,7 @@ var migrations = []migration{
 	{version: 1, files: []string{"domain.sql", "server.sql"}},
 	{version: 2, files: []string{"server_preferences.sql"}},
 	{version: 3, files: []string{"server_categories.sql"}},
+	{version: 4, files: []string{"server_income.sql"}},
 }
 
 type migration struct {

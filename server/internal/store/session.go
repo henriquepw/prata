@@ -25,8 +25,10 @@ type Session struct {
 	Email     string
 	AccountID string
 	Preferences
-	Currency  string
-	ExpiresAt time.Time
+	Currency string
+	// MonthlyIncome is the account's Receita mensal in cents, 0 when not defined.
+	MonthlyIncome int64
+	ExpiresAt     time.Time
 }
 
 // Preferences are a user's Idioma, Formato de data and Formato numérico, spelled as the schema stores them
@@ -82,7 +84,7 @@ func (s *Store) CreateSession(ctx context.Context, userID string, now time.Time)
 func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time) (Session, error) {
 	query := `
 		SELECT s.id, s.user_id, u.email, u.language, u.date_format, u.number_format, a.account_id, c.currency,
-			s.expires_at
+			c.monthly_income, s.expires_at
 		FROM sessions s
 		JOIN users u ON u.id = s.user_id
 		JOIN account_users a ON a.user_id = s.user_id
@@ -97,9 +99,10 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 		UserID string `db:"user_id"`
 		Email  string `db:"email"`
 		Preferences
-		AccountID string `db:"account_id"`
-		Currency  string `db:"currency"`
-		ExpiresAt string `db:"expires_at"`
+		AccountID     string `db:"account_id"`
+		Currency      string `db:"currency"`
+		MonthlyIncome int64  `db:"monthly_income"`
+		ExpiresAt     string `db:"expires_at"`
 	}
 	err := s.GetContext(ctx, &row, query, hashToken(token))
 	if errors.Is(err, sql.ErrNoRows) {
@@ -138,7 +141,9 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 		AccountID:   row.AccountID,
 		Preferences: row.Preferences,
 		Currency:    row.Currency,
-		ExpiresAt:   expiresAt.UTC(),
+
+		MonthlyIncome: row.MonthlyIncome,
+		ExpiresAt:     expiresAt.UTC(),
 	}, nil
 }
 
