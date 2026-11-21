@@ -43,11 +43,16 @@ func latin1(s string) string {
 func (w *webClient) upload(accountID, content string) *httptest.ResponseRecorder {
 	w.t.Helper()
 
-	return w.uploadConfirmed(accountID, content, false)
+	return w.uploadFile(accountID, "extrato.ofx", content)
 }
 
-// uploadConfirmed is upload, with the user's answer to the currency dialog when confirmed.
-func (w *webClient) uploadConfirmed(accountID, content string, confirmed bool) *httptest.ResponseRecorder {
+// uploadFile is upload with the name the browser sends for the file.
+func (w *webClient) uploadFile(accountID, name, content string) *httptest.ResponseRecorder {
+	return w.uploadConfirmed(accountID, name, content, false)
+}
+
+// uploadConfirmed is uploadFile, with the user's answer to the currency dialog when confirmed.
+func (w *webClient) uploadConfirmed(accountID, name, content string, confirmed bool) *httptest.ResponseRecorder {
 	w.t.Helper()
 
 	var body bytes.Buffer
@@ -62,7 +67,7 @@ func (w *webClient) uploadConfirmed(accountID, content string, confirmed bool) *
 		}
 	}
 
-	file, err := form.CreateFormFile("file", "extrato.ofx")
+	file, err := form.CreateFormFile("file", name)
 	if err != nil {
 		w.t.Fatal(err)
 	}
@@ -158,7 +163,7 @@ func TestMovements_ReimportingAddsNothingAndAnotherAccountIsNew(t *testing.T) {
 func TestMovements_UnrecognizedFileIsRefusedWhole(t *testing.T) {
 	w := newWebClient(t)
 
-	for _, content := range []string{"date,title,amount\n2024-01-01,x,1", strings.Repeat("a", 1<<20+1)} {
+	for _, content := range []string{"id,name\n1,x", strings.Repeat("a", 1<<20+1)} {
 		response := w.upload(w.accountID(), content)
 		if response.Code != http.StatusUnprocessableEntity {
 			t.Errorf("import = %d, want %d", response.Code, http.StatusUnprocessableEntity)
@@ -168,6 +173,39 @@ func TestMovements_UnrecognizedFileIsRefusedWhole(t *testing.T) {
 	}
 
 	assertContains(t, get(w.handler, "/movements", w.cookie).Body.String(), "nenhum movimento")
+}
+
+const csvCard = "date,title,amount\n2024-02-01,Uber *Trip,23.50\n2024-02-01,Uber *Trip,23.50\n2024-02-03,Pagamento recebido,-100.00\n"
+
+const csvAccount = "Data,Valor,Identificador,Descrição\n05/02/2024,-35.40,id-1,Compra no débito - Padaria\n06/02/2024,2000.00,id-2,Transferência recebida - Empresa\n"
+
+func TestMovements_NubankCardCSVPurchaseIsExpenseAndCreditIsIncome(t *testing.T) {
+	w := newWebClient(t)
+
+	response := w.uploadFile(w.accountID(), "nubank.csv", csvCard)
+	if response.Code != http.StatusOK {
+		t.Fatalf("import = %d: %s", response.Code, response.Body)
+	}
+
+	assertContains(t, response.Body.String(), "3 novos, 0 já importados", "Uber *Trip", "01/02/2024", "−R$ 23,50",
+		"Pagamento recebido", "R$ 100,00", "Nubank")
+
+	assertContains(t, w.uploadFile(w.accountID(), "nubank.csv", csvCard).Body.String(), "0 novos, 3 já importados")
+}
+
+func TestMovements_NubankAccountCSVNegativeIsExpenseAndDedupsByIdentifier(t *testing.T) {
+	w := newWebClient(t)
+
+	response := w.uploadFile(w.accountID(), "NU_conta.csv", csvAccount)
+	if response.Code != http.StatusOK {
+		t.Fatalf("import = %d: %s", response.Code, response.Body)
+	}
+
+	assertContains(t, response.Body.String(), "2 novos, 0 já importados", "Compra no débito - Padaria", "05/02/2024",
+		"−R$ 35,40", "R$ 2.000,00", "Nubank")
+
+	overlap := csvAccount + "07/02/2024,-10.00,id-3,Pix\n"
+	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", overlap).Body.String(), "1 novos, 2 já importados")
 }
 
 func TestMovements_NotAMemberCannotImportNorSee(t *testing.T) {
@@ -214,7 +252,7 @@ func TestMovements_ForeignCurrencyFileAsksConfirmationAndImportsAsIs(t *testing.
 		t.Errorf("movements before the confirmation = %d, %v", count, err)
 	}
 
-	response = w.uploadConfirmed(w.accountID(), usd, true)
+	response = w.uploadConfirmed(w.accountID(), "extrato.ofx", usd, true)
 	assertContains(t, response.Body.String(), "2 novos", "Mercado")
 }
 
@@ -226,4 +264,14 @@ func TestMovements_SameCurrencyFileImportsWithoutDialog(t *testing.T) {
 		t.Errorf("unexpected dialog: %s", response.Body.String())
 	}
 	assertContains(t, response.Body.String(), "2 novos")
+}
+
+func TestMovements_NubankCSVIsBRLAndAsksConfirmationOnAnotherCurrencyAccount(t *testing.T) {
+	w := newWebClient(t)
+
+	if _, err := w.db.ExecContext(context.Background(), "UPDATE accounts SET currency = 'USD'"); err != nil {
+		t.Fatal(err)
+	}
+
+	assertContains(t, w.uploadFile(w.accountID(), "nubank.csv", csvCard).Body.String(), "sem conversão", "BRL", "USD")
 }
