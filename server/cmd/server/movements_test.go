@@ -477,3 +477,81 @@ func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
 		t.Errorf("ops = %+v, want none", ops)
 	}
 }
+
+func TestMovements_BatchConfirmCreatesOneTransactionEachInOnePullAndSkipsReviewed(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+
+	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}, "category_id": {w.categories["Meta"]}}
+	if response := w.submit(http.MethodPost, "/movements/confirm", form); response.Code >= 400 {
+		t.Fatalf("batch confirm = %d: %s", response.Code, response.Body)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 2 {
+		t.Fatalf("ops = %+v, want two", ops)
+	}
+
+	expense, income := ops[0], ops[1]
+	if expense.Payload["description"] != "Padaria Pão Quente" || expense.Payload["category_id"] != w.categories["Meta"] || expense.Payload["amount"] != float64(4590) ||
+		income.Payload["description"] != "Salário" || income.Payload["category_id"] != nil || income.Payload["kind"] != "INCOME" {
+		t.Errorf("ops = %+v, want the bank descriptions, the batch category on the expense and none on the income", ops)
+	}
+
+	w.submit(http.MethodPost, "/movements/confirm", form)
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("repeated batch made ops %+v, want none", ops)
+	}
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") || strings.Contains(body, "Salário") {
+		t.Errorf("pending list after batch = %s, want empty", body)
+	}
+}
+
+func TestMovements_BatchConfirmWithoutCategoryUsesTheDefault(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+
+	w.submit(http.MethodPost, "/movements/confirm", url.Values{"id": {w.movementID("Padaria Pão Quente")}})
+
+	if ops := w.newOps(); len(ops) != 1 || ops[0].Payload["category_id"] != w.defaultID {
+		t.Errorf("ops = %+v, want the default category", ops)
+	}
+}
+
+func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+
+	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}}
+	for range 2 {
+		if response := w.submit(http.MethodPost, "/movements/ignore", form); response.Code >= 400 {
+			t.Fatalf("batch ignore = %d: %s", response.Code, response.Body)
+		}
+	}
+
+	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") || strings.Contains(body, "Salário") {
+		t.Errorf("ignored movements are back: %s", body)
+	}
+
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("ignore made ops %+v, want none", ops)
+	}
+}
+
+func TestMovements_BatchRoutesRequireSessionAndSelectAllIsOffered(t *testing.T) {
+	w := newWebClient(t)
+	body := w.upload(w.accountID(), latin1(ofxBank)).Body.String()
+	assertContains(t, body, `name="id"`, `form="batch"`, `hx-post="/movements/confirm"`, `hx-post="/movements/ignore"`)
+
+	for _, action := range []string{"confirm", "ignore"} {
+		response := httptest.NewRecorder()
+		w.handler.ServeHTTP(response, httptest.NewRequest(http.MethodPost, "/movements/"+action, nil))
+		assertRedirectsToLogin(t, response)
+	}
+}

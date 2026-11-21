@@ -73,9 +73,13 @@ templ movementsPanel(view movementsView) {
 		if len(view.Movements) == 0 {
 			@empty(i18n.T(ctx, "movements.empty"))
 		} else {
+			@batchForm(view.Categories)
 			@table.Table() {
 				@table.Header() {
 					@table.Row() {
+						@table.Head() {
+							<input type="checkbox" aria-label={ i18n.T(ctx, "movements.select_all") } onclick={ templ.JSUnsafeFuncCall(selectAll) }/>
+						}
 						@table.Head() {
 							{ i18n.T(ctx, "field.date") }
 						}
@@ -99,6 +103,9 @@ templ movementsPanel(view movementsView) {
 				@table.Body() {
 					for _, m := range view.Movements {
 						@table.Row() {
+							@table.Cell() {
+								<input type="checkbox" form="batch" name="id" value={ m.ID } aria-label={ m.Description }/>
+							}
 							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 								{ movementDate(ctx, m.OccurredAt) }
 							}
@@ -145,6 +152,28 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 		}
 		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
 			<span>{ i18n.T(ctx, "movements.ignore") }</span>
+		}
+	</form>
+}
+
+const selectAll = "for (const c of document.querySelectorAll('input[form=batch][name=id]')) c.checked = this.checked"
+
+// batchForm confirms or ignores the checked movements, which carry form="batch" from their rows. The category
+// (the default one is preselected) goes to the expenses; incomes keep none. A response swaps the screen's main.
+templ batchForm(categories []store.Category) {
+	<form id="batch" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mb-2 flex flex-wrap items-center gap-[1ch]">
+		@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.category")}}) {
+			for _, category := range categories {
+				@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
+					{ category.Name }
+				}
+			}
+		}
+		@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/movements/confirm"}}) {
+			<span>&gt; { i18n.T(ctx, "movements.confirm_selected") }</span>
+		}
+		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/ignore"}}) {
+			<span>{ i18n.T(ctx, "movements.ignore_selected") }</span>
 		}
 	</form>
 }
