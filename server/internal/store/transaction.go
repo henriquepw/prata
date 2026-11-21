@@ -7,8 +7,8 @@ import (
 	"fmt"
 )
 
-// Transaction is a live transaction as the web shows it, with its live category ("Sem categoria" and GRAY
-// when it has none or it was deleted) and the name of its live tag (empty without one); Amount is in cents and
+// Transaction is a live transaction as the web shows it, with its live category (empty and GRAY
+// when it has none, as an income) and the name of its live tag (empty without one); Amount is in cents and
 // OccurredAt is RFC 3339 in UTC.
 type Transaction struct {
 	ID            string  `db:"id"`
@@ -27,7 +27,7 @@ const transactionSelect = `
 	SELECT
 		t.id,
 		c.id AS category_id,
-		COALESCE(c.name, 'Sem categoria') AS category_name,
+		COALESCE(c.name, '') AS category_name,
 		COALESCE(c.color, 'GRAY') AS category_color,
 		t.tag_id,
 		COALESCE(g.name, '') AS tag_name,

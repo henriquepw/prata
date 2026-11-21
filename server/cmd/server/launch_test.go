@@ -56,7 +56,7 @@ func TestWebLaunch_PreviewsTheLine(t *testing.T) {
 	}{
 		{"", []string{"-45,90 despesa, +150 receita, @categoria, #tag, ontem ou dd/mm"}},
 		{"-45,90 padaria 18/11 @merc #viag", []string{"[despesa]", "−R$ 45,90", `"padaria"`, "Mercado", "#Viagem", "18/11/2026"}},
-		{"+150", []string{"[receita]", "R$ 150,00", "sem descrição", "sem categoria"}},
+		{"+150", []string{"[receita]", "R$ 150,00", "sem descrição"}},
 		{"padaria @xyz", []string{"! falta o valor", "! @xyz não existe"}},
 		{"10 @m", []string{"tab", "@mercado"}},
 	}

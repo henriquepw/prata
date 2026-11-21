@@ -70,9 +70,7 @@ templ launchPreview(line string, l launchLine) {
 			} else {
 				<span>"{ l.Description }"</span>
 			}
-			if l.Category.ID == "" {
-				<span class="text-muted-foreground">{ strings.ToLower(i18n.T(ctx, "field.no_category")) }</span>
-			} else {
+			if l.Category.ID != "" {
 				@categoryName(l.Category.Name, l.Category.Color)
 			}
 			if l.Tag.ID != "" {

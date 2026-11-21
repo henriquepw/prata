@@ -67,6 +67,12 @@ func parseLaunch(ctx context.Context, line string, categories []store.Category, 
 	}
 
 	l.Description = strings.Join(words, " ")
+	if l.Kind == "INCOME" {
+		l.Category = store.Category{}
+	} else if l.Category.ID == "" {
+		l.Category = defaultCategory(categories)
+	}
+
 	switch last := line[strings.LastIndexAny(line, " \t")+1:]; {
 	case strings.HasPrefix(last, "@"):
 		l.Suggestions = completions(categoryNames, last)

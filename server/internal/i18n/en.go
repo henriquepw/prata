@@ -110,7 +110,6 @@ var en = map[string]string{
 	"field.amount":        "Amount",
 	"field.date":          "Date",
 	"field.category":      "Category",
-	"field.no_category":   "No category",
 	"field.tag":           "Tag",
 	"field.no_tag":        "No tag",
 	"field.start":         "Start",

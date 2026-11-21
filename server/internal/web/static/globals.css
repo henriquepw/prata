@@ -999,6 +999,11 @@
     margin-bottom: 0;
   }
 
+  /* An income has no category: [receita] checked hides the sheet's category field. */
+  .sheet:has(input[name="kind"][value="INCOME"]:checked) .category-field {
+    display: none;
+  }
+
   /* Short choice ([despesa] [receita], [■ verde]): radios drawn as buttons that wrap, the checked one inverted. */
   .choice {
     display: flex;

@@ -58,8 +58,8 @@ func TestWebTransactions_WritesReachDevicePull(t *testing.T) {
 
 	w.mustSubmit(http.MethodPost, "/transactions/"+created.EntityID, transactionForm("Feira", "INCOME", "1234,56", "2026-07-15", categoryID, tagID), tz)
 	ops = w.newOps()
-	if len(ops) != 1 || ops[0].Kind != "UPDATE" || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"kind", "updated_at"}) {
-		t.Errorf("ops after edit = %+v, want one UPDATE with only kind and updated_at", ops)
+	if len(ops) != 1 || ops[0].Kind != "UPDATE" || !slices.Equal(slices.Sorted(maps.Keys(ops[0].Payload)), []string{"category_id", "kind", "updated_at"}) {
+		t.Errorf("ops after edit = %+v, want one UPDATE with only kind, category_id (cleared) and updated_at", ops)
 	}
 
 	w.mustSubmit(http.MethodPost, "/transactions/"+created.EntityID, transactionForm("Feira", "INCOME", "1.234,56", "2026-07-15", categoryID, tagID), tz)
@@ -151,7 +151,7 @@ func TestWebTransactions_InvalidFormIs422AndWritesNothing(t *testing.T) {
 		{"zero amount, no kind and no date", transactionForm("", "", "0", "", "", ""), []string{"Informe um valor maior que zero.", "Escolha o tipo.", "Informe a data."}},
 		{"malformed amount", transactionForm("", "OUTCOME", "12,345", "2026-07-01", "", ""), []string{"Informe um valor maior que zero."}},
 		{"negative amount", transactionForm("", "OUTCOME", "-5", "2026-07-01", "", ""), []string{"Informe um valor maior que zero."}},
-		{"unknown category and tag", transactionForm("", "INCOME", "5", "2026-07-01", transactionID, transactionID), []string{"Escolha uma categoria.", "Escolha uma tag."}},
+		{"unknown category and tag", transactionForm("", "OUTCOME", "5", "2026-07-01", transactionID, transactionID), []string{"Escolha uma categoria.", "Escolha uma tag."}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

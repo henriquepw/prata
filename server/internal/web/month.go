@@ -297,6 +297,8 @@ func (h handler) occurrence(w http.ResponseWriter, r *http.Request) (occurrenceF
 		form.CategoryID = id
 	}
 
+	form.CategoryID = entryCategory(form.Kind, form.CategoryID, form.Categories)
+
 	return occurrenceForm{transactionForm: form, Recurrence: rec, Date: date}, true
 }
 
@@ -333,6 +335,8 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		form.OccurredAt = r.PostFormValue("occurred_at")
 		form.CategoryID = r.PostFormValue("category_id")
 	}
+
+	form.CategoryID = entryCategory(form.Kind, form.CategoryID, form.Categories)
 
 	cents := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
 	occurredAt, ok := parseDate(form.OccurredAt, location(r))

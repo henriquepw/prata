@@ -79,6 +79,29 @@ func hasCategory(categories []store.Category, id string) bool {
 	return slices.ContainsFunc(categories, func(c store.Category) bool { return c.ID == id })
 }
 
+// entryCategory is the category an entry of kind is saved in: none for an income, else chosen, or the default
+// category when chosen is empty.
+func entryCategory(kind, chosen string, categories []store.Category) string {
+	if kind == "INCOME" {
+		return ""
+	}
+
+	if chosen != "" {
+		return chosen
+	}
+
+	return defaultCategory(categories).ID
+}
+
+// defaultCategory is the default one of categories, the zero Category when none is.
+func defaultCategory(categories []store.Category) store.Category {
+	if i := slices.IndexFunc(categories, func(c store.Category) bool { return c.IsDefault }); i >= 0 {
+		return categories[i]
+	}
+
+	return store.Category{}
+}
+
 func hasTag(tags []store.Tag, id string) bool {
 	return slices.ContainsFunc(tags, func(t store.Tag) bool { return t.ID == id })
 }

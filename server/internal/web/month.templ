@@ -148,7 +148,9 @@ templ monthContent(page month) {
 											@description(t.Description)
 										}
 										@table.Cell(table.CellProps{Class: "hide-m"}) {
-											@categoryName(t.CategoryName, t.CategoryColor)
+											if t.CategoryName != "" {
+												@categoryName(t.CategoryName, t.CategoryColor)
+											}
 										}
 										@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
 											if t.TagName != "" {

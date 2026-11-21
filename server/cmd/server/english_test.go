@@ -53,7 +53,7 @@ func TestWebEnglish_Recurrences(t *testing.T) {
 	id := w.newOps()[0].EntityID
 	w.mustSubmit(http.MethodPost, "/recurrences", recurrenceForm("", "INCOME", "10", "", "31", "2026-01-01", ""))
 	w.assertBody("/recurrences", "Aluguel", "no description", "Description", "Day", "Amount", "day 5 of every month")
-	w.assertBody("/recurrences/"+id, "Edit recurrence", "Description", "Kind", "Amount", "Category", "No category",
+	w.assertBody("/recurrences/"+id, "Edit recurrence", "Description", "Kind", "Amount", "Category",
 		"1 to 31; 31 falls on the last day", "Start", "End", "empty = no end",
 		"delete this recurrence? It stops generating pending occurrences; the confirmed transactions stay.")
 	w.assertBody("/recurrences/new", "New recurrence")
@@ -72,7 +72,7 @@ func TestWebEnglish_Month(t *testing.T) {
 	id := ops[1].EntityID
 	w.assertBody("/?month=2026-07", "Feira", "wed 15/07", "Mercado", "∞")
 	w.assertBody("/?month=2026-08&category="+ops[0].EntityID, "[all]", "no transactions in this category")
-	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "No category", "Tag", "No tag", "[today]", "[yesterday]",
+	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "Tag", "No tag", "[today]", "[yesterday]",
 		"delete this transaction? It disappears from the lists and balances on every device.")
 	w.assertBody("/transactions/new", "New transaction")
 

@@ -153,6 +153,10 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 		return Result{Reason: reason}, nil
 	}
 
+	if op, err = withDefaultCategory(ctx, tx, actor, op, values); err != nil {
+		return Result{}, err
+	}
+
 	if _, err := tx.ExecContext(ctx, "SAVEPOINT op"); err != nil {
 		return Result{}, fmt.Errorf("opening savepoint: %w", err)
 	}
@@ -182,23 +186,78 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 	return result, nil
 }
 
-// moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op to the account's
-// default category, as UPDATE ops from the same device; an account without a default category moves nothing.
-func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
+// defaultCategoryID is the id of the account's live default category, empty when it has none.
+func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID string) (string, error) {
 	query := "SELECT id FROM categories WHERE account_id = ? AND is_default = 1 AND deleted_at IS NULL"
 
-	var defaultID string
-	err := tx.GetContext(ctx, &defaultID, query, actor.AccountID)
+	var id string
+	err := tx.GetContext(ctx, &id, query, accountID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil
+		return "", nil
 	}
 
 	if err != nil {
-		return fmt.Errorf("reading default category: %w", err)
+		return "", fmt.Errorf("reading default category: %w", err)
+	}
+
+	return id, nil
+}
+
+// withDefaultCategory puts the account's default category in an OUTCOME transaction or recurrence that CREATEs
+// without a category or UPDATEs its category to null, in values and in the op's payload, so every device pulls
+// the category the server stored; an account without a default category changes nothing.
+func withDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, values map[string]any) (Op, error) {
+	if (op.Entity != "TRANSACTION" && op.Entity != "RECURRENCE") || op.Kind == KindDelete {
+		return op, nil
+	}
+
+	category, set := values["category_id"].(*string)
+	if (set && category != nil) || (!set && op.Kind != KindCreate) {
+		return op, nil
+	}
+
+	kind, set := values["kind"].(*string)
+	if !set && op.Kind == KindUpdate {
+		query := "SELECT kind FROM " + tables[op.Entity].name + " WHERE id = ?"
+		if err := tx.GetContext(ctx, &kind, query, op.EntityID); err != nil {
+			return op, fmt.Errorf("reading %s %s kind: %w", op.Entity, op.EntityID, err)
+		}
+	}
+
+	if kind == nil || *kind != "OUTCOME" {
+		return op, nil
+	}
+
+	id, err := defaultCategoryID(ctx, tx, actor.AccountID)
+	if err != nil || id == "" {
+		return op, err
+	}
+
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(op.Payload, &payload); err != nil {
+		return op, fmt.Errorf("decoding op %s payload: %w", op.ID, err)
+	}
+
+	payload["category_id"], _ = json.Marshal(id)
+	if op.Payload, err = json.Marshal(payload); err != nil {
+		return op, fmt.Errorf("encoding op %s payload: %w", op.ID, err)
+	}
+
+	values["category_id"] = &id
+
+	return op, nil
+}
+
+// moveToDefaultCategory moves the live transactions and recurrences of the category deleted by op to the account's
+// default category, as UPDATE ops from the same device; an account without a default category moves nothing.
+func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
+	defaultID, err := defaultCategoryID(ctx, tx, actor.AccountID)
+	if err != nil || defaultID == "" {
+		return err
 	}
 
 	for _, entity := range []string{"TRANSACTION", "RECURRENCE"} {
-		query = "SELECT id FROM " + tables[entity].name + " WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL"
+		query := "SELECT id FROM " + tables[entity].name + " WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL"
 
 		var ids []string
 		if err := tx.SelectContext(ctx, &ids, query, actor.AccountID, op.EntityID); err != nil {

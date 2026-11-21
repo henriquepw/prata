@@ -110,7 +110,6 @@ var ptBR = map[string]string{
 	"field.amount":        "Valor",
 	"field.date":          "Data",
 	"field.category":      "Categoria",
-	"field.no_category":   "Sem categoria",
 	"field.tag":           "Tag",
 	"field.no_tag":        "Sem tag",
 	"field.start":         "Início",

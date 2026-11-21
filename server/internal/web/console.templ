@@ -205,20 +205,20 @@ templ nameField(value, message string) {
 	}
 }
 
-// categoryField is the category of an entry, picked from categories after "sem categoria", with selected picked.
+// categoryField is the category of an entry, picked from categories with selected picked; the sheet hides it while
+// [receita] is checked, since an income has none.
 templ categoryField(categories []store.Category, selected, message string) {
-	@formField("category_id", i18n.T(ctx, "field.category"), message) {
-		@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(message)}) {
-			@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: selected == ""}) {
-				{ i18n.T(ctx, "field.no_category") }
-			}
-			for _, category := range categories {
-				@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == selected}) {
-					{ category.Name }
+	<div class="category-field">
+		@formField("category_id", i18n.T(ctx, "field.category"), message) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(message)}) {
+				for _, category := range categories {
+					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.ID == selected || (selected == "" && category.IsDefault)}) {
+						{ category.Name }
+					}
 				}
 			}
 		}
-	}
+	</div>
 }
 
 // endField is the optional end date of a tag or recurrence, "vazio = sem fim".
