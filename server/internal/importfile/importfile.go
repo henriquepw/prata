@@ -22,11 +22,12 @@ const (
 	Card     = "CARD"
 )
 
-// Statement is the lines of one Conta bancária declared by the file.
+// Statement is the lines of one Conta bancária declared by the file, with the Moeda it declares, empty when none.
 type Statement struct {
 	Institution string
 	Account     string
 	Kind        string
+	Currency    string
 	Rows        []Row
 }
 
@@ -101,6 +102,8 @@ func ParseOFX(content []byte) ([]Statement, error) {
 			}
 		case "ACCTID":
 			current.Account = value
+		case "CURDEF":
+			current.Currency = strings.ToUpper(value)
 		}
 
 		if row == nil {

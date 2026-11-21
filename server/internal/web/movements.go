@@ -24,6 +24,12 @@ type movementsView struct {
 	Error     string
 }
 
+// currencyView is the dialog that asks whether to import a file whose Moeda differs from the Conta's.
+type currencyView struct {
+	File    string
+	Account string
+}
+
 func (h handler) movements(w http.ResponseWriter, r *http.Request) {
 	h.renderMovements(w, r, http.StatusOK, movementsView{})
 }
@@ -38,6 +44,8 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case err != nil:
 		view.Error = i18n.T(r.Context(), "movements.error.file")
+	case r.PostFormValue("confirm_currency") == "" && h.askCurrency(w, r, statements):
+		return
 	default:
 		session := sessionFrom(r.Context())
 		added, existing, err := h.db.ImportMovements(r.Context(), session.UserID, r.PostFormValue("account_id"), statements)
@@ -60,6 +68,34 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderMovements(w, r, status, view)
+}
+
+// askCurrency answers with the confirmation dialog, swapped into #sheet, when a statement declares a Moeda other
+// than the chosen account's, and reports whether it did.
+func (h handler) askCurrency(w http.ResponseWriter, r *http.Request, statements []importfile.Statement) bool {
+	accounts, err := h.db.UserAccounts(r.Context(), sessionFrom(r.Context()).UserID)
+	if err != nil {
+		return false
+	}
+
+	for _, account := range accounts {
+		if account.ID != r.PostFormValue("account_id") {
+			continue
+		}
+
+		for _, statement := range statements {
+			if statement.Currency != "" && statement.Currency != account.Currency {
+				w.Header().Set("HX-Retarget", "#sheet")
+				w.Header().Set("HX-Reswap", "innerHTML")
+				w.Header().Set("HX-Reselect", "#currency-dialog")
+				render(w, r, http.StatusOK, currencyDialog(currencyView{File: statement.Currency, Account: account.Currency}))
+
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // readUpload reads the file of the multipart form, up to 1 MB, as OFX.

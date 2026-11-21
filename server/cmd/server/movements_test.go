@@ -43,10 +43,23 @@ func latin1(s string) string {
 func (w *webClient) upload(accountID, content string) *httptest.ResponseRecorder {
 	w.t.Helper()
 
+	return w.uploadConfirmed(accountID, content, false)
+}
+
+// uploadConfirmed is upload, with the user's answer to the currency dialog when confirmed.
+func (w *webClient) uploadConfirmed(accountID, content string, confirmed bool) *httptest.ResponseRecorder {
+	w.t.Helper()
+
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
 	if err := form.WriteField("account_id", accountID); err != nil {
 		w.t.Fatal(err)
+	}
+
+	if confirmed {
+		if err := form.WriteField("confirm_currency", "1"); err != nil {
+			w.t.Fatal(err)
+		}
 	}
 
 	file, err := form.CreateFormFile("file", "extrato.ofx")
@@ -184,4 +197,33 @@ func TestMovements_RoutesRequireSession(t *testing.T) {
 	w := newWebClient(t)
 
 	assertRedirectsToLogin(t, get(w.handler, "/movements"))
+}
+
+func TestMovements_ForeignCurrencyFileAsksConfirmationAndImportsAsIs(t *testing.T) {
+	w := newWebClient(t)
+	usd := strings.Replace(ofxCard, "<CURDEF>BRL", "<CURDEF>USD", 1)
+
+	response := w.upload(w.accountID(), usd)
+	assertContains(t, response.Body.String(), "USD", "BRL", "sem conversão")
+	if response.Header().Get("HX-Retarget") != "#sheet" {
+		t.Errorf("HX-Retarget = %q, want #sheet", response.Header().Get("HX-Retarget"))
+	}
+
+	var count int
+	if err := w.db.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM movements"); err != nil || count != 0 {
+		t.Errorf("movements before the confirmation = %d, %v", count, err)
+	}
+
+	response = w.uploadConfirmed(w.accountID(), usd, true)
+	assertContains(t, response.Body.String(), "2 novos", "Mercado")
+}
+
+func TestMovements_SameCurrencyFileImportsWithoutDialog(t *testing.T) {
+	w := newWebClient(t)
+
+	response := w.upload(w.accountID(), ofxCard)
+	if strings.Contains(response.Body.String(), "sem conversão") || response.Header().Get("HX-Retarget") != "" {
+		t.Errorf("unexpected dialog: %s", response.Body.String())
+	}
+	assertContains(t, response.Body.String(), "2 novos")
 }
