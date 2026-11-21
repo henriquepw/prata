@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -24,7 +25,7 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 func (h handler) renderSettings(w http.ResponseWriter, r *http.Request) {
 	session := sessionFrom(r.Context())
 	form := settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}
-	if err := h.withPluggy(r.Context(), &form); err != nil {
+	if _, err := h.showSavedPluggy(r.Context(), &form); err != nil {
 		internalError(w, "reading pluggy credentials", err)
 		return
 	}
@@ -32,21 +33,21 @@ func (h handler) renderSettings(w http.ResponseWriter, r *http.Request) {
 	render(w, r, http.StatusOK, settingsSheet(form))
 }
 
-// withPluggy turns the form's Pluggy fields on when Open Finance is, marking whether the user has credentials saved
-// and showing their client id when none was typed.
-func (h handler) withPluggy(ctx context.Context, form *settingsForm) error {
-	if h.openFinance.Key == "" {
-		return nil
+// showSavedPluggy turns the form's Pluggy fields on when Open Finance is, marking whether the user has credentials
+// saved, showing their client id when none was typed, and returns the saved client id, empty when there is none.
+func (h handler) showSavedPluggy(ctx context.Context, form *settingsForm) (string, error) {
+	if !h.openFinance.Enabled() {
+		return "", nil
 	}
 
 	form.OpenFinance = true
 	credentials, err := h.db.PluggyCredentials(ctx, h.openFinance.Key, sessionFrom(ctx).UserID)
 	if errors.Is(err, store.ErrNotFound) {
-		return nil
+		return "", nil
 	}
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	form.HasPluggy = true
@@ -54,12 +55,13 @@ func (h handler) withPluggy(ctx context.Context, form *settingsForm) error {
 		form.PluggyClientID = credentials.ClientID
 	}
 
-	return nil
+	return credentials.ClientID, nil
 }
 
 // saveSettings stores the Preferences, Idioma included, the account's Moeda and, when a secret is typed, the
-// Pluggy credentials after Pluggy accepts them, and reloads the page in them, or answers 422 with the form and
-// stores nothing when a value is not one of the options or Pluggy refuses the credentials.
+// Pluggy credentials after Pluggy accepts them, all at once, and reloads the page in them, or answers 422 with the
+// form and stores nothing when a value is not one of the options, a new client id comes without its secret, or
+// Pluggy refuses the credentials or is unavailable.
 func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	session := sessionFrom(r.Context())
 	form := settingsForm{
@@ -73,7 +75,8 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		PluggyClientID: strings.TrimSpace(r.PostFormValue("pluggy_client_id")),
 		Errors:         map[string]string{},
 	}
-	if err := h.withPluggy(r.Context(), &form); err != nil {
+	savedClientID, err := h.showSavedPluggy(r.Context(), &form)
+	if err != nil {
 		internalError(w, "reading pluggy credentials", err)
 		return
 	}
@@ -104,13 +107,17 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		form.Errors["pluggy_client_id"] = i18n.T(r.Context(), "settings.error.pluggy_client_id")
 	}
 
+	if form.OpenFinance && credentials.ClientSecret == "" && credentials.ClientID != savedClientID {
+		form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_secret")
+	}
+
 	if isSavingPluggy && len(form.Errors) == 0 {
 		_, err := h.openFinance.Pluggy.Authenticate(r.Context(), credentials.ClientID, credentials.ClientSecret)
 		if errors.Is(err, pluggy.ErrInvalidCredentials) {
 			form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_rejected")
 		} else if err != nil {
-			internalError(w, "authenticating on pluggy", err)
-			return
+			slog.Warn("authenticating on pluggy", "error", err)
+			form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_offline")
 		}
 	}
 
@@ -119,14 +126,16 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var sealed []byte
 	if isSavingPluggy {
-		if err := h.db.SavePluggyCredentials(r.Context(), h.openFinance.Key, session.UserID, credentials); err != nil {
-			internalError(w, "saving pluggy credentials", err)
+		sealed, err = store.SealPluggyCredentials(h.openFinance.Key, session.UserID, credentials)
+		if err != nil {
+			internalError(w, "sealing pluggy credentials", err)
 			return
 		}
 	}
 
-	if err := h.db.SaveSettings(r.Context(), session.UserID, session.AccountID, form.Preferences, form.Currency); err != nil {
+	if err := h.db.SaveSettings(r.Context(), session.UserID, session.AccountID, form.Preferences, form.Currency, sealed); err != nil {
 		internalError(w, "saving settings", err)
 		return
 	}
@@ -137,7 +146,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 
 // deletePluggyCredentials removes the user's Pluggy credentials and answers the sheet without them.
 func (h handler) deletePluggyCredentials(w http.ResponseWriter, r *http.Request) {
-	if h.openFinance.Key == "" {
+	if !h.openFinance.Enabled() {
 		http.NotFound(w, r)
 		return
 	}

@@ -200,7 +200,12 @@ func TestSaveSettings_StoresNothingWhenTheMoedaIsRefused(t *testing.T) {
 	}
 
 	preferences := store.Preferences{Language: "en", DateFormat: "YYYY-MM-DD", NumberFormat: "1,234.56", DailyLimitMode: "FIXED"}
-	if err := db.SaveSettings(context.Background(), ownerID, accountID, preferences, "XYZ"); err == nil {
+	sealed, err := store.SealPluggyCredentials("chave", ownerID, store.PluggyCredentials{ClientID: "id", ClientSecret: "secret"})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := db.SaveSettings(context.Background(), ownerID, accountID, preferences, "XYZ", sealed); err == nil {
 		t.Fatal("SaveSettings with Moeda XYZ succeeded, want an error")
 	}
 
@@ -212,5 +217,9 @@ func TestSaveSettings_StoresNothingWhenTheMoedaIsRefused(t *testing.T) {
 	want := store.Preferences{Language: "pt-BR", DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", DailyLimitMode: "DYNAMIC"}
 	if session.Preferences != want || session.Currency != "BRL" {
 		t.Errorf("settings = %+v %q, want %+v %q", session.Preferences, session.Currency, want, "BRL")
+	}
+
+	if _, err := db.PluggyCredentials(context.Background(), "chave", ownerID); !errors.Is(err, store.ErrNotFound) {
+		t.Errorf("PluggyCredentials = %v, want ErrNotFound after the refused save", err)
 	}
 }

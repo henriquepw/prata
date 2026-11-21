@@ -93,7 +93,7 @@ templ pluggyFields(form settingsForm) {
 			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
 				{ i18n.T(ctx, "settings.pluggy_delete") }
 			}
-			@confirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "settings.pluggy_confirm_yes"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
+			@confirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
 		</div>
 	}
 }

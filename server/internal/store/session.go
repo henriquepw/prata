@@ -148,9 +148,10 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	}, nil
 }
 
-// SaveSettings stores the user's Preferences and the account's Moeda, without converting any amount, in one
-// transaction; the schema refuses values outside their options and then nothing is stored.
-func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, preferences Preferences, currency string) error {
+// SaveSettings stores the user's Preferences, the account's Moeda, without converting any amount, and, when pluggy
+// is not nil, the user's sealed Pluggy credentials in one transaction; the schema refuses values outside their
+// options and then nothing is stored.
+func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, preferences Preferences, currency string, pluggy []byte) error {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting settings: %w", err)
@@ -174,6 +175,23 @@ func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, pref
 
 	if _, err := tx.ExecContext(ctx, query, currency, now, accountID); err != nil {
 		return fmt.Errorf("saving currency: %w", err)
+	}
+
+	if pluggy == nil {
+		return tx.Commit()
+	}
+
+	query = `
+		INSERT INTO pluggy_credentials (user_id, credentials, updated_at)
+		VALUES (?, ?, ?)
+		ON CONFLICT (user_id)
+		DO UPDATE SET
+			credentials = excluded.credentials,
+			updated_at = excluded.updated_at
+	`
+
+	if _, err := tx.ExecContext(ctx, query, userID, pluggy, now); err != nil {
+		return fmt.Errorf("saving pluggy credentials: %w", err)
 	}
 
 	return tx.Commit()

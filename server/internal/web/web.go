@@ -46,6 +46,11 @@ type OpenFinance struct {
 	Pluggy pluggy.Client
 }
 
+// Enabled reports whether Open Finance is on, that is, whether the instance has a Key.
+func (o OpenFinance) Enabled() bool {
+	return o.Key != ""
+}
+
 // New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
 // wrapped in requireSession, and every page without a session in visitor.
 func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Handler {

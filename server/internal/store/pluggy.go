@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 )
 
 // PluggyCredentials are a user's own client id and secret of the Pluggy API.
@@ -18,33 +17,23 @@ type PluggyCredentials struct {
 	ClientSecret string `json:"client_secret"`
 }
 
-// SavePluggyCredentials stores the user's credentials, replacing any, encrypted with the instance key.
-func (s *Store) SavePluggyCredentials(ctx context.Context, key, userID string, credentials PluggyCredentials) error {
+// SealPluggyCredentials encrypts the user's credentials with the instance key, for SaveSettings to store.
+func SealPluggyCredentials(key, userID string, credentials PluggyCredentials) ([]byte, error) {
 	plain, err := json.Marshal(credentials)
 	if err != nil {
-		return fmt.Errorf("encoding pluggy credentials: %w", err)
+		return nil, fmt.Errorf("encoding pluggy credentials: %w", err)
 	}
 
 	aead, err := newAEAD(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	sealed := aead.Seal(nil, nil, plain, []byte(userID))
-	query := `
-		INSERT INTO pluggy_credentials (user_id, credentials, updated_at)
-		VALUES (?, ?, ?)
-		ON CONFLICT (user_id) DO UPDATE SET credentials = excluded.credentials, updated_at = excluded.updated_at
-	`
-
-	if _, err := s.ExecContext(ctx, query, userID, sealed, formatTime(time.Now())); err != nil {
-		return fmt.Errorf("saving pluggy credentials: %w", err)
-	}
-
-	return nil
+	return aead.Seal(nil, nil, plain, []byte(userID)), nil
 }
 
-// PluggyCredentials returns the user's credentials, or ErrNotFound when there are none.
+// PluggyCredentials returns the user's credentials, or ErrNotFound when there are none or the instance key can no
+// longer decrypt them.
 func (s *Store) PluggyCredentials(ctx context.Context, key, userID string) (PluggyCredentials, error) {
 	query := "SELECT credentials FROM pluggy_credentials WHERE user_id = ?"
 
@@ -65,7 +54,7 @@ func (s *Store) PluggyCredentials(ctx context.Context, key, userID string) (Plug
 
 	plain, err := aead.Open(nil, nil, sealed, []byte(userID))
 	if err != nil {
-		return PluggyCredentials{}, fmt.Errorf("decrypting pluggy credentials: %w", err)
+		return PluggyCredentials{}, ErrNotFound
 	}
 
 	var credentials PluggyCredentials

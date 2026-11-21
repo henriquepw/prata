@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 // DefaultURL is the base address of the real Pluggy API.
@@ -15,6 +16,8 @@ const DefaultURL = "https://api.pluggy.ai"
 
 // ErrInvalidCredentials means Pluggy refused the client id and secret.
 var ErrInvalidCredentials = errors.New("invalid pluggy credentials")
+
+var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 // Client calls the Pluggy API at URL.
 type Client struct {
@@ -35,13 +38,13 @@ func (c Client) Authenticate(ctx context.Context, clientID, clientSecret string)
 
 	req.Header.Set("Content-Type", "application/json")
 
-	response, err := http.DefaultClient.Do(req)
+	response, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("requesting pluggy auth: %w", err)
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode >= 400 && response.StatusCode < 500 {
+	if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
 		return "", ErrInvalidCredentials
 	}
 
