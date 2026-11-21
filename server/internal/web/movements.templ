@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
@@ -67,6 +68,9 @@ templ movementsPanel(view movementsView) {
 						@table.Head(table.HeadProps{Class: "hide-m"}) {
 							{ i18n.T(ctx, "movements.bank_account") }
 						}
+						@table.Head() {
+							{ i18n.T(ctx, "movements.review") }
+						}
 					}
 				}
 				@table.Body() {
@@ -87,10 +91,36 @@ templ movementsPanel(view movementsView) {
 							@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
 								{ i18n.T(ctx, "movements.kind."+m.BankAccountKind) } { m.Institution } { m.BankAccount }
 							}
+							@table.Cell() {
+								@reviewForm(m, view.Categories)
+							}
 						}
 					}
 				}
 			}
 		}
 	}
+}
+
+// reviewForm confirms a movement as a transaction, editing only its description and, for an expense, its category
+// (the default one is preselected), or ignores it. A response swaps the screen's main.
+templ reviewForm(m store.Movement, categories []store.Category) {
+	<form hx-post={ "/movements/" + m.ID + "/confirm" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="flex flex-wrap items-center gap-[1ch]">
+		@input.Input(input.Props{Name: "description", Value: m.Description, Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.description")}})
+		if m.Kind == "OUTCOME" {
+			@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "field.category")}}) {
+				for _, category := range categories {
+					@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
+						{ category.Name }
+					}
+				}
+			}
+		}
+		@button.Button(button.Props{Type: button.TypeSubmit}) {
+			<span>&gt; { i18n.T(ctx, "movements.confirm") }</span>
+		}
+		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
+			<span>{ i18n.T(ctx, "movements.ignore") }</span>
+		}
+	</form>
 }

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -18,10 +20,11 @@ const maxImport = 1 << 20
 // movementsView is the review screen: the accounts to import into, the pending movements and, after an import, its
 // summary or the reason it was refused.
 type movementsView struct {
-	Accounts  []store.AccountRef
-	Movements []store.Movement
-	Summary   string
-	Error     string
+	Accounts   []store.AccountRef
+	Categories []store.Category
+	Movements  []store.Movement
+	Summary    string
+	Error      string
 }
 
 func (h handler) movements(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +94,11 @@ func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status 
 		return
 	}
 
+	if view.Categories, err = h.db.Categories(r.Context(), sessionFrom(r.Context()).AccountID); err != nil {
+		internalError(w, "listing categories", err)
+		return
+	}
+
 	if view.Movements, err = h.db.PendingMovements(r.Context(), userID); err != nil {
 		internalError(w, "listing movements", err)
 		return
@@ -112,4 +120,44 @@ func movementDate(ctx context.Context, stored string) string {
 	}
 
 	return date.Format(dateLayout(ctx))
+}
+
+// confirmMovement makes the pending movement in the path a transaction with the description and category of the
+// form, then answers the screen. A movement already reviewed is not made twice.
+func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
+	categories, ok := h.liveCategories(w, r)
+	if !ok {
+		return
+	}
+
+	categoryID := r.PostFormValue("category_id")
+	if categoryID != "" && !hasCategory(categories, categoryID) {
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	}
+
+	description := strings.TrimSpace(r.PostFormValue("description"))
+	reason, err := h.db.ConfirmMovement(r.Context(), sessionFrom(r.Context()), r.PathValue("id"), description, categoryID, location(r))
+	if err != nil && !errors.Is(err, store.ErrNotFound) {
+		internalError(w, "confirming movement", err)
+		return
+	}
+
+	if reason != "" {
+		slog.Warn("movement confirm rejected", "reason", reason)
+		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
+		return
+	}
+
+	h.renderMovements(w, r, http.StatusOK, movementsView{})
+}
+
+// ignoreMovement drops the pending movement in the path from review for good, then answers the screen.
+func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
+	if err := h.db.IgnoreMovement(r.Context(), sessionFrom(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
+		internalError(w, "ignoring movement", err)
+		return
+	}
+
+	h.renderMovements(w, r, http.StatusOK, movementsView{})
 }

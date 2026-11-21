@@ -102,6 +102,8 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
 	mux.Handle("GET /movements", h.requireSession(h.movements))
 	mux.Handle("POST /movements/import", h.requireSession(h.importMovements))
+	mux.Handle("POST /movements/{id}/confirm", h.requireSession(h.confirmMovement))
+	mux.Handle("POST /movements/{id}/ignore", h.requireSession(h.ignoreMovement))
 	mux.Handle("GET /devices", h.requireSession(h.devices))
 	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
 	mux.Handle("GET /settings", h.requireSession(h.settings))

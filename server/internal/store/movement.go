@@ -2,6 +2,8 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -115,4 +117,68 @@ func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, s
 	}
 
 	return added, existing, tx.Commit()
+}
+
+// ConfirmMovement turns a pending movement of the session's account into a transaction from the web device, with
+// the movement's kind, amount and date (local midnight in loc) and the given description and category, and marks it
+// confirmed in the same transaction. An income keeps no category and an expense without one gets the default. It
+// returns ErrNotFound when the movement is not pending in the account, so a second confirm creates nothing.
+func (s *Store) ConfirmMovement(ctx context.Context, session Session, id, description, categoryID string, loc *time.Location) (Reason, error) {
+	tx, err := s.BeginTxx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("starting confirm: %w", err)
+	}
+	defer tx.Rollback()
+
+	query := "SELECT kind, amount, occurred_at FROM movements WHERE id = ? AND account_id = ? AND status = 'PENDING'"
+
+	var movement Movement
+	if err := tx.GetContext(ctx, &movement, query, id, session.AccountID); errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	} else if err != nil {
+		return "", fmt.Errorf("reading movement: %w", err)
+	}
+
+	day, err := time.ParseInLocation(time.DateOnly, movement.OccurredAt, loc)
+	if err != nil {
+		return "", fmt.Errorf("reading movement date: %w", err)
+	}
+
+	fields := map[string]any{"kind": movement.Kind, "amount": movement.Amount, "occurred_at": day.UTC().Format(time.RFC3339)}
+	if description != "" {
+		fields["description"] = description
+	}
+
+	if categoryID != "" && movement.Kind == "OUTCOME" {
+		fields["category_id"] = categoryID
+	}
+
+	reason, err := commitChanges(ctx, tx, session, []Change{{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields}})
+	if err != nil || reason != "" {
+		return reason, err
+	}
+
+	query = "UPDATE movements SET status = 'CONFIRMED' WHERE id = ?"
+	if _, err := tx.ExecContext(ctx, query, id); err != nil {
+		return "", fmt.Errorf("confirming movement: %w", err)
+	}
+
+	return "", tx.Commit()
+}
+
+// IgnoreMovement marks a pending movement of the session's account as ignored, for good: importing the file again
+// does not bring it back. It returns ErrNotFound when the movement is not pending in the account.
+func (s *Store) IgnoreMovement(ctx context.Context, session Session, id string) error {
+	query := "UPDATE movements SET status = 'IGNORED' WHERE id = ? AND account_id = ? AND status = 'PENDING'"
+
+	result, err := s.ExecContext(ctx, query, id, session.AccountID)
+	if err != nil {
+		return fmt.Errorf("ignoring movement: %w", err)
+	}
+
+	if n, _ := result.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+
+	return nil
 }

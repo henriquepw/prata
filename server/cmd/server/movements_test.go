@@ -185,3 +185,116 @@ func TestMovements_RoutesRequireSession(t *testing.T) {
 
 	assertRedirectsToLogin(t, get(w.handler, "/movements"))
 }
+
+// movementID is the id of the movement with the description, whatever its status.
+func (w *webClient) movementID(description string) string {
+	w.t.Helper()
+
+	var id string
+	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM movements WHERE description = ?", description); err != nil {
+		w.t.Fatal(err)
+	}
+
+	return id
+}
+
+func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+	id := w.movementID("Padaria Pão Quente")
+
+	form := url.Values{"description": {" Café da manhã "}, "category_id": {w.categories["Meta"]}}
+	if response := w.submit(http.MethodPost, "/movements/"+id+"/confirm", form); response.Code >= 400 {
+		t.Fatalf("confirm = %d: %s", response.Code, response.Body)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 1 {
+		t.Fatalf("ops after confirm = %+v, want one", ops)
+	}
+
+	created := ops[0]
+	if created.Entity != "TRANSACTION" || created.Kind != "CREATE" || created.DeviceID == w.deviceID || created.Payload["description"] != "Café da manhã" ||
+		created.Payload["kind"] != "OUTCOME" || created.Payload["amount"] != float64(4590) || created.Payload["category_id"] != w.categories["Meta"] ||
+		!strings.HasPrefix(created.Payload["occurred_at"].(string), "2024-01-05") {
+		t.Errorf("confirm op = %+v, want the movement's amount, kind and date with the edited description and category", created)
+	}
+
+	w.submit(http.MethodPost, "/movements/"+id+"/confirm", form)
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("second confirm made ops %+v, want none", ops)
+	}
+
+	body := get(w.handler, "/movements", w.cookie).Body.String()
+	if strings.Contains(body, "Padaria") || !strings.Contains(body, "Salário") {
+		t.Errorf("pending list after confirm = %s, want only Salário", body)
+	}
+
+	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
+		t.Errorf("reimport brought a confirmed movement back: %s", body)
+	}
+}
+
+func TestMovements_ConfirmedExpenseWithoutCategoryGoesToTheDefaultAndIncomeKeepsNone(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+
+	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/confirm", url.Values{"description": {"Padaria"}})
+	w.submit(http.MethodPost, "/movements/"+w.movementID("Salário")+"/confirm", url.Values{"description": {"Salário"}, "category_id": {w.categories["Meta"]}})
+
+	ops := w.newOps()
+	if len(ops) != 2 || ops[0].Payload["category_id"] != w.defaultID || ops[1].Payload["category_id"] != nil {
+		t.Errorf("ops = %+v, want the expense in the default category and the income in none", ops)
+	}
+}
+
+func TestMovements_IgnoreHidesItForGood(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	w.newOps()
+
+	if response := w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/ignore", url.Values{}); response.Code >= 400 {
+		t.Fatalf("ignore = %d: %s", response.Code, response.Body)
+	}
+
+	assertContains(t, w.upload(w.accountID(), latin1(ofxBank)).Body.String(), "0 novos, 2 já importados")
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
+		t.Errorf("ignored movement is back: %s", body)
+	}
+
+	if ops := w.newOps(); len(ops) != 0 {
+		t.Errorf("ignore made ops %+v, want none", ops)
+	}
+}
+
+func TestMovements_ReviewRoutesRequireSessionAndMembership(t *testing.T) {
+	w := newWebClient(t)
+	w.upload(w.accountID(), latin1(ofxBank))
+	id := w.movementID("Padaria Pão Quente")
+
+	for _, action := range []string{"confirm", "ignore"} {
+		req := httptest.NewRequest(http.MethodPost, "/movements/"+id+"/"+action, nil)
+		response := httptest.NewRecorder()
+		w.handler.ServeHTTP(response, req)
+		assertRedirectsToLogin(t, response)
+	}
+
+	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
+	if _, err := w.db.CreateAccount(context.Background(), signup, true); err != nil {
+		t.Fatal(err)
+	}
+
+	stranger := *w
+	stranger.cookie = sessionCookie(t, postForm(w.handler, "/login", url.Values{"email": {signup.Email}, "password": {signup.Password}}))
+	stranger.submit(http.MethodPost, "/movements/"+id+"/confirm", url.Values{})
+	stranger.submit(http.MethodPost, "/movements/"+id+"/ignore", url.Values{})
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); !strings.Contains(body, "Padaria") {
+		t.Errorf("stranger reviewed the movement: %s", body)
+	}
+}
