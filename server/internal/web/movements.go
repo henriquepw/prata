@@ -62,7 +62,7 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	h.renderMovements(w, r, status, view)
 }
 
-// readUpload reads the file of the multipart form, up to 1 MB, as OFX.
+// readUpload reads the file of the multipart form, up to 1 MB, in any format it recognizes.
 func readUpload(r *http.Request) ([]importfile.Statement, error) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
@@ -79,7 +79,7 @@ func readUpload(r *http.Request) ([]importfile.Statement, error) {
 		return nil, importfile.ErrUnrecognized
 	}
 
-	return importfile.ParseOFX(content)
+	return importfile.Parse(content)
 }
 
 func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status int, view movementsView) {

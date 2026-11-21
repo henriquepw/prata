@@ -3,7 +3,9 @@ package importfile
 
 import (
 	"bytes"
+	"encoding/csv"
 	"errors"
+	"fmt"
 	"html"
 	"math"
 	"regexp"
@@ -38,6 +40,15 @@ type Row struct {
 	Kind        string
 	Amount      int64
 	Date        string
+}
+
+// Parse reads a file in any format this package knows, which it recognizes by the content.
+func Parse(content []byte) ([]Statement, error) {
+	if statements, err := ParseOFX(content); err == nil {
+		return statements, nil
+	}
+
+	return ParseNubankCSV(content)
 }
 
 // line is a Row as read, with the TRNTYPE the file gives it.
@@ -199,4 +210,67 @@ func parseCents(value string) (int64, error) {
 	}
 
 	return int64(math.Round(f * 100)), nil
+}
+
+// nubank is the institution of the CSVs it exports.
+const nubank = "Nubank"
+
+// ParseNubankCSV reads the Nubank card statement (date,title,amount) or account statement
+// (Data,Valor,Identificador,Descrição), told apart by the header. Amounts are BRL.
+func ParseNubankCSV(content []byte) ([]Statement, error) {
+	records, err := csv.NewReader(strings.NewReader(strings.TrimPrefix(decode(content), "\ufeff"))).ReadAll()
+	if err != nil || len(records) == 0 {
+		return nil, ErrUnrecognized
+	}
+
+	statement := Statement{Institution: nubank}
+	layout, sign, width := time.DateOnly, int64(-1), 3
+	switch strings.Join(records[0], ",") {
+	case "date,title,amount":
+		statement.Account, statement.Kind = "Cartão", Card
+		sign = 1
+	case "Data,Valor,Identificador,Descrição":
+		statement.Account, statement.Kind = "Conta", Checking
+		layout, width = "02/01/2006", 4
+	default:
+		return nil, ErrUnrecognized
+	}
+
+	seen := map[string]int{}
+	for _, record := range records[1:] {
+		if len(record) != width {
+			return nil, ErrUnrecognized
+		}
+
+		var row Row
+		if statement.Kind == Card {
+			row = Row{Date: record[0], Description: record[1]}
+			row.Amount, err = parseCents(record[2])
+		} else {
+			row = Row{Date: record[0], ID: record[2], Description: record[3]}
+			row.Amount, err = parseCents(record[1])
+		}
+
+		date, dateErr := time.Parse(layout, row.Date)
+		if err != nil || dateErr != nil {
+			return nil, ErrUnrecognized
+		}
+
+		row.Date = date.Format(time.DateOnly)
+
+		if statement.Kind == Card {
+			key := fmt.Sprintf("%s|%s|%d", row.Date, row.Description, row.Amount)
+			row.ID = fmt.Sprintf("%s|%d", key, seen[key])
+			seen[key]++
+		}
+
+		row.Kind, row.Amount = "OUTCOME", row.Amount*sign
+		if row.Amount < 0 {
+			row.Kind, row.Amount = "INCOME", -row.Amount
+		}
+
+		statement.Rows = append(statement.Rows, row)
+	}
+
+	return []Statement{statement}, nil
 }
