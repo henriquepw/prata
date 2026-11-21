@@ -33,6 +33,7 @@ Nenhuma variável é obrigatória: o banco fica em `/data/prata.db` e o servidor
 docker compose pull && docker compose up -d
 ```
 
+- **Open Finance**: defina `PRATA_ENCRYPTION_KEY` (um segredo longo) para cada usuário guardar, cifradas, as próprias credenciais da Pluggy em Configurações; sem ela a funcionalidade não aparece. Trocar a chave invalida as credenciais salvas. `PRATA_PLUGGY_URL` muda o endereço da API (padrão `https://api.pluggy.ai`).
 - **TLS**: termine o HTTPS num reverse proxy e repasse o header `X-Forwarded-Proto`; sem ele o cookie de sessão não recebe `Secure`.
 - **Backup**: pare o container (`docker compose stop`) e copie o volume `/data` inteiro (`prata.db`, `-wal` e `-shm`). Para restaurar, devolva os arquivos com o container parado.
 - **Bind mount**: o container roda como UID 65532; se trocar o volume nomeado por um diretório do host, dê a posse a ele (`sudo chown -R 65532:65532 ./data`).

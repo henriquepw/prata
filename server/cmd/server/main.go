@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/api"
+	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web"
 	_ "modernc.org/sqlite"
@@ -31,6 +32,9 @@ type config struct {
 	dbPath          string
 	addr            string
 	isSignupAllowed bool
+	// encryptionKey encrypts the users' Pluggy credentials; empty turns Open Finance off.
+	encryptionKey string
+	pluggyURL     string
 }
 
 func main() {
@@ -108,13 +112,15 @@ func configFromEnv(env []string) config {
 		dbPath:          cmp.Or(vars["PRATA_DB_PATH"], defaultDBPath),
 		addr:            cmp.Or(vars["PRATA_ADDR"], defaultAddr),
 		isSignupAllowed: strings.EqualFold(vars["PRATA_ALLOW_SIGNUP"], "true"),
+		encryptionKey:   vars["PRATA_ENCRYPTION_KEY"],
+		pluggyURL:       cmp.Or(vars["PRATA_PLUGGY_URL"], pluggy.DefaultURL),
 	}
 }
 
 func newHandler(db *store.Store, cfg config) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", api.New(db, cfg.isSignupAllowed))
-	mux.Handle("/", web.New(db, cfg.isSignupAllowed))
+	mux.Handle("/", web.New(db, cfg.isSignupAllowed, web.OpenFinance{Key: cfg.encryptionKey, Pluggy: pluggy.Client{URL: cfg.pluggyURL}}))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
 		defer cancel()

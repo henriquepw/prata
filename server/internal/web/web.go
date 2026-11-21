@@ -14,6 +14,7 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/oklog/ulid/v2"
 )
@@ -35,12 +36,20 @@ type sessionKey struct{}
 type handler struct {
 	db              *store.Store
 	isSignupAllowed bool
+	openFinance     OpenFinance
+}
+
+// OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
+// turns the feature off.
+type OpenFinance struct {
+	Key    string
+	Pluggy pluggy.Client
 }
 
 // New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
 // wrapped in requireSession, and every page without a session in visitor.
-func New(db *store.Store, isSignupAllowed bool) http.Handler {
-	h := handler{db: db, isSignupAllowed: isSignupAllowed}
+func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Handler {
+	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
 	mux.HandleFunc("GET /login", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, loginPage(authForm{})) }))
@@ -90,6 +99,7 @@ func New(db *store.Store, isSignupAllowed bool) http.Handler {
 	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
 	mux.Handle("GET /settings", h.requireSession(h.settings))
 	mux.Handle("POST /settings", h.requireSession(h.saveSettings))
+	mux.Handle("DELETE /settings/pluggy", h.requireSession(h.deletePluggyCredentials))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }

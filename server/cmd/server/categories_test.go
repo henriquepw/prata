@@ -26,8 +26,15 @@ type webClient struct {
 
 func newWebClient(t *testing.T) *webClient {
 	t.Helper()
+
+	return newWebClientWith(t, config{})
+}
+
+// newWebClientWith is newWebClient on a server with cfg.
+func newWebClientWith(t *testing.T, cfg config) *webClient {
+	t.Helper()
 	db := openStore(t)
-	handler := newHandler(db, config{})
+	handler := newHandler(db, cfg)
 	device := newClient(t, handler, newSignup())
 
 	w := &webClient{client: device, cookie: login(t, handler), db: db, categories: map[string]string{}}

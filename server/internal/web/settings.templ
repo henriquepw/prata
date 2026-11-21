@@ -3,19 +3,26 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 )
 
 // settingsForm is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
-// per field name.
+// per field name. With OpenFinance on, it also has the Pluggy client id, never the secret, and whether credentials
+// are saved.
 type settingsForm struct {
 	store.Preferences
-	Currency string
-	Errors   map[string]string
+	Currency       string
+	OpenFinance    bool
+	PluggyClientID string
+	HasPluggy      bool
+	Errors         map[string]string
 }
 
-// settingsSheet is the Configurações sheet: the five fields in one list and "> salvar". A 422 swaps the whole sheet.
+// settingsSheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
+// Open Finance is on. A 422 swaps the whole sheet.
 templ settingsSheet(form settingsForm) {
 	@sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
 		@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
@@ -66,5 +73,27 @@ templ settingsSheet(form settingsForm) {
 				{ i18n.T(ctx, "settings.currency_note") }
 			}
 		}
+		if form.OpenFinance {
+			@pluggyFields(form)
+		}
+	}
+}
+
+// pluggyFields are the user's Pluggy client id and secret, with "apagar credenciais" and its inline confirmation
+// when they are saved.
+templ pluggyFields(form settingsForm) {
+	@hintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]) {
+		@input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: ariaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})})
+	}
+	@hintField("pluggy_client_secret", i18n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]) {
+		@input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: ariaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})})
+	}
+	if form.HasPluggy {
+		<div class="flex flex-wrap gap-[1ch]" data-confirm>
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
+				{ i18n.T(ctx, "settings.pluggy_delete") }
+			}
+			@confirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "settings.pluggy_confirm_yes"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
+		</div>
 	}
 }

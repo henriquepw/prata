@@ -17,6 +17,7 @@ var migrations = []migration{
 	{version: 4, files: []string{"server_income.sql"}},
 	{version: 5, files: []string{"server_daily_limit.sql"}},
 	{version: 6, files: []string{"server_default_category.sql"}},
+	{version: 7, files: []string{"server_pluggy_credentials.sql"}},
 }
 
 type migration struct {

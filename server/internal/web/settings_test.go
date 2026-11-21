@@ -22,7 +22,7 @@ func signedIn(t *testing.T) (http.Handler, *http.Cookie) {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	routes := New(db, true)
+	routes := New(db, true, OpenFinance{})
 	req := httptest.NewRequest(http.MethodPost, "/signup", strings.NewReader(url.Values{"email": {"ana@example.com"}, "password": {"correct horse"}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
