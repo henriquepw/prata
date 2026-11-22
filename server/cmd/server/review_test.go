@@ -135,3 +135,60 @@ func TestReview_RemovingTheConnectionKeepsConfirmedTransactionsIgnoredAndFileMov
 		t.Errorf("ops after confirming the file movement without the key = %+v, want its transaction", ops)
 	}
 }
+
+func TestReview_ConfirmingAConnectionMovementAsAnOccurrenceCreatesTheOccurrencesTransactionWithTheMovementsAmount(t *testing.T) {
+	w, _ := fetchedPadaria(t)
+	padaria, _, _ := expenseRecurrences(w)
+	w.newOps()
+
+	form := url.Values{"occurrence": {padaria + ":2024-01-05"}}
+	if response := w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria")+"/occurrence", form); response.Code >= 400 {
+		t.Fatalf("confirm as occurrence = %d: %s", response.Code, response.Body)
+	}
+
+	ops := w.newOps()
+	if len(ops) != 1 {
+		t.Fatalf("ops = %+v, want one", ops)
+	}
+
+	payload := ops[0].Payload
+	if ops[0].Entity != "TRANSACTION" || payload["recurrence_id"] != padaria || payload["occurrence_date"] != "2024-01-05" ||
+		payload["amount"] != float64(4590) || payload["kind"] != "OUTCOME" {
+		t.Errorf("op = %+v, want the occurrence confirmed with the movement's amount", ops[0])
+	}
+
+	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
+		t.Errorf("confirmed movement still pending: %s", body)
+	}
+}
+
+// confirmSameOccurrence has the Movimento of the first description confirm the Padaria occurrence, then the one of the
+// second try the same, and checks that only the first made an op.
+func confirmSameOccurrence(t *testing.T, first, second string) {
+	t.Helper()
+	w, _ := fetchedPadaria(t)
+	padaria, _, _ := expenseRecurrences(w)
+	w.upload(w.accountID(), windows1252(ofxBank))
+	w.newOps()
+	form := url.Values{"occurrence": {padaria + ":2024-01-05"}}
+
+	if response := w.submit(http.MethodPost, "/movements/"+w.movementID(first)+"/occurrence", form); response.Code >= 400 {
+		t.Fatalf("%s confirm = %d", first, response.Code)
+	}
+
+	if response := w.submit(http.MethodPost, "/movements/"+w.movementID(second)+"/occurrence", form); response.Code < 400 {
+		t.Errorf("%s confirmed the same occurrence: %d", second, response.Code)
+	}
+
+	if ops := w.newOps(); len(ops) != 1 {
+		t.Errorf("ops = %+v, want only the first confirmation", ops)
+	}
+}
+
+func TestReview_AFileMovementCannotConfirmAnOccurrenceAConnectionMovementConfirmed(t *testing.T) {
+	confirmSameOccurrence(t, "Padaria", "Padaria Pão Quente")
+}
+
+func TestReview_AConnectionMovementCannotConfirmAnOccurrenceAFileMovementConfirmed(t *testing.T) {
+	confirmSameOccurrence(t, "Padaria Pão Quente", "Padaria")
+}
