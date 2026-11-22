@@ -612,7 +612,7 @@ func TestMovements_ImportsIntoAnAccountOfAnotherCurrencyWithoutEncryptionKey(t *
 
 func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T) {
 	w := newWebClient(t)
-	paths := []string{"/", "/transactions", "/budget"}
+	paths := []string{"/", "/transactions", "/categories"}
 	before := make([]string, len(paths))
 	for i, path := range paths {
 		before[i] = get(w.handler, path, w.cookie).Body.String()

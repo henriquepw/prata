@@ -25,8 +25,11 @@ func TestWebEnglish_Categories(t *testing.T) {
 
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	id := w.newOps()[0].EntityID
-	w.assertBody("/categories", "Mercado", "Name", "Monthly limit", "no limit")
-	w.assertBody("/categories/"+id, "Edit category", "Color", "green", "Monthly limit", "empty = no limit", "Cancel", "Delete", "Daily",
+	w.assertBody("/categories", "Mercado", "Monthly income", "set the monthly income to split it among the categories", "&gt; save split")
+
+	w.mustSubmit(http.MethodPost, "/budget", w.budgetForm("1.000,00", "value", map[string]string{"Livre": "1.000,00"}))
+	w.assertBody("/categories", "edit in", "Livre in %", "Livre in amount", "closed at 100%", "editing in %: changing the income keeps the %")
+	w.assertBody("/categories/"+id, "Edit category", "Color", "green", "Cancel", "Delete", "Daily",
 		"delete this category? Its transactions and recurrences move to the default category.", "yes, delete", "no", "&gt; Save", `data-busy="saving"`, `aria-label="Close"`)
 	w.assertBody("/categories/new", "New category")
 }
@@ -116,7 +119,7 @@ func TestWebEnglish_ValidationErrorsAre422InEnglish(t *testing.T) {
 		want []string
 	}{
 		"category": {"/categories", categoryForm("", "PINK", "-1"),
-			[]string{"Enter a name.", "Choose a color.", "Enter a limit of zero or more."}},
+			[]string{"Enter a name.", "Choose a color."}},
 		"tag": {"/tags", tagForm("", "2026-07-02", "2026-07-01"),
 			[]string{"Enter a name.", "Enter an end on or after the start."}},
 		"tag without start": {"/tags", tagForm("Viagem", "", ""), []string{"Enter the start."}},

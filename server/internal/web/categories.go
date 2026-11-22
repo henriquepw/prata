@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -26,7 +25,7 @@ func (h handler) categories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categoriesPage(s, categories))
+	render(w, r, http.StatusOK, categoriesPage(s, storedBudgetForm(r, categories)))
 }
 
 func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +34,7 @@ func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categorySheet(storedCategoryForm(r.Context(), category)))
+	render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
 }
 
 // saveCategory creates the category, or updates the one in the path, from the sheet's form.
@@ -44,7 +43,6 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		ID:           r.PathValue("id"),
 		Name:         strings.TrimSpace(r.PostFormValue("name")),
 		Color:        r.PostFormValue("color"),
-		MonthlyLimit: strings.TrimSpace(r.PostFormValue("monthly_limit")),
 		IsDaily:      r.PostFormValue("is_daily") == "1",
 		MarkDefault:  r.PostFormValue("is_default") == "1",
 		Errors:       map[string]string{},
@@ -60,21 +58,10 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 	change := store.Change{Entity: "CATEGORY", EntityID: form.ID, Kind: store.KindUpdate,
 		Fields: map[string]any{"name": form.Name, "color": form.Color, "is_daily": int64(utils.IfElse(form.IsDaily, 1, 0))}}
 
-	// With a Receita mensal the limits belong to the division: a new category enters with 0 and an edit leaves it.
-	if sessionFrom(r.Context()).MonthlyIncome == 0 {
-		limit, ok := parseAmount(r.Context(), form.MonthlyLimit)
-		if !ok || limit < 0 {
-			form.Errors["monthly_limit"] = i18n.T(r.Context(), "categories.error.monthly_limit")
-		}
-
-		change.Fields["monthly_limit"] = limit
-	}
-
+	// The limits belong to the division (POST /budget): a new category enters with 0 and an edit leaves it.
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
-		if _, ok := change.Fields["monthly_limit"]; !ok {
-			change.Fields["monthly_limit"] = int64(0)
-		}
+		change.Fields["monthly_limit"] = int64(0)
 	} else if stored, ok := h.category(w, r); ok {
 		form.IsDefault = stored.IsDefault
 	} else {
@@ -95,14 +82,14 @@ func (h handler) deleteCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := storedCategoryForm(r.Context(), category)
+	form := storedCategoryForm(category)
 	h.commit(w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: store.KindDelete})
 }
 
 // storedCategoryForm fills the sheet with the stored category.
-func storedCategoryForm(ctx context.Context, category store.Category) categoryForm {
-	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, MonthlyLimit: amount(ctx, category.MonthlyLimit),
-		IsDaily: category.IsDaily, IsDefault: category.IsDefault, Errors: map[string]string{}}
+func storedCategoryForm(category store.Category) categoryForm {
+	return categoryForm{ID: category.ID, Name: category.Name, Color: category.Color, IsDaily: category.IsDaily, IsDefault: category.IsDefault,
+		Errors: map[string]string{}}
 }
 
 // category reads the live category in the path, answering 404 when the account has none.

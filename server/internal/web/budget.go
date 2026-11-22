@@ -1,24 +1,30 @@
 package web
 
 import (
-	"context"
+	"cmp"
 	"errors"
+	"fmt"
 	"net/http"
-	"net/url"
 
+	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// budgetForm is the division sheet: the Receita mensal and a limit per category id as typed, in Mode "value" or
-// "percent", and an error message per field name ("income", also for a division that does not close the
-// Receita mensal, and "limit_<id>"). Gap is what is missing to close, negative when it exceeds, in cents or hundredths of a percent.
+// budgetForm is the division on the Categorias screen: the Receita mensal as typed and in cents, the Mode the limits
+// are typed in ("value" or "percent"), each category's limit as the text of its value and percent fields and in
+// cents and hundredths of a percent, and an error message per field name ("income", "limit_<id>", and "form" for a
+// division that does not close the Receita mensal).
 type budgetForm struct {
 	Income     string
+	income     int64
 	Mode       string
 	Categories []store.Category
-	Limits     map[string]string
-	Gap        int64
+	Values     map[string]string
+	Percents   map[string]string
+	Cents      map[string]int64
+	Points     map[string]int64
 	Errors     map[string]string
 }
 
@@ -28,59 +34,94 @@ const (
 	budgetInPercent = "percent"
 )
 
-func (f budgetForm) percent() bool { return f.Mode == budgetInPercent }
-
-func (h handler) budget(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
-	if !ok {
-		return
-	}
-
-	query := r.URL.Query()
-	form := storedBudgetForm(r.Context(), categories, query.Get("mode"))
-	if query.Has("income") {
-		form = typedBudgetForm(r.Context(), form, query)
-	}
-
-	render(w, r, http.StatusOK, budgetSheet(form))
+func newBudgetForm(categories []store.Category, mode string) budgetForm {
+	return budgetForm{Mode: mode, Categories: categories, Values: map[string]string{}, Percents: map[string]string{},
+		Cents: map[string]int64{}, Points: map[string]int64{}, Errors: map[string]string{}}
 }
 
-// saveBudget stores the Receita mensal and the division, or answers 422 with the form and stores nothing when a value
-// is not an amount or the division does not close the Receita mensal.
+func (f budgetForm) percent() bool { return f.Mode == budgetInPercent }
+
+// gap is what is missing to close the Receita mensal, negative when it exceeds, in cents and in hundredths of a
+// percent; the typed mode decides, and the other follows from it.
+func (f budgetForm) gap() (cents, points int64) {
+	cents, points = f.income, store.HundredPercent
+	for _, category := range f.Categories {
+		cents -= f.Cents[category.ID]
+		points -= f.Points[category.ID]
+	}
+
+	if f.percent() {
+		return f.income * points / store.HundredPercent, points
+	}
+
+	if cents < 0 {
+		return cents, -store.BasisPoints(-cents, f.income)
+	}
+
+	return cents, store.BasisPoints(cents, f.income)
+}
+
+// gapSign is the sign of the gap in the typed mode: 1 when something is missing, -1 when it exceeds.
+func (f budgetForm) gapSign() int64 {
+	cents, points := f.gap()
+
+	return utils.IfElse(f.percent(), sign(points), sign(cents))
+}
+
+// closed tells whether the division adds up exactly to a Receita mensal, in the typed mode.
+func (f budgetForm) closed() bool {
+	cents, points := f.gap()
+
+	return f.income > 0 && (f.percent() && points == 0 || !f.percent() && cents == 0)
+}
+
+// width is the CSS width of a slice of the 100% bar, from hundredths of a percent; none below zero.
+func width(points int64) templ.SafeCSS {
+	return templ.SafeCSS(fmt.Sprintf("width: %.2f%%", float64(max(0, points))/100))
+}
+
+func sign(n int64) int64 { return int64(cmp.Compare(n, 0)) }
+
+func abs(n int64) int64 { return max(n, -n) }
+
+// saveBudget stores the Receita mensal and the division, or answers 422 with the screen's form, from what was typed,
+// and stores nothing when a value is not an amount, the Receita mensal is not above zero or the division does not
+// close it.
 func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
 	categories, ok := h.liveCategories(w, r)
 	if !ok {
 		return
 	}
 
-	form := budgetForm{Income: r.PostFormValue("income"), Mode: r.PostFormValue("mode"), Categories: categories, Limits: map[string]string{}, Errors: map[string]string{}}
+	form := newBudgetForm(categories, r.PostFormValue("mode"))
+	if !form.percent() {
+		form.Mode = budgetInValue
+	}
+
+	form.Income = r.PostFormValue("income")
 	budget := store.Budget{Percent: form.percent(), Limits: map[string]int64{}}
 
 	var incomeOK bool
-	if budget.Income, incomeOK = parseAmount(r.Context(), form.Income); !incomeOK {
+	if form.income, incomeOK = parseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
 		form.Errors["income"] = i18n.T(r.Context(), "budget.error.income")
 	}
 
-	if form.percent() && budget.Income == 0 && form.Errors["income"] == "" {
-		form.Errors["income"] = i18n.T(r.Context(), "budget.error.income_percent")
-	}
-
-	var typed int64
+	budget.Income = form.income
 	for _, category := range categories {
-		form.Limits[category.ID] = r.PostFormValue("limit_" + category.ID)
-
-		limit, ok := parseAmount(r.Context(), form.Limits[category.ID])
+		typed := r.PostFormValue("limit_" + category.ID)
+		limit, ok := parseAmount(r.Context(), typed)
 		if !ok || limit < 0 {
-			form.Errors["limit_"+category.ID] = i18n.T(r.Context(), "categories.error.monthly_limit")
+			form.Errors["limit_"+category.ID] = i18n.T(r.Context(), "budget.error.limit")
 		}
 
 		budget.Limits[category.ID] = limit
-		typed += limit
-	}
-
-	form.Gap = budget.Income - typed
-	if form.percent() {
-		form.Gap = store.HundredPercent - typed
+		if form.percent() {
+			form.Cents[category.ID], form.Points[category.ID] = form.income*limit/store.HundredPercent, limit
+			form.Values[category.ID], form.Percents[category.ID] = amount(r.Context(), form.Cents[category.ID]), typed
+		} else {
+			form.Cents[category.ID], form.Points[category.ID] = limit, store.BasisPoints(limit, form.income)
+			form.Values[category.ID], form.Percents[category.ID] = typed, amount(r.Context(), form.Points[category.ID])
+		}
 	}
 
 	if len(form.Errors) == 0 {
@@ -97,80 +138,24 @@ func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		form.Errors["income"] = i18n.T(r.Context(), "budget.error.open")
+		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
 	}
 
-	render(w, r, http.StatusUnprocessableEntity, budgetSheet(form))
+	render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
 }
 
-// storedBudgetForm fills the sheet with the stored Receita mensal and limits, the limits as percentages of what they add
-// up to when mode is "percent".
-func storedBudgetForm(ctx context.Context, categories []store.Category, mode string) budgetForm {
-	form := budgetForm{Mode: budgetInValue, Categories: categories, Limits: map[string]string{}, Errors: map[string]string{}}
-	if mode == budgetInPercent {
-		form.Mode = mode
+// storedBudgetForm fills the screen with the stored Receita mensal and division, typed in percent.
+func storedBudgetForm(r *http.Request, categories []store.Category) budgetForm {
+	form := newBudgetForm(categories, budgetInPercent)
+	if form.income = sessionFrom(r.Context()).MonthlyIncome; form.income > 0 {
+		form.Income = amount(r.Context(), form.income)
 	}
 
-	income := sessionFrom(ctx).MonthlyIncome
-	if income > 0 {
-		form.Income = amount(ctx, income)
-	}
-
-	form.Gap = income
-	if form.percent() {
-		form.Gap = store.HundredPercent
-	}
-
-	division := store.Division(categories, form.percent())
+	division := store.Division(categories)
 	for _, category := range categories {
-		form.Limits[category.ID] = amount(ctx, division[category.ID])
-		form.Gap -= division[category.ID]
+		form.Cents[category.ID], form.Points[category.ID] = category.MonthlyLimit, division[category.ID]
+		form.Values[category.ID], form.Percents[category.ID] = amount(r.Context(), category.MonthlyLimit), amount(r.Context(), division[category.ID])
 	}
 
 	return form
-}
-
-// typedBudgetForm carries into form's mode the Receita mensal and the limits typed in the other mode: a limit in value
-// becomes its percentage of the typed Receita mensal and a percentage its value; one that is not an amount stays as typed.
-func typedBudgetForm(ctx context.Context, form budgetForm, typed url.Values) budgetForm {
-	form.Income = typed.Get("income")
-	income, _ := parseAmount(ctx, form.Income)
-
-	form.Gap = income
-	if form.percent() {
-		form.Gap = store.HundredPercent
-	}
-
-	for _, category := range form.Categories {
-		raw := typed.Get("limit_" + category.ID)
-		limit, ok := parseAmount(ctx, raw)
-		if !ok {
-			form.Limits[category.ID] = raw
-			continue
-		}
-
-		if form.percent() {
-			limit = store.BasisPoints(limit, income)
-		} else {
-			limit = income * limit / store.HundredPercent
-		}
-
-		form.Limits[category.ID] = amount(ctx, limit)
-		form.Gap -= limit
-	}
-
-	return form
-}
-
-// budgetAmount writes cents as money, or hundredths of a percent as a percentage, by the mode of the form.
-func budgetAmount(ctx context.Context, form budgetForm, value int64) string {
-	if form.percent() {
-		if value < 0 {
-			return "−" + amount(ctx, -value) + "%"
-		}
-
-		return amount(ctx, value) + "%"
-	}
-
-	return money(ctx, value)
 }

@@ -100,7 +100,7 @@ func TestWebSettings_AmountsAreTypedAndShownInTheNumberFormat(t *testing.T) {
 	tz := &http.Cookie{Name: "tz", Value: "America/Sao_Paulo"}
 	w.mustSubmit(http.MethodPost, "/settings", settingsForm("DD/MM/YYYY", "1,234.56"))
 
-	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "1,234.56"))
+	w.mustSubmit(http.MethodPost, "/budget", w.budgetForm("1,234.56", "value", map[string]string{"Livre": "1,234.56"}))
 	category := w.newOps()[0]
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1,234.56", "2026-07-15", "", ""), tz)
 	transaction := w.newOps()[0]
@@ -111,8 +111,7 @@ func TestWebSettings_AmountsAreTypedAndShownInTheNumberFormat(t *testing.T) {
 		t.Errorf("ops = %v, %v and %v, want 123456, 123456 and 150000 cents", category.Payload, transaction.Payload, recurrence.Payload)
 	}
 
-	w.assertBody("/categories", "R$ 1,234.56")
-	w.assertBody("/categories/"+category.EntityID, `value="1,234.56"`, `placeholder="0.00"`)
+	w.assertBody("/categories", "R$ 1,234.56", `value="1,234.56"`, `placeholder="0.00"`, `value="100.00"`)
 	w.assertBody("/?month=2026-07", "−R$ 1,234.56")
 	w.assertBody("/transactions/"+transaction.EntityID, `value="1,234.56"`)
 	w.assertBody("/recurrences", "−R$ 1,500.00")
@@ -169,7 +168,7 @@ func TestWebSettings_CurrencySymbolFollowsTheAccountCurrency(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "1,234.56", "2026-07-15", "", ""), tz)
 
 	w.assertBody("/?month=2026-07", "−$ 1,234.56")
-	for _, path := range []string{"/transactions/new", "/recurrences/new", "/categories/new"} {
+	for _, path := range []string{"/transactions/new", "/recurrences/new", "/categories"} {
 		w.assertBody(path, ">$</span>")
 	}
 

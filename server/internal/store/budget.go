@@ -31,23 +31,25 @@ func BasisPoints(limit, total int64) int64 {
 	return (limit*20000 + total) / (2 * total)
 }
 
-// Division is the stored monthly limit of each of categories, in cents, or in hundredths of a percent of what they add
-// up to when percent.
-func Division(categories []Category, percent bool) map[string]int64 {
-	var stored int64
+// Division is the stored monthly limit of each of categories in hundredths of a percent of what they add up to, the
+// rounding on the default category so that it closes 100%; all 0 while they add up to 0.
+func Division(categories []Category) map[string]int64 {
+	var stored, shared int64
 	for _, category := range categories {
 		stored += category.MonthlyLimit
 	}
 
-	limits := map[string]int64{}
+	shares := map[string]int64{}
 	for _, category := range categories {
-		limits[category.ID] = category.MonthlyLimit
-		if percent {
-			limits[category.ID] = BasisPoints(category.MonthlyLimit, stored)
-		}
+		shares[category.ID] = BasisPoints(category.MonthlyLimit, stored)
+		shared += shares[category.ID]
 	}
 
-	return limits
+	if i := slices.IndexFunc(categories, func(c Category) bool { return c.IsDefault }); i >= 0 && stored > 0 {
+		shares[categories[i].ID] += HundredPercent - shared
+	}
+
+	return shares
 }
 
 // SaveBudget stores the Receita mensal and the monthly limits of the live categories, as divide sets them, in one
@@ -98,17 +100,17 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 	return tx.Commit()
 }
 
-// divide is the monthly limit, in cents, of each of categories for budget. Typed limits equal to the stored ones mean
-// the Receita mensal alone changed: the stored limits are rescaled to it in proportion. Otherwise the typed limits are
-// the division, converted from percent when Percent, and must add up to the Receita mensal, or 100%. Without a
-// Receita mensal the limits are loose, in value only. The cents lost to rounding go to the default category.
+// divide is the monthly limit, in cents, of each of categories for budget, which needs a Receita mensal. In percent,
+// typed limits equal to the stored ones mean the Receita mensal alone changed: the stored limits are rescaled to it in
+// proportion. Otherwise the typed limits are the division, converted from percent when Percent, and must add up to
+// the Receita mensal, or 100%. The cents lost to rounding go to the default category.
 func divide(categories []Category, budget Budget) (map[string]int64, error) {
 	var stored, typed int64
 	for _, category := range categories {
 		stored += category.MonthlyLimit
 	}
 
-	current := Division(categories, budget.Percent)
+	current := Division(categories)
 	untouched := true
 	limits := map[string]int64{}
 	for _, category := range categories {
@@ -117,16 +119,12 @@ func divide(categories []Category, budget Budget) (map[string]int64, error) {
 		untouched = untouched && limits[category.ID] == current[category.ID]
 	}
 
-	if budget.Income == 0 && budget.Percent {
+	if budget.Income <= 0 {
 		return nil, ErrDivisionNotClosed
 	}
 
-	if budget.Income == 0 {
-		return limits, nil
-	}
-
 	switch {
-	case untouched:
+	case budget.Percent && untouched:
 		for _, category := range categories {
 			limits[category.ID] = category.MonthlyLimit * budget.Income / max(stored, 1)
 		}

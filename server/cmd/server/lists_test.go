@@ -44,7 +44,11 @@ func TestWebLists_RowsOpenTheSheetAndFlashOnce(t *testing.T) {
 		}
 
 		body := get(w.handler, list.path, w.cookie, flash).Body.String()
-		row := `hx-get="` + list.path + "/" + id + `" hx-target="#sheet" tabindex="0"`
+		row := `hx-get="` + list.path + "/" + id + `" hx-target="#sheet"`
+		if list.path != "/categories" { // a category's name is a button, focusable already
+			row += ` tabindex="0"`
+		}
+
 		if !strings.Contains(body, row) || strings.Count(body, "data-flash") != 1 {
 			t.Errorf("%s lacks the focusable row %q flashed once: %s", list.path, row, body)
 		}

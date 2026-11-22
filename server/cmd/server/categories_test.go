@@ -97,8 +97,8 @@ func TestWebCategories_WritesReachDevicePull(t *testing.T) {
 	created := ops[0]
 	if created.Entity != "CATEGORY" || created.Kind != "CREATE" || created.OwnerID != w.ownerID || created.DeviceID == w.deviceID ||
 		created.ProtocolVersion != 1 || created.Payload["name"] != "Mercado" || created.Payload["color"] != "GREEN" ||
-		created.Payload["monthly_limit"] != float64(123456) || created.Payload["created_at"] != created.CreatedAt {
-		t.Errorf("create op = %+v, want a CATEGORY CREATE from the web device with the trimmed name and limit in cents", created)
+		created.Payload["monthly_limit"] != float64(0) || created.Payload["created_at"] != created.CreatedAt {
+		t.Errorf("create op = %+v, want a CATEGORY CREATE from the web device with the trimmed name and limit 0", created)
 	}
 
 	page := get(w.handler, "/categories", w.cookie)
@@ -107,8 +107,8 @@ func TestWebCategories_WritesReachDevicePull(t *testing.T) {
 	}
 
 	edit := get(w.handler, "/categories/"+created.EntityID, w.cookie)
-	if edit.Code != http.StatusOK || strings.Contains(edit.Body.String(), "<html") || !strings.Contains(edit.Body.String(), `value="1.234,56"`) {
-		t.Errorf("edit form = %d, want the bare form fragment with the limit: %s", edit.Code, edit.Body)
+	if edit.Code != http.StatusOK || strings.Contains(edit.Body.String(), "<html") || !strings.Contains(edit.Body.String(), `value="Mercado"`) {
+		t.Errorf("edit form = %d, want the bare form fragment with the name: %s", edit.Code, edit.Body)
 	}
 
 	w.mustSubmit(http.MethodPost, "/categories/"+created.EntityID, categoryForm("Feira", "GREEN", "1.234,56"))
@@ -118,10 +118,14 @@ func TestWebCategories_WritesReachDevicePull(t *testing.T) {
 		t.Errorf("ops after edit = %+v, want one UPDATE with only name and updated_at", ops)
 	}
 
-	w.mustSubmit(http.MethodPost, "/categories/"+created.EntityID, categoryForm("Feira", "GREEN", "1234,56"))
+	w.mustSubmit(http.MethodPost, "/categories/"+created.EntityID, categoryForm("Feira", "GREEN", "1.234,56"))
 	if ops = w.newOps(); len(ops) != 0 {
 		t.Errorf("ops after saving unchanged = %+v, want none", ops)
 	}
+
+	w.categories["Feira"] = created.EntityID
+	w.mustSubmit(http.MethodPost, "/budget", w.budgetForm("1.234,56", "value", map[string]string{"Feira": "1.234,56"}))
+	w.newOps()
 
 	w.mustSubmit(http.MethodDelete, "/categories/"+created.EntityID, nil)
 	ops = w.newOps() // the limit of the deleted category moves to the default one first
@@ -148,14 +152,14 @@ func TestWebCategories_InvalidFormIs422AndWritesNothing(t *testing.T) {
 	}
 
 	body := response.Body.String()
-	for _, message := range []string{"Informe um nome.", "Escolha uma cor.", "Informe um limite maior ou igual a zero."} {
+	for _, message := range []string{"Informe um nome.", "Escolha uma cor."} {
 		if !strings.Contains(body, message) {
 			t.Errorf("422 body lacks %q: %s", message, body)
 		}
 	}
 
-	if got := strings.Count(body, `aria-invalid="true"`); got != 3 {
-		t.Errorf("422 body has %d invalid controls, want 3", got)
+	if got := strings.Count(body, `aria-invalid="true"`); got != 2 {
+		t.Errorf("422 body has %d invalid controls, want 2", got)
 	}
 
 	if ops := w.newOps(); len(ops) != 0 {
