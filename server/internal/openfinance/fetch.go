@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"math/big"
 	"time"
 
@@ -40,7 +39,6 @@ func (f Fetcher) Fetch(ctx context.Context, userID string, now time.Time) error 
 	var errs []error
 	for _, target := range targets {
 		if err := f.fetch(ctx, target, now); err != nil {
-			slog.Warn("fetching connection", "connection", target.ID, "error", err)
 			errs = append(errs, fmt.Errorf("connection %s: %w", target.ID, err))
 		}
 	}
@@ -74,7 +72,7 @@ func (f Fetcher) fetch(ctx context.Context, target store.FetchTarget, now time.T
 	var statements []importfile.Statement
 	for _, account := range accounts {
 		kind, ok := bankAccountKinds[account.Type]
-		if !ok || account.Currency != "BRL" {
+		if !ok || account.Currency != importfile.CurrencyBRL {
 			continue
 		}
 
