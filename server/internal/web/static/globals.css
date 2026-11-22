@@ -909,7 +909,7 @@
 
   /* Division of the Receita mensal (Categorias): the income prompt, the 100% bar with a slice per category and the
      undivided part hatched, then a row per category with its name, a slider drawn as the meter, the field in the
-     typed mode and the value in the other. .over marks a division that exceeds the income. */
+     typed mode and the value in the other. .over marks a division that exceeds the income, .closed one that closes it. */
   .budget {
     display: flex;
     flex-direction: column;
@@ -963,6 +963,10 @@
 
   .budget [data-status] {
     color: var(--muted-foreground);
+  }
+
+  .budget.closed [data-status] {
+    color: var(--cat-green);
   }
 
   /* !important beats the category color, a utility, which sits in a later layer. */

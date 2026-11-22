@@ -44,6 +44,7 @@ const budgetScript = `(() => {
     const gap = percent ? gapPoints : gapCents, closed = income > 0 && (!rows.length || gap === 0), status = f.querySelector('[data-status]')
     f.querySelector('[data-slice=free]')?.style.setProperty('width', Math.max(0, gapPoints / 100) + '%')
     f.classList.toggle('over', rows.length > 0 && gap < 0)
+    f.classList.toggle('closed', rows.length > 0 && closed)
     if (status) status.textContent = !income || !rows.length ? '' : closed ? d.closed : (gap > 0 ? d.missing : d.over) + ' ' + money(d, Math.abs(gapCents)) + ' · ' + amount(d, Math.abs(gapPoints)) + '%'
     f.querySelector('[type=submit]').disabled = !closed
   })
@@ -63,7 +64,7 @@ templ budgetScreen(form budgetForm, flash string) {
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disable="find [type=submit]"
-		class={ "budget", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0) }
+		class={ "budget", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed()) }
 		data-budget
 		data-mode={ form.Mode }
 		data-decimal={ format.Decimal }

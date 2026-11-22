@@ -53,6 +53,7 @@ const budgetScript = `(() => {
     const gap = percent ? gapPoints : gapCents, closed = income > 0 && (!rows.length || gap === 0), status = f.querySelector('[data-status]')
     f.querySelector('[data-slice=free]')?.style.setProperty('width', Math.max(0, gapPoints / 100) + '%')
     f.classList.toggle('over', rows.length > 0 && gap < 0)
+    f.classList.toggle('closed', rows.length > 0 && closed)
     if (status) status.textContent = !income || !rows.length ? '' : closed ? d.closed : (gap > 0 ? d.missing : d.over) + ' ' + money(d, Math.abs(gapCents)) + ' · ' + amount(d, Math.abs(gapPoints)) + '%'
     f.querySelector('[type=submit]').disabled = !closed
   })
@@ -90,7 +91,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var2 = []any{"budget", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0)}
+			var templ_7745c5c3_Var2 = []any{"budget", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed())}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var2...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -111,7 +112,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(form.Mode).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 68, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 69, Col: 23}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -124,7 +125,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(format.Decimal).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 69, Col: 31}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 70, Col: 31}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -137,7 +138,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(format.Thousands).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 70, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 71, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -150,7 +151,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var7 string
 			templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(currencySymbol(ctx)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 71, Col: 35}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 72, Col: 35}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 			if templ_7745c5c3_Err != nil {
@@ -163,7 +164,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.missing")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 72, Col: 46}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 73, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {
@@ -176,7 +177,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var9 string
 			templ_7745c5c3_Var9, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.over")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 73, Col: 40}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 40}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
 			if templ_7745c5c3_Err != nil {
@@ -189,7 +190,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.closed")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 75, Col: 44}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 			if templ_7745c5c3_Err != nil {
@@ -202,7 +203,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.hint_percent")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 75, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 76, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
 			if templ_7745c5c3_Err != nil {
@@ -215,7 +216,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.hint_value")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 76, Col: 52}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 77, Col: 52}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var12)
 			if templ_7745c5c3_Err != nil {
@@ -258,7 +259,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(currencySymbol(ctx))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 81, Col: 69}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 82, Col: 69}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -279,7 +280,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var15 string
 				templ_7745c5c3_Var15, templ_7745c5c3_Err = templruntime.NewAttributeExpression(form.Income).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 85, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 86, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var15)
 				if templ_7745c5c3_Err != nil {
@@ -292,7 +293,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var16 string
 				templ_7745c5c3_Var16, templ_7745c5c3_Err = templruntime.NewAttributeExpression(amount(ctx, 0)).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 86, Col: 33}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 87, Col: 33}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var16)
 				if templ_7745c5c3_Err != nil {
@@ -305,7 +306,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var17 string
 				templ_7745c5c3_Var17, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.title")).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 87, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 88, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var17)
 				if templ_7745c5c3_Err != nil {
@@ -351,7 +352,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var18 string
 				templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, utils.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 96, Col: 151}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 97, Col: 151}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 				if templ_7745c5c3_Err != nil {
@@ -391,7 +392,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var21 string
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templruntime.NewAttributeExpression(category.ID).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 99, Col: 70}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 100, Col: 70}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var21)
 						if templ_7745c5c3_Err != nil {
@@ -404,7 +405,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var22 string
 						templ_7745c5c3_Var22, templ_7745c5c3_Err = templruntime.NewAttributeExpression(category.Name).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 99, Col: 94}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 100, Col: 94}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var22)
 						if templ_7745c5c3_Err != nil {
@@ -417,7 +418,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var23 string
 						templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(width(form.Points[category.ID]))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 99, Col: 136}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 100, Col: 136}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 						if templ_7745c5c3_Err != nil {
@@ -450,7 +451,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.free")).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 102, Col: 80}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 103, Col: 80}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 				if templ_7745c5c3_Err != nil {
@@ -463,7 +464,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var25 string
 				templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(width(free))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 102, Col: 102}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 103, Col: 102}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 				if templ_7745c5c3_Err != nil {
@@ -529,7 +530,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 					var templ_7745c5c3_Var27 string
 					templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression("/categories/" + category.ID).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 121, Col: 85}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 122, Col: 85}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 					if templ_7745c5c3_Err != nil {
@@ -560,7 +561,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 					var templ_7745c5c3_Var28 string
 					templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression("limit_" + category.ID).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 124, Col: 56}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 125, Col: 56}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 					if templ_7745c5c3_Err != nil {
@@ -573,7 +574,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 					var templ_7745c5c3_Var29 string
 					templ_7745c5c3_Var29, templ_7745c5c3_Err = templruntime.NewAttributeExpression(form.Percents[category.ID]).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 124, Col: 93}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 125, Col: 93}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 					if templ_7745c5c3_Err != nil {
@@ -605,7 +606,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 					var templ_7745c5c3_Var31 string
 					templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(form.Errors["form"])
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 130, Col: 26}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 131, Col: 26}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 					if templ_7745c5c3_Err != nil {
@@ -641,7 +642,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				var templ_7745c5c3_Var33 string
 				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "budget.save"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 135, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 136, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
@@ -701,7 +702,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 		var templ_7745c5c3_Var35 string
 		templ_7745c5c3_Var35, templ_7745c5c3_Err = templruntime.NewAttributeExpression(id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 145, Col: 36}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 146, Col: 36}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 		if templ_7745c5c3_Err != nil {
@@ -714,7 +715,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 		var templ_7745c5c3_Var36 string
 		templ_7745c5c3_Var36, templ_7745c5c3_Err = templruntime.NewAttributeExpression("/categories/" + id).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 146, Col: 72}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 147, Col: 72}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36)
 		if templ_7745c5c3_Err != nil {
@@ -753,7 +754,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templruntime.NewAttributeExpression(fmt.Sprintf("%.2f", float64(form.Points[id])/100)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 154, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 155, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 			if templ_7745c5c3_Err != nil {
@@ -766,7 +767,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var38 string
 			templ_7745c5c3_Var38, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.in_percent", name)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 155, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 156, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var38)
 			if templ_7745c5c3_Err != nil {
@@ -797,7 +798,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var41 string
 			templ_7745c5c3_Var41, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[id])/100)))))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 157, Col: 100}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 158, Col: 100}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 			if templ_7745c5c3_Err != nil {
@@ -832,7 +833,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var42 string
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templruntime.NewAttributeExpression("limit_" + id).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 162, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 163, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var42)
 			if templ_7745c5c3_Err != nil {
@@ -845,7 +846,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var43 string
 			templ_7745c5c3_Var43, templ_7745c5c3_Err = templruntime.NewAttributeExpression(form.Percents[id]).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 163, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 164, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var43)
 			if templ_7745c5c3_Err != nil {
@@ -858,7 +859,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templruntime.NewAttributeExpression(amount(ctx, 0)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 164, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 165, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var44)
 			if templ_7745c5c3_Err != nil {
@@ -871,7 +872,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.in_percent", name)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 165, Col: 56}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 166, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var45)
 			if templ_7745c5c3_Err != nil {
@@ -920,7 +921,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templruntime.NewAttributeExpression("limit_" + id).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 176, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 177, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var46)
 			if templ_7745c5c3_Err != nil {
@@ -933,7 +934,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var47 string
 			templ_7745c5c3_Var47, templ_7745c5c3_Err = templruntime.NewAttributeExpression(form.Values[id]).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 177, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 178, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var47)
 			if templ_7745c5c3_Err != nil {
@@ -946,7 +947,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templruntime.NewAttributeExpression(amount(ctx, 0)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 178, Col: 33}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 179, Col: 33}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var48)
 			if templ_7745c5c3_Err != nil {
@@ -959,7 +960,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "budget.in_value", name)).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 179, Col: 54}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 180, Col: 54}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var49)
 			if templ_7745c5c3_Err != nil {
@@ -1001,7 +1002,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, form.Cents[id]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 190, Col: 32}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 191, Col: 32}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -1011,7 +1012,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			var templ_7745c5c3_Var51 string
 			templ_7745c5c3_Var51, templ_7745c5c3_Err = templ.JoinStringErrs(amount(ctx, form.Points[id]))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 192, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 193, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var51))
 			if templ_7745c5c3_Err != nil {
@@ -1079,7 +1080,7 @@ func budgetActions(form budgetForm, hasIncome bool) templ.Component {
 			var templ_7745c5c3_Var53 string
 			templ_7745c5c3_Var53, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "budget.mode"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 209, Col: 122}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 210, Col: 122}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var53))
 			if templ_7745c5c3_Err != nil {
@@ -1104,7 +1105,7 @@ func budgetActions(form budgetForm, hasIncome bool) templ.Component {
 				var templ_7745c5c3_Var55 string
 				templ_7745c5c3_Var55, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "budget.mode_value"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 212, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 213, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var55))
 				if templ_7745c5c3_Err != nil {
@@ -1150,7 +1151,7 @@ func budgetActions(form budgetForm, hasIncome bool) templ.Component {
 			var templ_7745c5c3_Var57 string
 			templ_7745c5c3_Var57, templ_7745c5c3_Err = templruntime.NewAttributeExpression(budgetInPercent).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 220, Col: 59}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 221, Col: 59}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var57)
 			if templ_7745c5c3_Err != nil {
@@ -1202,7 +1203,7 @@ func budgetStatus(form budgetForm) templ.Component {
 			var templ_7745c5c3_Var59 string
 			templ_7745c5c3_Var59, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "budget.closed"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 233, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 234, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var59))
 			if templ_7745c5c3_Err != nil {
@@ -1213,7 +1214,7 @@ func budgetStatus(form budgetForm) templ.Component {
 			var templ_7745c5c3_Var60 string
 			templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, utils.IfElse(form.gapSign() > 0, "budget.missing", "budget.over")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 236, Col: 84}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 237, Col: 84}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 			if templ_7745c5c3_Err != nil {
@@ -1226,7 +1227,7 @@ func budgetStatus(form budgetForm) templ.Component {
 			var templ_7745c5c3_Var61 string
 			templ_7745c5c3_Var61, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, abs(cents)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 236, Col: 111}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 237, Col: 111}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var61))
 			if templ_7745c5c3_Err != nil {
@@ -1239,7 +1240,7 @@ func budgetStatus(form budgetForm) templ.Component {
 			var templ_7745c5c3_Var62 string
 			templ_7745c5c3_Var62, templ_7745c5c3_Err = templ.JoinStringErrs(amount(ctx, abs(points)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 236, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 237, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var62))
 			if templ_7745c5c3_Err != nil {
