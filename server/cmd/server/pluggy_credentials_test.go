@@ -156,8 +156,11 @@ func newPluggyAnswering(t *testing.T, status int) string {
 // databaseFiles is the raw content of the database file and its write-ahead log.
 func (w *webClient) databaseFiles() string {
 	w.t.Helper()
+
+	query := "SELECT file FROM pragma_database_list WHERE name = 'main'"
+
 	var path string
-	if err := w.db.Get(&path, "SELECT file FROM pragma_database_list WHERE name = 'main'"); err != nil {
+	if err := w.db.Get(&path, query); err != nil {
 		w.t.Fatal(err)
 	}
 

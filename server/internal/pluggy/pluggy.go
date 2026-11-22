@@ -77,11 +77,6 @@ type Item struct {
 	} `json:"connector"`
 }
 
-// Institution is the name of the bank behind the Item.
-func (i Item) Institution() string {
-	return i.Connector.Name
-}
-
 // NeedsReconnect reports whether an Item in this status and executionStatus waits for the user to reconnect it.
 func NeedsReconnect(status, executionStatus string) bool {
 	return slices.Contains([]string{"LOGIN_ERROR", "WAITING_USER_INPUT"}, status) || slices.Contains([]string{
@@ -93,30 +88,16 @@ func NeedsReconnect(status, executionStatus string) bool {
 
 // Item reads the Item with that id, or ErrItemNotFound when it does not exist or the credentials cannot reach it.
 func (c Client) Item(ctx context.Context, apiKey, id string) (Item, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+"/items/"+url.PathEscape(id), nil)
-	if err != nil {
-		return Item{}, fmt.Errorf("creating pluggy item request: %w", err)
-	}
+	var item Item
+	var status statusError
 
-	req.Header.Set("X-API-KEY", apiKey)
-
-	response, err := httpClient.Do(req)
-	if err != nil {
-		return Item{}, fmt.Errorf("requesting pluggy item: %w", err)
-	}
-	defer response.Body.Close()
-
-	if slices.Contains([]int{http.StatusNotFound, http.StatusBadRequest, http.StatusForbidden}, response.StatusCode) {
+	err := c.getJSON(ctx, apiKey, "/items/"+url.PathEscape(id), &item)
+	if errors.As(err, &status) && slices.Contains([]int{http.StatusNotFound, http.StatusBadRequest, http.StatusForbidden}, int(status)) {
 		return Item{}, ErrItemNotFound
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return Item{}, fmt.Errorf("pluggy item returned %s", response.Status)
-	}
-
-	var item Item
-	if err := json.NewDecoder(response.Body).Decode(&item); err != nil {
-		return Item{}, fmt.Errorf("decoding pluggy item: %w", err)
+	if err != nil {
+		return Item{}, fmt.Errorf("reading pluggy item: %w", err)
 	}
 
 	return item, nil
@@ -185,7 +166,14 @@ func (c Client) Transactions(ctx context.Context, apiKey, accountID, dateFrom st
 	return transactions, nil
 }
 
-// getJSON reads the JSON at path, relative to the API, into out.
+// statusError is the HTTP status of an answer that was not 200 OK.
+type statusError int
+
+func (e statusError) Error() string {
+	return fmt.Sprintf("returned %d %s", int(e), http.StatusText(int(e)))
+}
+
+// getJSON reads the JSON at path, relative to the API, into out, or a statusError when the answer is not 200 OK.
 func (c Client) getJSON(ctx context.Context, apiKey, path string, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+path, nil)
 	if err != nil {
@@ -201,7 +189,7 @@ func (c Client) getJSON(ctx context.Context, apiKey, path string, out any) error
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("returned %s", response.Status)
+		return statusError(response.StatusCode)
 	}
 
 	if err := json.NewDecoder(response.Body).Decode(out); err != nil {

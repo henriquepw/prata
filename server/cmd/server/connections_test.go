@@ -61,12 +61,28 @@ func (w *webClient) connect(itemID, accountID string) bool {
 func (w *webClient) connectionRows() int {
 	w.t.Helper()
 
+	query := "SELECT COUNT(*) FROM connections"
+
 	var n int
-	if err := w.db.GetContext(context.Background(), &n, "SELECT COUNT(*) FROM connections"); err != nil {
+	if err := w.db.GetContext(context.Background(), &n, query); err != nil {
 		w.t.Fatal(err)
 	}
 
 	return n
+}
+
+// connectionID is the id of the only Conexão in the database.
+func (w *webClient) connectionID() string {
+	w.t.Helper()
+
+	query := "SELECT id FROM connections"
+
+	var id string
+	if err := w.db.GetContext(context.Background(), &id, query); err != nil {
+		w.t.Fatal(err)
+	}
+
+	return id
 }
 
 func TestConnections_HiddenWithoutTheEncryptionKey(t *testing.T) {
@@ -185,10 +201,7 @@ func TestConnections_AreOnlyTheirOwnersEvenInTheSameAccount(t *testing.T) {
 		t.Errorf("another user of the account sees the connection: %s", body)
 	}
 
-	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM connections"); err != nil {
-		t.Fatal(err)
-	}
+	id := w.connectionID()
 
 	if response := mate.submit(http.MethodDelete, "/connections/"+id, nil); response.Code != http.StatusNotFound {
 		t.Errorf("DELETE of another user's connection = %d, want %d", response.Code, http.StatusNotFound)
@@ -207,10 +220,7 @@ func TestConnections_RemovedWithoutCallingPluggyDroppingOnlyPendingMovements(t *
 	account := w.accountID()
 	w.connect(pluggyItemID, account)
 
-	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM connections"); err != nil {
-		t.Fatal(err)
-	}
+	id := w.connectionID()
 
 	for status, external := range map[string]string{"PENDING": "p", "CONFIRMED": "c", "IGNORED": "i"} {
 		query := `
@@ -236,8 +246,10 @@ func TestConnections_RemovedWithoutCallingPluggyDroppingOnlyPendingMovements(t *
 		t.Errorf("removed connection is still listed: %s", body)
 	}
 
+	query := "SELECT status FROM movements ORDER BY status"
+
 	var statuses []string
-	if err := w.db.SelectContext(context.Background(), &statuses, "SELECT status FROM movements ORDER BY status"); err != nil {
+	if err := w.db.SelectContext(context.Background(), &statuses, query); err != nil {
 		t.Fatal(err)
 	}
 

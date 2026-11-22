@@ -47,7 +47,7 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxImport+1<<16)
 
 	var view movementsView
-	statements, err := readUpload(r)
+	statements, err := readImportFile(r)
 	if err != nil {
 		view.Error = i18n.T(r.Context(), "movements.error.file")
 	} else {
@@ -116,8 +116,8 @@ func (h handler) askCurrency(w http.ResponseWriter, r *http.Request, statements 
 	return false, nil
 }
 
-// readUpload reads the file of the multipart form, up to 1 MB, in any format it recognizes.
-func readUpload(r *http.Request) ([]importfile.Statement, error) {
+// readImportFile reads the file of the multipart form, up to 1 MB, in any format it recognizes.
+func readImportFile(r *http.Request) ([]importfile.Statement, error) {
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status 
 		return
 	}
 
-	if view.Movements, err = h.db.PendingMovements(r.Context(), session.AccountID); err != nil {
+	if view.Movements, err = h.db.PendingMovements(r.Context(), session); err != nil {
 		internalError(w, "listing movements", err)
 		return
 	}

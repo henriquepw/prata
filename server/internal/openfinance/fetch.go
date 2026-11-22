@@ -62,6 +62,10 @@ func (f Fetcher) fetch(ctx context.Context, target store.FetchTarget, now time.T
 		return err
 	}
 
+	if err := f.DB.UpdateConnectionItem(ctx, target.ID, item); err != nil {
+		return err
+	}
+
 	accounts, err := f.Pluggy.Accounts(ctx, apiKey, target.ItemID)
 	if err != nil {
 		return err
@@ -88,7 +92,7 @@ func (f Fetcher) fetch(ctx context.Context, target store.FetchTarget, now time.T
 		return err
 	}
 
-	return f.DB.MarkFetched(ctx, target.ID, item.Status, item.ExecutionStatus, item.LastUpdatedAt, now)
+	return f.DB.MarkFetched(ctx, target.ID, now)
 }
 
 var bankAccountKinds = map[string]string{"BANK": importfile.Checking, "CREDIT": importfile.Card}
@@ -106,35 +110,32 @@ func dateFrom(target store.FetchTarget, now time.Time) string {
 // rows keeps the posted lines but the card bill payments. The sign of the amount tells the Tipo, whatever the type
 // says: a card purchase comes as CREDIT with a negative amount in the sandbox.
 func rows(transactions []pluggy.Transaction) []importfile.Row {
-	var rows []importfile.Row
+	var posted []importfile.Row
 	for _, t := range transactions {
-		cents, negative, ok := reaisToCents(string(t.Amount))
+		cents, ok := reaisToCents(string(t.Amount))
 		if t.Status != "POSTED" || t.OperationType == cardPayment || !ok || cents == 0 || len(t.Date) < len(time.DateOnly) {
 			continue
 		}
 
-		kind := "INCOME"
-		if negative {
-			kind = "OUTCOME"
-		}
-
-		rows = append(rows, importfile.Row{ID: t.ID, Description: t.Description, Kind: kind, Amount: cents, Date: t.Date[:len(time.DateOnly)]})
+		row := importfile.Row{ID: t.ID, Description: t.Description, Date: t.Date[:len(time.DateOnly)]}
+		row.Kind, row.Amount = importfile.BySign(cents)
+		posted = append(posted, row)
 	}
 
-	return rows
+	return posted
 }
 
-// reaisToCents reads an amount in reais, as Pluggy writes it, into positive cents and its sign, rounding half up
+// reaisToCents reads an amount in reais, as Pluggy writes it, into signed cents, rounding half away from zero
 // without going through a float.
-func reaisToCents(amount string) (cents int64, negative, ok bool) {
+func reaisToCents(amount string) (cents int64, ok bool) {
 	r, ok := new(big.Rat).SetString(amount)
 	if !ok {
-		return 0, false, false
+		return 0, false
 	}
 
-	negative = r.Sign() < 0
+	sign := int64(r.Sign())
 	r.Abs(r).Mul(r, big.NewRat(100, 1))
 	rounded := new(big.Int).Quo(new(big.Int).Add(new(big.Int).Lsh(r.Num(), 1), r.Denom()), new(big.Int).Lsh(r.Denom(), 1))
 
-	return rounded.Int64(), negative, true
+	return sign * rounded.Int64(), true
 }

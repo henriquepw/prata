@@ -94,8 +94,10 @@ func (w *webClient) uploadConfirmed(accountID, name, content string, confirmed b
 func (w *webClient) accountID() string {
 	w.t.Helper()
 
+	query := "SELECT id FROM accounts"
+
 	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM accounts"); err != nil {
+	if err := w.db.GetContext(context.Background(), &id, query); err != nil {
 		w.t.Fatal(err)
 	}
 
@@ -246,8 +248,10 @@ func TestMovements_RoutesRequireSession(t *testing.T) {
 func (w *webClient) movementID(description string) string {
 	w.t.Helper()
 
+	query := "SELECT id FROM movements WHERE description = ?"
+
 	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM movements WHERE description = ?", description); err != nil {
+	if err := w.db.GetContext(context.Background(), &id, query, description); err != nil {
 		w.t.Fatal(err)
 	}
 
@@ -365,8 +369,10 @@ func TestMovements_ForeignCurrencyFileAsksConfirmationAndImportsAsIs(t *testing.
 		t.Errorf("HX-Retarget = %q, want #sheet", response.Header().Get("HX-Retarget"))
 	}
 
+	query := "SELECT COUNT(*) FROM movements"
+
 	var count int
-	if err := w.db.GetContext(context.Background(), &count, "SELECT COUNT(*) FROM movements"); err != nil || count != 0 {
+	if err := w.db.GetContext(context.Background(), &count, query); err != nil || count != 0 {
 		t.Errorf("movements before the confirmation = %d, %v", count, err)
 	}
 
@@ -387,7 +393,9 @@ func TestMovements_SameCurrencyFileImportsWithoutDialog(t *testing.T) {
 func TestMovements_NubankCSVIsBRLAndAsksConfirmationOnAnotherCurrencyAccount(t *testing.T) {
 	w := newWebClient(t)
 
-	if _, err := w.db.ExecContext(context.Background(), "UPDATE accounts SET currency = 'USD'"); err != nil {
+	query := "UPDATE accounts SET currency = 'USD'"
+
+	if _, err := w.db.ExecContext(context.Background(), query); err != nil {
 		t.Fatal(err)
 	}
 

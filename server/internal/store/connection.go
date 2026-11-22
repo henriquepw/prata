@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/importfile"
+	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -42,9 +43,9 @@ func (s *Store) Connections(ctx context.Context, userID string) ([]Connection, e
 	return connections, nil
 }
 
-// AddConnection stores the user's Conexão to a Pluggy Item, feeding the account. It returns ErrNotFound when the
-// user does not belong to the account and ErrCurrency when the account's Moeda is not BRL.
-func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID, institution, status, executionStatus, lastUpdatedAt string) error {
+// AddConnection stores the user's Conexão to the Pluggy Item with that id, feeding the account. It returns
+// ErrNotFound when the user does not belong to the account and ErrCurrency when the account's Moeda is not BRL.
+func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID string, item pluggy.Item) error {
 	query := `
 		SELECT c.currency
 		FROM account_users a
@@ -70,7 +71,7 @@ func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID, in
 		INSERT INTO connections (id, user_id, account_id, item_id, institution, status, execution_status, last_updated_at, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
 	`
-	if _, err := s.ExecContext(ctx, query, ulid.Make().String(), userID, accountID, itemID, institution, status, executionStatus, lastUpdatedAt, formatTime(time.Now())); err != nil {
+	if _, err := s.ExecContext(ctx, query, ulid.Make().String(), userID, accountID, itemID, item.Connector.Name, item.Status, item.ExecutionStatus, item.LastUpdatedAt, formatTime(time.Now())); err != nil {
 		return fmt.Errorf("adding connection: %w", err)
 	}
 
@@ -137,14 +138,24 @@ func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget,
 	return targets, nil
 }
 
-// MarkFetched records the state Pluggy reported for the Conexão's Item and when the fetch ran.
-func (s *Store) MarkFetched(ctx context.Context, id, status, executionStatus, lastUpdatedAt string, fetchedAt time.Time) error {
+// UpdateConnectionItem records the state Pluggy reported for the Conexão's Item.
+func (s *Store) UpdateConnectionItem(ctx context.Context, id string, item pluggy.Item) error {
 	query := `
 		UPDATE connections
-		SET status = ?, execution_status = ?, last_updated_at = NULLIF(?, ''), last_fetched_at = ?
+		SET status = ?, execution_status = ?, last_updated_at = NULLIF(?, '')
 		WHERE id = ?
 	`
-	if _, err := s.ExecContext(ctx, query, status, executionStatus, lastUpdatedAt, formatTime(fetchedAt), id); err != nil {
+	if _, err := s.ExecContext(ctx, query, item.Status, item.ExecutionStatus, item.LastUpdatedAt, id); err != nil {
+		return fmt.Errorf("updating connection item: %w", err)
+	}
+
+	return nil
+}
+
+// MarkFetched records when the Conexão's movements were last fetched in full.
+func (s *Store) MarkFetched(ctx context.Context, id string, fetchedAt time.Time) error {
+	query := "UPDATE connections SET last_fetched_at = ? WHERE id = ?"
+	if _, err := s.ExecContext(ctx, query, formatTime(fetchedAt), id); err != nil {
 		return fmt.Errorf("marking connection fetched: %w", err)
 	}
 

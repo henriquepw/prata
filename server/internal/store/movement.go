@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"maps"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/importfile"
@@ -50,17 +49,21 @@ func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, 
 	return accounts, nil
 }
 
-// PendingMovements are the pending movements of the account, newest first.
-func (s *Store) PendingMovements(ctx context.Context, accountID string) ([]Movement, error) {
+// ownMovement keeps, in a WHERE taking the user id, the movements the user may see: the imported ones, which belong to
+// the account, and those of the user's own Conexões, which no other member of the account reads.
+const ownMovement = "(connection_id IS NULL OR connection_id IN (SELECT id FROM connections WHERE user_id = ?))"
+
+// PendingMovements are the pending movements of the session's account the user may see, newest first.
+func (s *Store) PendingMovements(ctx context.Context, session Session) ([]Movement, error) {
 	query := `
 		SELECT id, institution, bank_account, bank_account_kind, description, kind, amount, occurred_at
 		FROM movements
-		WHERE account_id = ? AND status = 'PENDING'
+		WHERE account_id = ? AND status = 'PENDING' AND ` + ownMovement + `
 		ORDER BY occurred_at DESC, id
 	`
 
 	var movements []Movement
-	if err := s.SelectContext(ctx, &movements, query, accountID); err != nil {
+	if err := s.SelectContext(ctx, &movements, query, session.AccountID, session.UserID); err != nil {
 		return nil, fmt.Errorf("listing movements: %w", err)
 	}
 
@@ -138,10 +141,16 @@ func (s *Store) ConfirmMovement(ctx context.Context, session Session, id, descri
 // transaction confirms it, with the movement's amount and date. An occurrence already confirmed is rejected by the
 // unique (recurrence_id, occurrence_date), so no second transaction is made.
 func (s *Store) ConfirmMovementAsOccurrence(ctx context.Context, session Session, id, recurrenceID, date, description, categoryID string, loc *time.Location) (Reason, error) {
-	return s.confirmMovement(ctx, session, id, description, categoryID, map[string]any{"recurrence_id": recurrenceID, "occurrence_date": date}, loc)
+	return s.confirmMovement(ctx, session, id, description, categoryID, &occurrenceRef{RecurrenceID: recurrenceID, Date: date}, loc)
 }
 
-func (s *Store) confirmMovement(ctx context.Context, session Session, id, description, categoryID string, occurrence map[string]any, loc *time.Location) (Reason, error) {
+// occurrenceRef is the occurrence of a recurrence a movement confirms.
+type occurrenceRef struct {
+	RecurrenceID string
+	Date         string
+}
+
+func (s *Store) confirmMovement(ctx context.Context, session Session, id, description, categoryID string, occurrence *occurrenceRef, loc *time.Location) (Reason, error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return "", fmt.Errorf("starting confirm: %w", err)
@@ -151,11 +160,11 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 	query := `
 		SELECT kind, amount, occurred_at
 		FROM movements
-		WHERE id = ? AND account_id = ? AND status = 'PENDING'
+		WHERE id = ? AND account_id = ? AND status = 'PENDING' AND ` + ownMovement + `
 	`
 
 	var movement Movement
-	if err := tx.GetContext(ctx, &movement, query, id, session.AccountID); errors.Is(err, sql.ErrNoRows) {
+	if err := tx.GetContext(ctx, &movement, query, id, session.AccountID, session.UserID); errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNotFound
 	} else if err != nil {
 		return "", fmt.Errorf("reading movement: %w", err)
@@ -177,16 +186,16 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 		`
 
 		var sameKind bool
-		if err := tx.GetContext(ctx, &sameKind, query, occurrence["recurrence_id"], session.AccountID, movement.Kind); err != nil {
+		if err := tx.GetContext(ctx, &sameKind, query, occurrence.RecurrenceID, session.AccountID, movement.Kind); err != nil {
 			return "", fmt.Errorf("checking recurrence: %w", err)
 		}
 
 		if !sameKind {
 			return ReasonInvalidOperation, nil
 		}
-	}
 
-	maps.Copy(fields, occurrence)
+		fields["recurrence_id"], fields["occurrence_date"] = occurrence.RecurrenceID, occurrence.Date
+	}
 
 	if description != "" {
 		fields["description"] = description
@@ -210,9 +219,9 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 // IgnoreMovement marks a pending movement of the session's account as ignored, for good: importing the file again
 // does not bring it back. It returns ErrNotFound when the movement is not pending in the account.
 func (s *Store) IgnoreMovement(ctx context.Context, session Session, id string) error {
-	query := "UPDATE movements SET status = 'IGNORED' WHERE id = ? AND account_id = ? AND status = 'PENDING'"
+	query := "UPDATE movements SET status = 'IGNORED' WHERE id = ? AND account_id = ? AND status = 'PENDING' AND " + ownMovement
 
-	result, err := s.ExecContext(ctx, query, id, session.AccountID)
+	result, err := s.ExecContext(ctx, query, id, session.AccountID, session.UserID)
 	if err != nil {
 		return fmt.Errorf("ignoring movement: %w", err)
 	}
@@ -242,11 +251,11 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 	query := `
 		SELECT id, description, kind, amount, occurred_at
 		FROM movements
-		WHERE id IN (?) AND account_id = ? AND status = 'PENDING'
+		WHERE id IN (?) AND account_id = ? AND status = 'PENDING' AND ` + ownMovement + `
 		ORDER BY occurred_at, id
 	`
 
-	query, args, err := sqlx.In(query, ids, session.AccountID)
+	query, args, err := sqlx.In(query, ids, session.AccountID, session.UserID)
 	if err != nil {
 		return "", fmt.Errorf("building confirm: %w", err)
 	}
@@ -300,9 +309,9 @@ func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []stri
 		return nil
 	}
 
-	query := "UPDATE movements SET status = 'IGNORED' WHERE id IN (?) AND account_id = ? AND status = 'PENDING'"
+	query := "UPDATE movements SET status = 'IGNORED' WHERE id IN (?) AND account_id = ? AND status = 'PENDING' AND " + ownMovement
 
-	query, args, err := sqlx.In(query, ids, session.AccountID)
+	query, args, err := sqlx.In(query, ids, session.AccountID, session.UserID)
 	if err != nil {
 		return fmt.Errorf("building ignore: %w", err)
 	}

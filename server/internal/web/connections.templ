@@ -4,7 +4,9 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/pluggy"
+	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
@@ -37,8 +39,8 @@ templ connectionFormPanel(view connectionsView) {
 				@formField("account_id", i18n.T(ctx, "movements.account"), view.Errors["account_id"]) {
 					@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
 						for _, account := range view.Accounts {
-							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != "BRL", Selected: account.ID == view.AccountID}) {
-								if account.Currency != "BRL" {
+							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}) {
+								if account.Currency != importfile.CurrencyBRL {
 									{ account.Name } ({ account.Currency }): { i18n.T(ctx, "connections.only_brl") }
 								} else {
 									{ account.Name }
@@ -55,20 +57,38 @@ templ connectionFormPanel(view connectionsView) {
 	}
 }
 
-// fetchAction is the "buscar agora" button of the panel head, shown once there is a Conexão to fetch.
+// fetchAction is the "buscar agora" button of the panel head, shown once there is a Conexão to fetch. A failure,
+// answered with the page, swaps the screen's main.
 templ fetchAction(show bool) {
 	if show {
-		<form hx-post="/connections/fetch" hx-disable="find button">
+		<form hx-post="/connections/fetch" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button">
 			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeSm, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "connections.fetching")}}) {
-				<span>&gt; { i18n.T(ctx, "connections.fetch") }</span>
+				<span>{ i18n.T(ctx, "connections.fetch") }</span>
 			}
 		</form>
 	}
 }
 
-// connectionsPanel lists the Conexões, each with its state and its remove button.
+// connectionState is the state chip of a Conexão: reconnect when its Item asks the user to, else Pluggy's status.
+templ connectionState(c store.Connection) {
+	if pluggy.NeedsReconnect(c.Status, c.ExecutionStatus) {
+		@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+			{ "[" + i18n.T(ctx, "connections.reconnect") + "]" }
+		}
+	} else {
+		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+			{ "[" + i18n.T(ctx, "connections.status."+c.Status) + "]" }
+		}
+	}
+}
+
+// connectionsPanel lists the Conexões, each with its state and its remove button, under the error of the last
+// "buscar agora".
 templ connectionsPanel(view connectionsView, loc *time.Location) {
 	@panel(i18n.T(ctx, "nav.connections"), "", fetchAction(len(view.Connections) > 0)) {
+		if view.FetchError != "" {
+			<p role="alert" class="text-destructive">! { view.FetchError }</p>
+		}
 		if len(view.Connections) == 0 {
 			@empty(i18n.T(ctx, "connections.empty"))
 		} else {
@@ -103,13 +123,7 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 								{ localTime(ctx, c.LastUpdatedAt.String, loc) }
 							}
 							@table.Cell() {
-								if pluggy.NeedsReconnect(c.Status, c.ExecutionStatus) {
-									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-										{ "[" + i18n.T(ctx, "connections.reconnect") + "]" }
-									}
-								} else {
-									<span class="text-muted-foreground">{ "[" + i18n.T(ctx, "connections.ok") + "]" }</span>
-								}
+								@connectionState(c)
 							}
 							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
 								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {

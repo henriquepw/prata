@@ -14,7 +14,7 @@ import (
 )
 
 // connectionsView is the Conexões screen: the user's Conexões, the accounts to feed, whether the user has Pluggy
-// credentials, and the typed form with its field errors.
+// credentials, the typed form with its field errors, and the error of the last "buscar agora".
 type connectionsView struct {
 	Connections    []store.Connection
 	Accounts       []store.AccountRef
@@ -22,6 +22,7 @@ type connectionsView struct {
 	ItemID         string
 	AccountID      string
 	Errors         map[string]string
+	FetchError     string
 }
 
 func (h handler) connections(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +88,7 @@ func (h handler) saveConnection(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(view.Errors) == 0 {
-		err = h.db.AddConnection(r.Context(), session.UserID, view.AccountID, view.ItemID, item.Institution(), item.Status, item.ExecutionStatus, item.LastUpdatedAt)
+		err = h.db.AddConnection(r.Context(), session.UserID, view.AccountID, view.ItemID, item)
 		switch {
 		case errors.Is(err, store.ErrNotFound):
 			http.NotFound(w, r)
@@ -146,8 +147,9 @@ func (h handler) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// fetchConnections fetches the movements of the user's Conexões now, then reloads the screen. A Conexão that fails
-// is logged and shows in its state; the others are still fetched.
+// fetchConnections fetches the movements of the user's Conexões now, then reloads the screen. When a Conexão fails,
+// the others are still fetched, the error is logged and the screen answers 502 with a warning over the Conexões, whose
+// state shows any Item that asks to reconnect.
 func (h handler) fetchConnections(w http.ResponseWriter, r *http.Request) {
 	if !h.openFinance.Enabled() {
 		http.NotFound(w, r)
@@ -157,6 +159,8 @@ func (h handler) fetchConnections(w http.ResponseWriter, r *http.Request) {
 	fetcher := openfinance.Fetcher{DB: h.db, Key: h.openFinance.Key, Pluggy: h.openFinance.Pluggy}
 	if err := fetcher.Fetch(r.Context(), sessionFrom(r.Context()).UserID, time.Now().In(location(r))); err != nil {
 		slog.Warn("fetching connections", "error", err)
+		h.renderConnections(w, r, http.StatusBadGateway, connectionsView{Errors: map[string]string{}, FetchError: i18n.T(r.Context(), "connections.error.fetch")})
+		return
 	}
 
 	w.Header().Set("HX-Refresh", "true")

@@ -80,8 +80,10 @@ func TestReview_BatchConfirmAndIgnoreMixConnectionAndFileMovements(t *testing.T)
 		t.Errorf("transactions after the mixed batch confirm = %v, want the Conexão's and the file's", created)
 	}
 
+	query := "SELECT id FROM movements WHERE description = 'Salário'"
+
 	var salaries []string
-	if err := w.db.SelectContext(context.Background(), &salaries, "SELECT id FROM movements WHERE description = 'Salário'"); err != nil || len(salaries) != 2 {
+	if err := w.db.SelectContext(context.Background(), &salaries, query); err != nil || len(salaries) != 2 {
 		t.Fatalf("salary movements = %v, %v, want the Conexão's and the file's", salaries, err)
 	}
 
@@ -102,10 +104,7 @@ func TestReview_RemovingTheConnectionKeepsConfirmedTransactionsIgnoredAndFileMov
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/ignore", url.Values{})
 	w.newOps()
 
-	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM connections"); err != nil {
-		t.Fatal(err)
-	}
+	id := w.connectionID()
 
 	w.submit(http.MethodDelete, "/connections/"+id, nil)
 
@@ -113,8 +112,10 @@ func TestReview_RemovingTheConnectionKeepsConfirmedTransactionsIgnoredAndFileMov
 		t.Errorf("removing the Conexão made ops %+v, want the confirmed transaction untouched", ops)
 	}
 
+	query := "SELECT status FROM movements ORDER BY description, status"
+
 	var statuses []string
-	if err := w.db.SelectContext(context.Background(), &statuses, "SELECT status FROM movements ORDER BY description, status"); err != nil {
+	if err := w.db.SelectContext(context.Background(), &statuses, query); err != nil {
 		t.Fatal(err)
 	}
 

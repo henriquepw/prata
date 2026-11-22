@@ -144,7 +144,7 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 			@categorySelect(categories)
 		}
 		@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
-			<span>&gt; { i18n.T(ctx, "movements.confirm") }</span>
+			<span>{ i18n.T(ctx, "movements.confirm") }</span>
 		}
 		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
 			<span>{ i18n.T(ctx, "movements.ignore") }</span>
@@ -192,7 +192,7 @@ templ occurrenceConfirm(m store.Movement, occurrences []occurrence) {
 				}
 			}
 			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.confirming")}}) {
-				<span>&gt; { i18n.T(ctx, "movements.confirm_occurrence") }</span>
+				<span>{ i18n.T(ctx, "movements.confirm_occurrence") }</span>
 			}
 		</form>
 	}

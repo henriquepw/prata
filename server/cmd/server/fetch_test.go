@@ -126,8 +126,10 @@ func TestFetch_FirstTimeReadsFromTheStartOfTheMonthAndListsPostedMovementsForRev
 func (w *webClient) movementDescriptions() []string {
 	w.t.Helper()
 
+	query := "SELECT description FROM movements ORDER BY description"
+
 	var descriptions []string
-	if err := w.db.SelectContext(context.Background(), &descriptions, "SELECT description FROM movements ORDER BY description"); err != nil {
+	if err := w.db.SelectContext(context.Background(), &descriptions, query); err != nil {
 		w.t.Fatal(err)
 	}
 
@@ -194,8 +196,10 @@ func TestFetch_CentsAreExactAndNeverGoThroughAFloat(t *testing.T) {
 	w.connect(pluggyItemID, w.accountID())
 	w.fetchNow()
 
+	query := "SELECT amount FROM movements ORDER BY description"
+
 	var cents []int64
-	if err := w.db.SelectContext(context.Background(), &cents, "SELECT amount FROM movements ORDER BY description"); err != nil {
+	if err := w.db.SelectContext(context.Background(), &cents, query); err != nil {
 		t.Fatal(err)
 	}
 
@@ -289,10 +293,7 @@ func TestFetch_RemovingTheConnectionDropsTheFetchedPendingMovements(t *testing.T
 	w.connect(pluggyItemID, w.accountID())
 	w.fetchNow()
 
-	var id string
-	if err := w.db.GetContext(context.Background(), &id, "SELECT id FROM connections"); err != nil {
-		t.Fatal(err)
-	}
+	id := w.connectionID()
 
 	w.submit(http.MethodDelete, "/connections/"+id, nil)
 
@@ -318,4 +319,61 @@ func TestFetch_ConnectionsScreenOffersFetchNowOnlyWithAConnection(t *testing.T) 
 
 	w.connect(pluggyItemID, w.accountID())
 	w.assertBody("/connections", `hx-post="/connections/fetch"`, "buscar agora")
+}
+
+func TestFetch_AFailedFetchKeepsTheItemStateAndWarns(t *testing.T) {
+	w, fake := connected(t)
+	w.connect(pluggyItemID, w.accountID())
+	fake.serveItem(pluggyItem("Pluggy Bank", "LOGIN_ERROR", "INVALID_CREDENTIALS"))
+
+	response := w.submit(http.MethodPost, "/connections/fetch", nil)
+	if response.Code != http.StatusBadGateway || !strings.Contains(response.Body.String(), "A busca falhou") {
+		t.Errorf("failed fetch = %d, want %d with the warning: %s", response.Code, http.StatusBadGateway, response.Body)
+	}
+
+	w.assertBody("/connections", "reconecte em meu.pluggy.ai")
+}
+
+func TestFetch_ARenamedBankAccountDoesNotBringItsMovementsBack(t *testing.T) {
+	w, fake := connected(t)
+	today := time.Now().Format(time.DateOnly)
+	name := "Conta Corrente"
+	fake.handle("GET /accounts", func(r *http.Request) (int, any) {
+		return http.StatusOK, map[string]any{"results": []any{pluggyAccount(pluggyBankAccountID, "BANK", name)}}
+	})
+	fake.serveTransactions(pluggyBankAccountID, []map[string]any{pluggyTransaction("t1", "POSTED", today, "Padaria", -45.9)})
+	w.connect(pluggyItemID, w.accountID())
+	w.fetchNow()
+	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria")+"/ignore", url.Values{})
+
+	name = "Conta Corrente Renomeada"
+	w.fetchNow()
+
+	if got := w.movementDescriptions(); len(got) != 1 {
+		t.Errorf("movements after renaming the bank account = %v, want only the ignored one", got)
+	}
+}
+
+func TestFetch_AccountMatesDoNotSeeOrReviewTheConnectionsMovements(t *testing.T) {
+	w, fake := connected(t)
+	today := time.Now().Format(time.DateOnly)
+	fake.serveAccounts(pluggyAccount(pluggyBankAccountID, "BANK", "Conta Corrente"))
+	fake.serveTransactions(pluggyBankAccountID, []map[string]any{
+		pluggyTransaction("t1", "POSTED", today, "Padaria", -45.9),
+		pluggyTransaction("t2", "POSTED", today, "Farmácia", -20),
+	})
+	w.connect(pluggyItemID, w.accountID())
+	w.fetchNow()
+
+	mate := w.newAccountMate()
+	if body := get(mate.handler, "/movements", mate.cookie).Body.String(); strings.Contains(body, "Padaria") {
+		t.Errorf("mate sees the connection's movements: %s", body)
+	}
+
+	mate.submit(http.MethodPost, "/movements/"+w.movementID("Padaria")+"/confirm", url.Values{})
+	mate.submit(http.MethodPost, "/movements/"+w.movementID("Farmácia")+"/ignore", url.Values{})
+	mate.submit(http.MethodPost, "/movements/confirm", url.Values{"id": {w.movementID("Padaria")}})
+	mate.submit(http.MethodPost, "/movements/ignore", url.Values{"id": {w.movementID("Farmácia")}})
+
+	w.assertBody("/movements", "Padaria", "Farmácia")
 }

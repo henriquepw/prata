@@ -177,7 +177,7 @@ func parseOFX(content []byte) ([]Statement, error) {
 // withKind sets the Kind and the positive Amount of a line: the sign of the file, except on a card line that says
 // DEBIT or CREDIT, which decides it.
 func withKind(row Row, trnType, kind string) Row {
-	row.Kind, row.Amount = bySign(row.Amount)
+	row.Kind, row.Amount = BySign(row.Amount)
 	if kind == Card && trnType == "DEBIT" {
 		row.Kind = "OUTCOME"
 	} else if kind == Card && trnType == "CREDIT" {
@@ -187,8 +187,8 @@ func withKind(row Row, trnType, kind string) Row {
 	return row
 }
 
-// bySign is the Kind of a signed amount, INCOME when positive, with the amount made positive.
-func bySign(amount int64) (string, int64) {
+// BySign is the Kind of a signed amount, INCOME when positive, with the amount made positive.
+func BySign(amount int64) (string, int64) {
 	if amount > 0 {
 		return "INCOME", amount
 	}
@@ -273,7 +273,7 @@ func parseNubankCSV(content []byte) ([]Statement, error) {
 			seen[key]++
 		}
 
-		row.Kind, row.Amount = bySign(-row.Amount * sign)
+		row.Kind, row.Amount = BySign(-row.Amount * sign)
 		statement.Rows = append(statement.Rows, row)
 	}
 

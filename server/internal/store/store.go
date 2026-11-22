@@ -21,6 +21,7 @@ var migrations = []migration{
 	{version: 8, files: []string{"server_movements.sql"}},
 	{version: 9, files: []string{"server_connections.sql"}},
 	{version: 10, files: []string{"server_connection_fetch.sql"}},
+	{version: 11, files: []string{"server_movement_connection.sql"}},
 }
 
 type migration struct {
