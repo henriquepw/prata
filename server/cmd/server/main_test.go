@@ -89,7 +89,7 @@ func TestRun_NewerDatabase(t *testing.T) {
 	if got := run(nil, []string{"PRATA_DB_PATH=" + path}); got != 1 {
 		t.Errorf("newer database exit code = %d, want 1", got)
 	}
-	if !strings.Contains(logs.String(), "database schema version 12 is newer than this binary (11)") {
+	if !strings.Contains(logs.String(), "database schema version 12 is newer than this binary (1)") {
 		t.Errorf("logs = %q, want schema version error", logs.String())
 	}
 }

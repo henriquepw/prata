@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/shared/schema"
 	_ "modernc.org/sqlite"
 )
 
@@ -58,44 +57,23 @@ func TestCreateAccount_WaitsForConcurrentSignup(t *testing.T) {
 	}
 }
 
-func TestOpen_MigratesExistingDatabaseToDefaultPreferencesAndCurrency(t *testing.T) {
+func TestOpen_DefaultsPreferencesAndCurrency(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "prata.db")
-	v1, err := sql.Open("sqlite", path)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, name := range []string{"domain.sql", "server.sql"} {
-		file, err := schema.Files.ReadFile(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if _, err := v1.Exec(string(file)); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	for _, statement := range []string{
-		"PRAGMA user_version = 1",
-		"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES ('" + ownerID + "', 'ana@example.com', '', '', '')",
-		"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES ('" + accountID + "', 'Ana', '" + ownerID + "', '', '')",
-	} {
-		if _, err := v1.Exec(statement); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	if err := v1.Close(); err != nil {
-		t.Fatal(err)
-	}
-
 	db, err := store.Open(ctx, path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
+
+	for _, statement := range []string{
+		"INSERT INTO users (id, email, secret, created_at, updated_at) VALUES ('" + ownerID + "', 'ana@example.com', '', '', '')",
+		"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES ('" + accountID + "', 'Ana', '" + ownerID + "', '', '')",
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			t.Fatal(err)
+		}
+	}
 
 	var got struct {
 		Language     string `db:"language"`
@@ -109,7 +87,7 @@ func TestOpen_MigratesExistingDatabaseToDefaultPreferencesAndCurrency(t *testing
 	}
 
 	if got.Language != "pt-BR" || got.DateFormat != "DD/MM/YYYY" || got.NumberFormat != "1.234,56" || got.Currency != "BRL" {
-		t.Errorf("migrated user and account = %+v, want pt-BR, DD/MM/YYYY, 1.234,56 and BRL", got)
+		t.Errorf("default user and account = %+v, want pt-BR, DD/MM/YYYY, 1.234,56 and BRL", got)
 	}
 
 	for _, query := range []string{

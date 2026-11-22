@@ -5,29 +5,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/henriquepw/prata/shared/schema"
 	"github.com/jmoiron/sqlx"
 )
-
-var migrations = []migration{
-	{version: 1, files: []string{"domain.sql", "server.sql"}},
-	{version: 2, files: []string{"server_preferences.sql"}},
-	{version: 3, files: []string{"server_categories.sql"}},
-	{version: 4, files: []string{"server_income.sql"}},
-	{version: 5, files: []string{"server_daily_limit.sql"}},
-	{version: 6, files: []string{"server_default_category.sql"}},
-	{version: 7, files: []string{"server_pluggy_credentials.sql"}},
-	{version: 8, files: []string{"server_movements.sql"}},
-	{version: 9, files: []string{"server_connections.sql"}},
-	{version: 10, files: []string{"server_connection_fetch.sql"}},
-	{version: 11, files: []string{"server_movement_connection.sql"}},
-}
-
-type migration struct {
-	version int
-	files   []string
-}
 
 // Store is an open server database.
 type Store struct {
@@ -60,7 +42,12 @@ func migrate(ctx context.Context, db *sqlx.DB) error {
 		return fmt.Errorf("reading schema version: %w", err)
 	}
 
-	latest := migrations[len(migrations)-1].version
+	migrations, err := fs.Glob(schema.Files, "migration/*.sql")
+	if err != nil {
+		return fmt.Errorf("listing migrations: %w", err)
+	}
+
+	latest := len(migrations)
 	if version > latest {
 		return fmt.Errorf("database schema version %d is newer than this binary (%d)", version, latest)
 	}
@@ -72,8 +59,8 @@ func migrate(ctx context.Context, db *sqlx.DB) error {
 		}
 		defer tx.Rollback()
 
-		for _, migration := range migrations[version:] {
-			if err := applyMigration(ctx, tx, migration); err != nil {
+		for i, name := range migrations[version:] {
+			if err := applyMigration(ctx, tx, version+i+1, name); err != nil {
 				return err
 			}
 		}
@@ -94,19 +81,18 @@ func migrate(ctx context.Context, db *sqlx.DB) error {
 	return nil
 }
 
-func applyMigration(ctx context.Context, tx *sqlx.Tx, migration migration) error {
-	for _, name := range migration.files {
-		sql, err := schema.Files.ReadFile(name)
-		if err != nil {
-			return fmt.Errorf("reading %s: %w", name, err)
-		}
-		if _, err := tx.ExecContext(ctx, string(sql)); err != nil {
-			return fmt.Errorf("applying %s: %w", name, err)
-		}
+func applyMigration(ctx context.Context, tx *sqlx.Tx, version int, name string) error {
+	sql, err := schema.Files.ReadFile(name)
+	if err != nil {
+		return fmt.Errorf("reading %s: %w", name, err)
 	}
 
-	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", migration.version)); err != nil {
-		return fmt.Errorf("recording schema version %d: %w", migration.version, err)
+	if _, err := tx.ExecContext(ctx, string(sql)); err != nil {
+		return fmt.Errorf("applying %s: %w", name, err)
+	}
+
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", version)); err != nil {
+		return fmt.Errorf("recording schema version %d: %w", version, err)
 	}
 
 	return nil
