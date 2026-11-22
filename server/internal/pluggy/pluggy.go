@@ -157,13 +157,20 @@ type Transaction struct {
 	OperationType string      `json:"operationType"`
 }
 
+// maxPages caps the pages of Transactions, so a cursor that never ends cannot loop forever.
+const maxPages = 1000
+
 // Transactions lists the lines of the Account dated on or after dateFrom (YYYY-MM-DD), following the cursor
 // Pluggy gives in `next` until it runs out.
 func (c Client) Transactions(ctx context.Context, apiKey, accountID, dateFrom string) ([]Transaction, error) {
 	var transactions []Transaction
 
 	next := "?" + url.Values{"accountId": {accountID}, "dateFrom": {dateFrom}}.Encode()
-	for next != "" {
+	for pages := 1; next != ""; pages++ {
+		if pages > maxPages {
+			return nil, fmt.Errorf("reading pluggy transactions: more than %d pages", maxPages)
+		}
+
 		var page struct {
 			Next    string        `json:"next"`
 			Results []Transaction `json:"results"`
@@ -173,6 +180,10 @@ func (c Client) Transactions(ctx context.Context, apiKey, accountID, dateFrom st
 		}
 
 		transactions = append(transactions, page.Results...)
+		if page.Next == next {
+			return nil, errors.New("reading pluggy transactions: cursor did not advance")
+		}
+
 		next = page.Next
 	}
 
