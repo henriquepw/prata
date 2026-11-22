@@ -214,6 +214,8 @@ var ptBR = map[string]string{
 	"categories.confirm_delete": "excluir esta categoria? As transações e recorrências dela passam para a categoria padrão.",
 	"categories.daily":          "Diária",
 	"categories.default":        "Padrão",
+	"categories.daily_help":     "Os gastos desta categoria contam no gasto do dia, e o limite mensal dela entra no limite diário.",
+	"categories.default_help":   "Recebe as despesas sem categoria, o resto da divisão da receita e o que sobra de uma categoria excluída. Só uma categoria é padrão: para trocar, marque outra como padrão.",
 	"categories.yes":            "sim",
 	"categories.no":             "não",
 	"categories.color":          "Cor",

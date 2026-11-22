@@ -276,7 +276,7 @@ func TestWebTransactions_FlashesTheSavedRowOnce(t *testing.T) {
 func TestWebTransactions_SheetIsTheConsoleSheet(t *testing.T) {
 	w := newWebClient(t)
 	body := get(w.handler, "/transactions/new", w.cookie).Body.String()
-	for _, want := range []string{"Nova transação", "[esc ✕]", "[despesa]", "[receita]", `value="OUTCOME" checked`, "salvando"} {
+	for _, want := range []string{"Nova transação", "[esc ✕]", ">despesa<", ">receita<", `value="OUTCOME" checked`, "salvando"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("new sheet lacks %q: %s", want, body)
 		}

@@ -202,7 +202,7 @@ func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 		"Go to month", "Open settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
 		"</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
 	w.assertBody("/?month=2026-11", "November 2026", "<kbd>n</kbd> new")
-	w.assertBody("/transactions/new", "[expense]", "[income]")
+	w.assertBody("/transactions/new", ">expense<", ">income<")
 	w.assertSettings("Settings", "Language", "Date format", "Number format", "DD/MM/YYYY",
 		"Currency", "recorded amounts are not converted", "&gt; Save")
 	w.assertBody("/tags", "Despesa")

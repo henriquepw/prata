@@ -214,6 +214,8 @@ var en = map[string]string{
 	"categories.confirm_delete": "delete this category? Its transactions and recurrences move to the default category.",
 	"categories.daily":          "Daily",
 	"categories.default":        "Default",
+	"categories.daily_help":     "Spending in this category counts toward the day's spending, and its monthly limit goes into the daily limit.",
+	"categories.default_help":   "Gets the expenses with no category, the rest of the income split and what is left from a deleted category. Only one category is the default: to change it, mark another one as default.",
 	"categories.yes":            "yes",
 	"categories.no":             "no",
 	"categories.color":          "Color",

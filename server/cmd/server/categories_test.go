@@ -306,8 +306,8 @@ func TestWebCategories_MarkingAnotherDefaultTakesTheMarkFromTheCurrentOne(t *tes
 	w := newWebClient(t)
 	meta := w.categories["Meta"]
 
-	if sheet := get(w.handler, "/categories/"+w.defaultID, w.cookie).Body.String(); strings.Contains(sheet, `name="is_default"`) {
-		t.Errorf("default category sheet = %s, want no default choice", sheet)
+	if sheet := get(w.handler, "/categories/"+w.defaultID, w.cookie).Body.String(); !strings.Contains(sheet, `<fieldset class="contents" disabled>`) {
+		t.Errorf("default category sheet = %s, want the default choice locked", sheet)
 	}
 
 	w.mustSubmit(http.MethodPost, "/categories/"+meta, url.Values{"name": {"Meta"}, "color": {"YELLOW"}, "is_daily": {"0"}, "is_default": {"1"}})

@@ -1255,7 +1255,38 @@
     display: none;
   }
 
-  /* Short choice ([despesa] [receita], [■ verde]): radios drawn as buttons that wrap, the checked one inverted. */
+  /* Help mark "?" after a field label: its data-tip shows on hover or focus. */
+  .tip {
+    position: relative;
+    margin-left: 0.5ch;
+    color: var(--primary);
+    cursor: help;
+  }
+
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    width: 34ch;
+    padding: 0.5lh 1ch;
+    background: var(--foreground);
+    color: var(--background);
+    font-size: 11px;
+    letter-spacing: normal;
+    text-transform: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--snap) var(--ease);
+  }
+
+  .tip:hover::after,
+  .tip:focus-visible::after {
+    opacity: 1;
+  }
+
+  /* Short choice (despesa receita, ■ verde): radios drawn as buttons that wrap, the checked one inverted. */
   .choice {
     display: flex;
     flex-wrap: wrap;

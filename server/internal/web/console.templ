@@ -253,9 +253,14 @@ templ dateField(id, label, value, message string) {
 
 // choiceField is a short choice, as in [despesa] [receita]: the choiceOption radios as children, drawn as buttons
 // with the checked one inverted.
-templ choiceField(name, label, message string) {
+templ choiceField(name, label, help, message string) {
 	@field.Field() {
-		<span id={ name + "-label" } class="text-[11px] uppercase tracking-widest text-muted-foreground">{ label }</span>
+		<span id={ name + "-label" } class="text-[11px] uppercase tracking-widest text-muted-foreground">
+			{ label }
+			if help != "" {
+				<span class="tip" tabindex="0" role="img" aria-label={ help } data-tip={ help }>?</span>
+			}
+		</span>
 		<div role="radiogroup" aria-labelledby={ name + "-label" } class="choice" { ariaInvalid(message)... }>
 			{ children... }
 		</div>
@@ -263,20 +268,19 @@ templ choiceField(name, label, message string) {
 	}
 }
 
-// choiceOption is one radio of a choiceField, with its label as children inside the brackets.
+// choiceOption is one radio of a choiceField, with its label as children.
 templ choiceOption(name, value string, checked bool) {
 	<label>
 		<input type="radio" name={ name } value={ value } checked?={ checked }/>
 		<span>
-			[{ children... }
-			]
+			{ children... }
 		</span>
 	</label>
 }
 
 // kindChoice is the [despesa] [receita] choice of a transaction or recurrence.
 templ kindChoice(value, message string) {
-	@choiceField("kind", i18n.T(ctx, "kind.label"), message) {
+	@choiceField("kind", i18n.T(ctx, "kind.label"), "", message) {
 		for _, kind := range kinds {
 			@choiceOption("kind", kind, kind == value) {
 				{ strings.ToLower(i18n.T(ctx, "kind."+kind)) }

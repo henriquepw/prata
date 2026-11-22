@@ -55,14 +55,14 @@ templ categorySheet(form categoryForm) {
 		Error:     form.Errors["form"],
 	}) {
 		@nameField(form.Name, form.Errors["name"])
-		@choiceField("color", i18n.T(ctx, "categories.color"), form.Errors["color"]) {
+		@choiceField("color", i18n.T(ctx, "categories.color"), "", form.Errors["color"]) {
 			for _, color := range categoryColors {
 				@choiceOption("color", color.Value, color.Value == form.Color) {
 					<span class={ color.Class } aria-hidden="true">■</span> { strings.ToLower(i18n.T(ctx, "color."+color.Value)) }
 				}
 			}
 		}
-		@choiceField("is_daily", i18n.T(ctx, "categories.daily"), "") {
+		@choiceField("is_daily", i18n.T(ctx, "categories.daily"), i18n.T(ctx, "categories.daily_help"), "") {
 			@choiceOption("is_daily", "1", form.IsDaily) {
 				{ i18n.T(ctx, "categories.yes") }
 			}
@@ -70,15 +70,15 @@ templ categorySheet(form categoryForm) {
 				{ i18n.T(ctx, "categories.no") }
 			}
 		}
-		if !form.IsDefault {
-			@choiceField("is_default", i18n.T(ctx, "categories.default"), "") {
-				@choiceOption("is_default", "1", form.MarkDefault) {
+		<fieldset class="contents" disabled?={ form.IsDefault }>
+			@choiceField("is_default", i18n.T(ctx, "categories.default"), i18n.T(ctx, "categories.default_help"), "") {
+				@choiceOption("is_default", "1", form.IsDefault || form.MarkDefault) {
 					{ i18n.T(ctx, "categories.yes") }
 				}
-				@choiceOption("is_default", "0", !form.MarkDefault) {
+				@choiceOption("is_default", "0", !form.IsDefault && !form.MarkDefault) {
 					{ i18n.T(ctx, "categories.no") }
 				}
 			}
-		}
+		</fieldset>
 	}
 }
