@@ -82,11 +82,6 @@ func (i Item) Institution() string {
 	return i.Connector.Name
 }
 
-// NeedsReconnect reports whether the Item waits for the user to act at meu.pluggy.ai.
-func (i Item) NeedsReconnect() bool {
-	return NeedsReconnect(i.Status, i.ExecutionStatus)
-}
-
 // NeedsReconnect reports whether an Item in this status and executionStatus waits for the user to reconnect it.
 func NeedsReconnect(status, executionStatus string) bool {
 	return slices.Contains([]string{"LOGIN_ERROR", "WAITING_USER_INPUT"}, status) || slices.Contains([]string{
