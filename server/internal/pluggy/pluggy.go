@@ -126,3 +126,81 @@ func (c Client) Item(ctx context.Context, apiKey, id string) (Item, error) {
 
 	return item, nil
 }
+
+// Account is a Conta bancária of an Item: a checking account (type BANK) or a credit card (type CREDIT).
+type Account struct {
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Currency string `json:"currencyCode"`
+	Name     string `json:"name"`
+}
+
+// Accounts lists the Contas bancárias of the Item.
+func (c Client) Accounts(ctx context.Context, apiKey, itemID string) ([]Account, error) {
+	var page struct {
+		Results []Account `json:"results"`
+	}
+	if err := c.getJSON(ctx, apiKey, "/accounts?"+url.Values{"itemId": {itemID}}.Encode(), &page); err != nil {
+		return nil, fmt.Errorf("reading pluggy accounts: %w", err)
+	}
+
+	return page.Results, nil
+}
+
+// Transaction is a line of an Account. Amount is the literal Pluggy sends, in reais, and Date its ISO timestamp.
+type Transaction struct {
+	ID            string      `json:"id"`
+	Status        string      `json:"status"`
+	Amount        json.Number `json:"amount"`
+	Date          string      `json:"date"`
+	Description   string      `json:"description"`
+	OperationType string      `json:"operationType"`
+}
+
+// Transactions lists the lines of the Account dated on or after dateFrom (YYYY-MM-DD), following the cursor
+// Pluggy gives in `next` until it runs out.
+func (c Client) Transactions(ctx context.Context, apiKey, accountID, dateFrom string) ([]Transaction, error) {
+	var transactions []Transaction
+
+	next := "?" + url.Values{"accountId": {accountID}, "dateFrom": {dateFrom}}.Encode()
+	for next != "" {
+		var page struct {
+			Next    string        `json:"next"`
+			Results []Transaction `json:"results"`
+		}
+		if err := c.getJSON(ctx, apiKey, "/v2/transactions"+next, &page); err != nil {
+			return nil, fmt.Errorf("reading pluggy transactions: %w", err)
+		}
+
+		transactions = append(transactions, page.Results...)
+		next = page.Next
+	}
+
+	return transactions, nil
+}
+
+// getJSON reads the JSON at path, relative to the API, into out.
+func (c Client) getJSON(ctx context.Context, apiKey, path string, out any) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.URL+path, nil)
+	if err != nil {
+		return fmt.Errorf("creating request: %w", err)
+	}
+
+	req.Header.Set("X-API-KEY", apiKey)
+
+	response, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("requesting: %w", err)
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return fmt.Errorf("returned %s", response.Status)
+	}
+
+	if err := json.NewDecoder(response.Body).Decode(out); err != nil {
+		return fmt.Errorf("decoding: %w", err)
+	}
+
+	return nil
+}

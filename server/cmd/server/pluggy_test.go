@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 )
@@ -14,7 +15,11 @@ type fakePluggy struct {
 	*httptest.Server
 	mux *http.ServeMux
 	// requests counts every request the fake received.
-	requests atomic.Int64
+	requests   atomic.Int64
+	mu         sync.Mutex
+	dates      []string
+	item       map[string]any
+	itemServed bool
 }
 
 const (

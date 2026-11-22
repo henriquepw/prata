@@ -20,6 +20,7 @@ var migrations = []migration{
 	{version: 7, files: []string{"server_pluggy_credentials.sql"}},
 	{version: 8, files: []string{"server_movements.sql"}},
 	{version: 9, files: []string{"server_connections.sql"}},
+	{version: 10, files: []string{"server_connection_fetch.sql"}},
 }
 
 type migration struct {

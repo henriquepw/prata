@@ -5,8 +5,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 )
@@ -138,6 +140,23 @@ func (h handler) deleteConnection(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		internalError(w, "deleting connection", err)
 		return
+	}
+
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// fetchConnections fetches the movements of the user's Conexões now, then reloads the screen. A Conexão that fails
+// is logged and shows in its state; the others are still fetched.
+func (h handler) fetchConnections(w http.ResponseWriter, r *http.Request) {
+	if !h.openFinance.Enabled() {
+		http.NotFound(w, r)
+		return
+	}
+
+	fetcher := openfinance.Fetcher{DB: h.db, Key: h.openFinance.Key, Pluggy: h.openFinance.Pluggy}
+	if err := fetcher.Fetch(r.Context(), sessionFrom(r.Context()).UserID, time.Now().In(location(r))); err != nil {
+		slog.Warn("fetching connections", "error", err)
 	}
 
 	w.Header().Set("HX-Refresh", "true")

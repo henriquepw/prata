@@ -103,3 +103,44 @@ func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
 
 	return tx.Commit()
 }
+
+// FetchTarget is a Conexão to fetch movements for: its owner, the account it feeds and when it was last fetched.
+type FetchTarget struct {
+	ID            string         `db:"id"`
+	UserID        string         `db:"user_id"`
+	AccountID     string         `db:"account_id"`
+	ItemID        string         `db:"item_id"`
+	Institution   string         `db:"institution"`
+	LastFetchedAt sql.NullString `db:"last_fetched_at"`
+}
+
+// FetchTargets are the Conexões of the user, or of every user when userID is empty.
+func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget, error) {
+	query := `
+		SELECT id, user_id, account_id, item_id, institution, last_fetched_at
+		FROM connections
+		WHERE ? = '' OR user_id = ?
+		ORDER BY created_at, id
+	`
+
+	var targets []FetchTarget
+	if err := s.SelectContext(ctx, &targets, query, userID, userID); err != nil {
+		return nil, fmt.Errorf("listing connections to fetch: %w", err)
+	}
+
+	return targets, nil
+}
+
+// MarkFetched records the state Pluggy reported for the Conexão's Item and when the fetch ran.
+func (s *Store) MarkFetched(ctx context.Context, id, status, executionStatus, lastUpdatedAt string, fetchedAt time.Time) error {
+	query := `
+		UPDATE connections
+		SET status = ?, execution_status = ?, last_updated_at = NULLIF(?, ''), last_fetched_at = ?
+		WHERE id = ?
+	`
+	if _, err := s.ExecContext(ctx, query, status, executionStatus, lastUpdatedAt, formatTime(fetchedAt), id); err != nil {
+		return fmt.Errorf("marking connection fetched: %w", err)
+	}
+
+	return nil
+}

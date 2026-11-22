@@ -71,6 +71,15 @@ func (s *Store) PendingMovements(ctx context.Context, accountID string) ([]Movem
 // returns how many were new and how many were already there, in any status. It returns ErrNotFound when the user
 // does not belong to the account.
 func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, statements []importfile.Statement) (added, existing int, err error) {
+	return s.importMovements(ctx, userID, accountID, "", statements)
+}
+
+// ImportConnectionMovements is ImportMovements for the movements a Conexão fetched, which it links to the Conexão.
+func (s *Store) ImportConnectionMovements(ctx context.Context, userID, accountID, connectionID string, statements []importfile.Statement) (added, existing int, err error) {
+	return s.importMovements(ctx, userID, accountID, connectionID, statements)
+}
+
+func (s *Store) importMovements(ctx context.Context, userID, accountID, connectionID string, statements []importfile.Statement) (added, existing int, err error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return 0, 0, fmt.Errorf("starting import: %w", err)
@@ -90,17 +99,17 @@ func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, s
 
 	query = `
 		INSERT INTO movements (
-			id, account_id, institution, bank_account, bank_account_kind, external_id,
+			id, account_id, connection_id, institution, bank_account, bank_account_kind, external_id,
 			description, kind, amount, occurred_at, created_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, NULLIF(?, ''), ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT DO NOTHING
 	`
 
 	now := formatTime(time.Now())
 	for _, statement := range statements {
 		for _, row := range statement.Rows {
-			result, err := tx.ExecContext(ctx, query, ulid.Make().String(), accountID, statement.Institution, statement.Account,
+			result, err := tx.ExecContext(ctx, query, ulid.Make().String(), accountID, connectionID, statement.Institution, statement.Account,
 				statement.Kind, row.ID, row.Description, row.Kind, row.Amount, row.Date, now)
 			if err != nil {
 				return 0, 0, fmt.Errorf("importing movement: %w", err)

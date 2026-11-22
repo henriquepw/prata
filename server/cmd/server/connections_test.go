@@ -21,14 +21,27 @@ func pluggyItem(institution, status, executionStatus string) map[string]any {
 	}
 }
 
-// serveItem makes the fake answer GET /items/{id} for pluggyItemID, and 404 for any other.
+// serveItem makes the fake answer GET /items/{id} for pluggyItemID with item, and 404 for any other; calling it again
+// changes what the fake answers.
 func (f *fakePluggy) serveItem(item map[string]any) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.item = item
+	if f.itemServed {
+		return
+	}
+
+	f.itemServed = true
 	f.handle("GET /items/{id}", func(r *http.Request) (int, any) {
+		f.mu.Lock()
+		defer f.mu.Unlock()
+
 		if r.PathValue("id") != pluggyItemID {
 			return http.StatusNotFound, map[string]any{"code": 404, "message": "Item not found"}
 		}
 
-		return http.StatusOK, item
+		return http.StatusOK, f.item
 	})
 }
 
