@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 )
 
@@ -12,6 +13,8 @@ import (
 type fakePluggy struct {
 	*httptest.Server
 	mux *http.ServeMux
+	// requests counts every request the fake received.
+	requests atomic.Int64
 }
 
 const (
@@ -36,7 +39,10 @@ func newFakePluggy(t *testing.T) *fakePluggy {
 		writeJSON(w, http.StatusOK, map[string]string{"apiKey": pluggyAPIKey})
 	})
 
-	fake.Server = httptest.NewServer(fake.mux)
+	fake.Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fake.requests.Add(1)
+		fake.mux.ServeHTTP(w, r)
+	}))
 	t.Cleanup(fake.Close)
 
 	return fake

@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -20,17 +21,32 @@ type shell struct {
 	Now     time.Time
 	Balance balance
 	Flash   string
+	// Connections turns the Conexões screen on, with Open Finance.
+	Connections bool
 }
 
 // nav is the rail, in the order of the number shortcuts. Label is the i18n key of the screen's name, which is also
 // its title; NewURL is the screen's "novo" sheet, when it has one, and NewLabel the key of its launcher command.
-var nav = []struct{ Href, Label, NewURL, NewLabel string }{
+var nav = []navItem{
 	{"/", "nav.month", "/transactions/new", "launcher.new_transaction"},
 	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
 	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
 	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
 	{"/movements", "nav.movements", "", ""},
 	{"/devices", "nav.devices", "", ""},
+}
+
+type navItem struct{ Href, Label, NewURL, NewLabel string }
+
+// nav is the rail of this page: the screens, with Conexões after Movimentos when the instance has Open Finance on.
+func (s shell) nav() []navItem {
+	if !s.Connections {
+		return nav
+	}
+
+	i := slices.IndexFunc(nav, func(item navItem) bool { return item.Href == "/movements" }) + 1
+
+	return slices.Insert(slices.Clone(nav), i, navItem{"/connections", "nav.connections", "", ""})
 }
 
 // newURL is the URL of the current screen's "novo" sheet, empty where there is none.
@@ -173,7 +189,7 @@ templ layout(s shell) {
 				</header>
 				@balanceLine(s.Balance, false)
 				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
-					for i, item := range nav {
+					for i, item := range s.nav() {
 						<a
 							href={ templ.SafeURL(item.Href) }
 							if item.Href == s.Path {
@@ -184,7 +200,7 @@ templ layout(s shell) {
 				</nav>
 				<div class="console-body">
 					<nav class="rail" aria-label={ i18n.T(ctx, "nav.label") }>
-						for i, item := range nav {
+						for i, item := range s.nav() {
 							<a
 								href={ templ.SafeURL(item.Href) }
 								data-key={ strconv.Itoa(i + 1) }
@@ -200,7 +216,7 @@ templ layout(s shell) {
 				</div>
 				<footer class="keybar">
 					<div class="keys">
-						<span><kbd>{ fmt.Sprintf("1-%d", len(nav)) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
+						<span><kbd>{ fmt.Sprintf("1-%d", len(s.nav())) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 						if url := s.newURL(); url != "" {
 							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
 						}
@@ -219,7 +235,7 @@ templ layout(s shell) {
 				</footer>
 			</div>
 		</div>
-		@launcher()
+		@launcher(s.nav())
 		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet"></dialog>
 	}
 }
@@ -265,8 +281,8 @@ templ balanceLine(b balance, oob bool) {
 
 // launcher is the ctrl+k dialog: a prompt over the numbered commands, the first one selected. headScript filters,
 // selects and runs them.
-templ launcher() {
-	{{ n := len(nav) }}
+templ launcher(items []navItem) {
+	{{ n := len(items) }}
 	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher">
 		<div class="panel">
 			<div class="panel-head">
@@ -278,7 +294,7 @@ templ launcher() {
 				<input type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
 			</label>
 			<div id="launcher-options" role="listbox">
-				for i, item := range nav {
+				for i, item := range items {
 					<a
 						href={ templ.SafeURL(item.Href) }
 						role="option"
@@ -290,7 +306,7 @@ templ launcher() {
 						<kbd>{ strconv.Itoa(i + 1) }</kbd>
 					</a>
 				}
-				for _, item := range nav {
+				for _, item := range items {
 					if item.NewURL != "" {
 						{{ n++ }}
 						<button type="button" role="option" hx-get={ item.NewURL } hx-target="#sheet">

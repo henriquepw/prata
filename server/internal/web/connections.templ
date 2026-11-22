@@ -1,0 +1,115 @@
+package web
+
+import (
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/pluggy"
+	"github.com/henriquepw/prata/server/internal/web/components/badge"
+	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/table"
+)
+
+// connectionsPage is the Conexões screen: the form that registers an Item over the list of Conexões.
+templ connectionsPage(s shell, view connectionsView) {
+	@layout(s) {
+		@connectionFormPanel(view)
+		@connectionsPanel(view, s.Now.Location())
+	}
+}
+
+// connectionFormPanel registers a Conexão by the Item id, onto a BRL account; without Pluggy credentials it sends
+// the user to Configurações. A response, a 422 included, swaps the screen's main.
+templ connectionFormPanel(view connectionsView) {
+	@panel(i18n.T(ctx, "connections.add"), "", nil) {
+		if !view.HasCredentials {
+			<p class="text-muted-foreground">
+				{ i18n.T(ctx, "connections.no_credentials") }
+				<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
+			</p>
+		} else {
+			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+				@hintField("item_id", i18n.T(ctx, "connections.item_id"), i18n.T(ctx, "connections.item_id_hint"), view.Errors["item_id"]) {
+					@input.Input(input.Props{ID: "item_id", Name: "item_id", Value: view.ItemID, Required: true, Attributes: ariaInvalid(view.Errors["item_id"], templ.Attributes{"autocomplete": "off", "spellcheck": "false"})})
+				}
+				@formField("account_id", i18n.T(ctx, "movements.account"), view.Errors["account_id"]) {
+					@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
+						for _, account := range view.Accounts {
+							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != "BRL", Selected: account.ID == view.AccountID}) {
+								if account.Currency != "BRL" {
+									{ account.Name } ({ account.Currency }): { i18n.T(ctx, "connections.only_brl") }
+								} else {
+									{ account.Name }
+								}
+							}
+						}
+					}
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "connections.adding")}}) {
+					<span>&gt; { i18n.T(ctx, "connections.add_submit") }</span>
+				}
+			</form>
+		}
+	}
+}
+
+// connectionsPanel lists the Conexões, each with its state and its remove button.
+templ connectionsPanel(view connectionsView, loc *time.Location) {
+	@panel(i18n.T(ctx, "nav.connections"), "", nil) {
+		if len(view.Connections) == 0 {
+			@empty(i18n.T(ctx, "connections.empty"))
+		} else {
+			@table.Table() {
+				@table.Header() {
+					@table.Row() {
+						@table.Head(table.HeadProps{Class: "w-full"}) {
+							{ i18n.T(ctx, "connections.institution") }
+						}
+						@table.Head(table.HeadProps{Class: "hide-m"}) {
+							{ i18n.T(ctx, "movements.account") }
+						}
+						@table.Head() {
+							{ i18n.T(ctx, "connections.last_update") }
+						}
+						@table.Head() {
+							{ i18n.T(ctx, "connections.state") }
+						}
+						@table.Head()
+					}
+				}
+				@table.Body() {
+					for _, c := range view.Connections {
+						@table.Row() {
+							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+								{ c.Institution }
+							}
+							@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+								{ c.AccountName }
+							}
+							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+								{ localTime(ctx, c.LastUpdatedAt.String, loc) }
+							}
+							@table.Cell() {
+								if pluggy.NeedsReconnect(c.Status, c.ExecutionStatus) {
+									@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+										{ "[" + i18n.T(ctx, "connections.reconnect") + "]" }
+									}
+								} else {
+									<span class="text-muted-foreground">{ "[" + i18n.T(ctx, "connections.ok") + "]" }</span>
+								}
+							}
+							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
+								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
+									{ i18n.T(ctx, "connections.remove") }
+								}
+								@confirmInline(i18n.T(ctx, "connections.confirm_remove", c.Institution), i18n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID})
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

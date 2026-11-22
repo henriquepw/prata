@@ -91,7 +91,7 @@ func TestWebPluggyCredentials_ReplacedAndDeleted(t *testing.T) {
 	}
 
 	w.assertSelected("YYYY-MM-DD")
-	w.assertSettings(`value="`+pluggyClientID+`"`)
+	w.assertSettings(`value="` + pluggyClientID + `"`)
 
 	deleted := w.submit(http.MethodDelete, "/settings/pluggy", nil)
 	if body := deleted.Body.String(); deleted.Code != http.StatusOK || strings.Contains(body, pluggyClientID) || !strings.Contains(body, `name="pluggy_client_id"`) {

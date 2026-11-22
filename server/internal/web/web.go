@@ -107,6 +107,9 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /movements/{id}/confirm", h.requireSession(h.confirmMovement))
 	mux.Handle("POST /movements/{id}/occurrence", h.requireSession(h.confirmMovementAsOccurrence))
 	mux.Handle("POST /movements/{id}/ignore", h.requireSession(h.ignoreMovement))
+	mux.Handle("GET /connections", h.requireSession(h.connections))
+	mux.Handle("POST /connections", h.requireSession(h.saveConnection))
+	mux.Handle("DELETE /connections/{id}", h.requireSession(h.deleteConnection))
 	mux.Handle("GET /devices", h.requireSession(h.devices))
 	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
 	mux.Handle("GET /settings", h.requireSession(h.settings))
@@ -298,7 +301,7 @@ func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (sh
 		return shell{}, false
 	}
 
-	s := shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance}
+	s := shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
 	if cookie, err := r.Cookie(flashCookie); err == nil {
 		s.Flash = cookie.Value
 		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: r.URL.Path, MaxAge: -1})
