@@ -71,6 +71,10 @@ func run(args, env []string) int {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	jobCtx, cancelJob := context.WithCancel(ctx)
+	defer cancelJob()
+
 	db, err := store.Open(ctx, cfg.dbPath)
 	if err != nil {
 		slog.Error("opening database", "error", err)
@@ -85,10 +89,13 @@ func run(args, env []string) int {
 	if cfg.encryptionKey != "" {
 		fetcher := openfinance.Fetcher{DB: db, Key: cfg.encryptionKey, Pluggy: pluggy.Client{URL: cfg.pluggyURL}}
 		jobDone := make(chan struct{})
-		defer func() { <-jobDone }()
+		defer func() {
+			cancelJob()
+			<-jobDone
+		}()
 		go func() {
 			defer close(jobDone)
-			fetchEvery(ctx, fetcher, fetchInterval)
+			fetchEvery(jobCtx, fetcher, fetchInterval)
 		}()
 	}
 
@@ -114,7 +121,7 @@ func run(args, env []string) int {
 	return 0
 }
 
-// fetchEvery fetches the movements of every Conexão each interval until ctx ends; a failure is logged by Fetch and
+// fetchEvery fetches the movements of every Conexão each interval until ctx ends; a failure is logged and
 // waits for the next round.
 func fetchEvery(ctx context.Context, fetcher openfinance.Fetcher, interval time.Duration) {
 	ticker := time.NewTicker(interval)
