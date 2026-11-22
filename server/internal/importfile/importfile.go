@@ -221,6 +221,9 @@ func parseCents(value string) (int64, error) {
 // nubank is the institution of the CSVs it exports.
 const nubank = "Nubank"
 
+// CurrencyBRL is the only Moeda of the statements and Conexões for now.
+const CurrencyBRL = "BRL"
+
 // parseNubankCSV reads the Nubank card statement (date,title,amount) or account statement
 // (Data,Valor,Identificador,Descrição), told apart by the header. Amounts are BRL.
 func parseNubankCSV(content []byte) ([]Statement, error) {
@@ -229,7 +232,7 @@ func parseNubankCSV(content []byte) ([]Statement, error) {
 		return nil, ErrUnrecognized
 	}
 
-	statement := Statement{Institution: nubank, Currency: "BRL"}
+	statement := Statement{Institution: nubank, Currency: CurrencyBRL}
 	layout, sign, width := time.DateOnly, int64(-1), 3
 	switch strings.Join(records[0], ",") {
 	case "date,title,amount":

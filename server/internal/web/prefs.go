@@ -9,12 +9,13 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
 // visitorSession holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
 // Idioma comes from visitor.
-var visitorSession = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: "BRL"}
+var visitorSession = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: importfile.CurrencyBRL}
 
 // option is a choice of a settings or form field: its schema value.
 type option struct{ Value string }
@@ -72,7 +73,7 @@ type currency struct {
 	Symbol string
 }
 
-var currencies = []currency{{option{"BRL"}, "R$"}, {option{"USD"}, "$"}, {option{"EUR"}, "€"}}
+var currencies = []currency{{option{importfile.CurrencyBRL}, "R$"}, {option{"USD"}, "$"}, {option{"EUR"}, "€"}}
 
 // currencySymbol is the symbol of the request's Moeda, as "R$".
 func currencySymbol(ctx context.Context) string {

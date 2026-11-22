@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -61,7 +62,7 @@ func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID, in
 		return fmt.Errorf("checking account: %w", err)
 	}
 
-	if currency != "BRL" {
+	if currency != importfile.CurrencyBRL {
 		return ErrCurrency
 	}
 
