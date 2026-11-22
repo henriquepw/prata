@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/api"
+	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web"
@@ -26,6 +27,8 @@ import (
 const (
 	defaultDBPath = "/data/prata.db"
 	defaultAddr   = ":8080"
+	// fetchInterval is how often the server fetches the movements of every Conexão.
+	fetchInterval = 6 * time.Hour
 )
 
 type config struct {
@@ -79,6 +82,16 @@ func run(args, env []string) int {
 		}
 	}()
 
+	if cfg.encryptionKey != "" {
+		fetcher := openfinance.Fetcher{DB: db, Key: cfg.encryptionKey, Pluggy: pluggy.Client{URL: cfg.pluggyURL}}
+		jobDone := make(chan struct{})
+		defer func() { <-jobDone }()
+		go func() {
+			defer close(jobDone)
+			fetchEvery(ctx, fetcher, fetchInterval)
+		}()
+	}
+
 	server := &http.Server{Addr: cfg.addr, Handler: newHandler(db, cfg)}
 	serveErr := make(chan error, 1)
 	go func() { serveErr <- server.ListenAndServe() }()
@@ -99,6 +112,24 @@ func run(args, env []string) int {
 	}
 
 	return 0
+}
+
+// fetchEvery fetches the movements of every Conexão each interval until ctx ends; a failure is logged by Fetch and
+// waits for the next round.
+func fetchEvery(ctx context.Context, fetcher openfinance.Fetcher, interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := fetcher.Fetch(ctx, "", time.Now()); err != nil {
+				slog.Warn("fetching connections", "error", err)
+			}
+		}
+	}
 }
 
 func configFromEnv(env []string) config {

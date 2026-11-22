@@ -66,6 +66,8 @@ var ptBR = map[string]string{
 	"connections.state":            "Estado",
 	"connections.ok":               "ok",
 	"connections.reconnect":        "reconecte em meu.pluggy.ai",
+	"connections.fetch":            "buscar agora",
+	"connections.fetching":         "buscando",
 	"connections.remove":           "Remover",
 	"connections.confirm_remove":   "remover a conexão com %s? Movimentos pendentes dela somem; nada muda na Pluggy.",
 	"connections.remove_yes":       "sim, remover",

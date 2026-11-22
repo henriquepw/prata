@@ -55,9 +55,20 @@ templ connectionFormPanel(view connectionsView) {
 	}
 }
 
+// fetchAction is the "buscar agora" button of the panel head, shown once there is a Conexão to fetch.
+templ fetchAction(show bool) {
+	if show {
+		<form hx-post="/connections/fetch" hx-disable="find button">
+			@button.Button(button.Props{Type: button.TypeSubmit, Size: button.SizeSm, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "connections.fetching")}}) {
+				<span>&gt; { i18n.T(ctx, "connections.fetch") }</span>
+			}
+		</form>
+	}
+}
+
 // connectionsPanel lists the Conexões, each with its state and its remove button.
 templ connectionsPanel(view connectionsView, loc *time.Location) {
-	@panel(i18n.T(ctx, "nav.connections"), "", nil) {
+	@panel(i18n.T(ctx, "nav.connections"), "", fetchAction(len(view.Connections) > 0)) {
 		if len(view.Connections) == 0 {
 			@empty(i18n.T(ctx, "connections.empty"))
 		} else {

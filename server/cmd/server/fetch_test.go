@@ -308,3 +308,14 @@ func TestFetch_WithoutTheEncryptionKeyIsNotFound(t *testing.T) {
 		t.Errorf("POST /connections/fetch without the key = %d, want %d", response.StatusCode, http.StatusNotFound)
 	}
 }
+
+func TestFetch_ConnectionsScreenOffersFetchNowOnlyWithAConnection(t *testing.T) {
+	w, _ := connected(t)
+
+	if body := get(w.handler, "/connections", w.cookie).Body.String(); strings.Contains(body, `hx-post="/connections/fetch"`) {
+		t.Errorf("screen without Conexões offers the fetch: %s", body)
+	}
+
+	w.connect(pluggyItemID, w.accountID())
+	w.assertBody("/connections", `hx-post="/connections/fetch"`, "buscar agora")
+}

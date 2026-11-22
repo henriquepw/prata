@@ -66,6 +66,8 @@ var en = map[string]string{
 	"connections.state":            "State",
 	"connections.ok":               "ok",
 	"connections.reconnect":        "reconnect at meu.pluggy.ai",
+	"connections.fetch":            "fetch now",
+	"connections.fetching":         "fetching",
 	"connections.remove":           "Remove",
 	"connections.confirm_remove":   "remove the connection to %s? Its pending movements go away; nothing changes at Pluggy.",
 	"connections.remove_yes":       "yes, remove",
