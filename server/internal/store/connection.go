@@ -92,7 +92,12 @@ func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
 		return fmt.Errorf("deleting connection: %w", err)
 	}
 
-	if n, _ := result.RowsAffected(); n == 0 {
+	n, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("counting deleted connections: %w", err)
+	}
+
+	if n == 0 {
 		return ErrNotFound
 	}
 
