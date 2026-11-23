@@ -129,3 +129,19 @@ func ParseAmount(ctx context.Context, s string) (int64, bool) {
 
 	return cents, err == nil
 }
+
+// Signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.
+func Signed(kind string, amount int64) int64 {
+	if kind == "INCOME" {
+		return amount
+	}
+
+	return -amount
+}
+
+// MonthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
+func MonthWindow(t time.Time) (month time.Time, from, to string) {
+	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+
+	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
+}

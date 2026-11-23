@@ -1,4 +1,4 @@
-package web
+package homepage
 
 import (
 	"context"
@@ -122,13 +122,13 @@ func (l launchLine) isValid() bool { return l.Amount > 0 && len(l.Unknown) == 0 
 
 // readLaunch parses the request's prompt line against the live categories and tags, today in the user's time zone
 // and the year of the month on screen, answering 500 when it cannot read them.
-func (h handler) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine, bool) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine, bool) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return launchLine{}, false
 	}
 
-	tags, ok := shared.LiveTags(w, r, h.db)
+	tags, ok := shared.LiveTags(w, r, p.db)
 	if !ok {
 		return launchLine{}, false
 	}
@@ -138,9 +138,9 @@ func (h handler) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine,
 	return parseLaunch(r.Context(), r.FormValue("line"), categories, tags, now, shownMonth(r, now).Year()), true
 }
 
-// launchPreview answers the preview of the request's prompt line.
-func (h handler) launchPreview(w http.ResponseWriter, r *http.Request) {
-	l, ok := h.readLaunch(w, r)
+// LaunchPreview answers the preview of the request's prompt line.
+func (p Page) LaunchPreview(w http.ResponseWriter, r *http.Request) {
+	l, ok := p.readLaunch(w, r)
 	if !ok {
 		return
 	}
@@ -148,10 +148,10 @@ func (h handler) launchPreview(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
 }
 
-// launch creates the transaction the prompt line reads as, at local midnight of its date in UTC, and answers the
+// Launch creates the transaction the prompt line reads as, at local midnight of its date in UTC, and answers the
 // month on screen with the new row flashing; a line with problems answers 422 with its preview and creates nothing.
-func (h handler) launch(w http.ResponseWriter, r *http.Request) {
-	l, ok := h.readLaunch(w, r)
+func (p Page) Launch(w http.ResponseWriter, r *http.Request) {
+	l, ok := p.readLaunch(w, r)
 	if !ok {
 		return
 	}
@@ -166,5 +166,5 @@ func (h handler) launch(w http.ResponseWriter, r *http.Request) {
 		"kind": l.Kind, "amount": l.Amount, "description": shared.OrNil(l.Description), "occurred_at": occurredAt,
 		"category_id": shared.OrNil(l.Category.ID), "tag_id": shared.OrNil(l.Tag.ID),
 	}}
-	h.createInMonth(w, r, change, nil)
+	p.CreateInMonth(w, r, change, nil)
 }

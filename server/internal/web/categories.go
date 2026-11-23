@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -52,7 +53,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
-	if _, ok := shared.Find(categoryColors, form.Color); !ok {
+	if _, ok := shared.Find(console.CategoryColors, form.Color); !ok {
 		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
@@ -149,10 +150,4 @@ func returnPath(entity string, r *http.Request) string {
 	}
 
 	return "/" + strings.Split(r.URL.Path, "/")[1]
-}
-
-func colorClass(value string) string {
-	color, _ := shared.Find(categoryColors, value)
-
-	return color.Class
 }

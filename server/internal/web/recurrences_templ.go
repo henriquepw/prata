@@ -298,9 +298,9 @@ func recurrencesPage(s shell.Shell, recurrences []store.Recurrence) templ.Compon
 										}
 										ctx = templ.InitializeContext(ctx)
 										var templ_7745c5c3_Var19 string
-										templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, signed(recurrence.Kind, recurrence.Amount)))
+										templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, shared.Signed(recurrence.Kind, recurrence.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 59, Col: 72}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 59, Col: 79}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 										if templ_7745c5c3_Err != nil {
@@ -308,7 +308,7 @@ func recurrencesPage(s shell.Shell, recurrences []store.Recurrence) templ.Compon
 										}
 										return nil
 									})
-									templ_7745c5c3_Err = table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
+									templ_7745c5c3_Err = table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", console.KindClass(recurrence.Kind))}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}

@@ -376,7 +376,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var21 = []any{budgetSlice, colorClass(category.Color)}
+						var templ_7745c5c3_Var21 = []any{budgetSlice, console.ColorClass(category.Color)}
 						templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var21...)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
@@ -397,7 +397,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var23 string
 						templ_7745c5c3_Var23, templ_7745c5c3_Err = templruntime.NewAttributeExpression(category.ID).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 83}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 91}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var23)
 						if templ_7745c5c3_Err != nil {
@@ -410,7 +410,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var24 string
 						templ_7745c5c3_Var24, templ_7745c5c3_Err = templruntime.NewAttributeExpression(category.Name).Resolve(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 107}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 115}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var24)
 						if templ_7745c5c3_Err != nil {
@@ -423,7 +423,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 						var templ_7745c5c3_Var25 string
 						templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues(width(form.Points[category.ID]))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 149}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/budget.templ`, Line: 74, Col: 157}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 						if templ_7745c5c3_Err != nil {
@@ -627,7 +627,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					templ_7745c5c3_Err = categoryName(category.Name, category.Color).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = console.CategoryName(category.Name, category.Color).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -794,7 +794,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = categoryName(name, color).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.CategoryName(name, color).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -862,7 +862,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = categoryName(name, color).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.CategoryName(name, color).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -905,7 +905,7 @@ func budgetRow(form budgetForm, id, name, color string, flash bool) templ.Compon
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var47 = []any{"budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", colorClass(color)}
+			var templ_7745c5c3_Var47 = []any{"budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", console.ColorClass(color)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var47...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err

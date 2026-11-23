@@ -71,7 +71,7 @@ templ budgetScreen(form budgetForm, flash string) {
 				<p class="mt-1 text-2xs text-muted-foreground" data-hint>{ i18n.T(ctx, utils.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
 				<div class="mt-5 flex h-6 gap-0.5 bg-line-faint" aria-hidden="true">
 					for _, category := range form.Categories {
-						<i class={ budgetSlice, colorClass(category.Color) } data-slice={ category.ID } title={ category.Name } style={ width(form.Points[category.ID]) }></i>
+						<i class={ budgetSlice, console.ColorClass(category.Color) } data-slice={ category.ID } title={ category.Name } style={ width(form.Points[category.ID]) }></i>
 					}
 					{{ _, free := form.gap() }}
 					<i class={ budgetSlice, "budget-free" } data-slice="free" title={ i18n.T(ctx, "budget.free") } style={ width(free) }></i>
@@ -95,7 +95,7 @@ templ budgetScreen(form budgetForm, flash string) {
 						@budgetRow(form, category.ID, category.Name, category.Color, category.ID == flash)
 					} else {
 						<button type="button" class={ budgetName } hx-get={ "/categories/" + category.ID } hx-target="#sheet" data-flash?={ category.ID == flash }>
-							@categoryName(category.Name, category.Color)
+							@console.CategoryName(category.Name, category.Color)
 						</button>
 						<input type="hidden" name={ "limit_" + category.ID } value={ form.Percents[category.ID] }/>
 					}
@@ -121,11 +121,11 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 	<div class="contents" data-row={ id }>
 		if form.Welcome {
 			<span class="px-0.5">
-				@categoryName(name, color)
+				@console.CategoryName(name, color)
 			</span>
 		} else {
 			<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
-				@categoryName(name, color)
+				@console.CategoryName(name, color)
 			</button>
 		}
 		<input
@@ -135,7 +135,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 			step="0.5"
 			value={ fmt.Sprintf("%.2f", float64(form.Points[id])/100) }
 			aria-label={ i18n.T(ctx, "budget.in_percent", name) }
-			class={ "budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", colorClass(color) }
+			class={ "budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", console.ColorClass(color) }
 			style={ templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[id])/100)))) }
 		/>
 		<span class="flex justify-end">

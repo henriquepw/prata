@@ -242,9 +242,9 @@ func (h handler) ignoreMovements(w http.ResponseWriter, r *http.Request) {
 // pendingThisMonth are the account's pending occurrences up to the end of the current month, the ones the ticker counts.
 func (h handler) pendingThisMonth(r *http.Request) ([]shell.Occurrence, error) {
 	now := time.Now().In(shared.Location(r))
-	month, _, _ := monthWindow(now)
+	month, _, _ := shared.MonthWindow(now)
 
-	return h.pending(r.Context(), shared.SessionFrom(r.Context()).AccountID, now, month.AddDate(0, 1, -1))
+	return shell.Pending(r.Context(), h.db, shared.SessionFrom(r.Context()).AccountID, now, month.AddDate(0, 1, -1))
 }
 
 // occurrencesFor are the pending occurrences of the movement's kind, the ones of an equal amount first and then the

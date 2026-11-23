@@ -55,8 +55,8 @@ templ recurrencesPage(s shell.Shell, recurrences []store.Recurrence) {
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 									{ i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
 								}
-								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}) {
-									{ shared.Money(ctx, signed(recurrence.Kind, recurrence.Amount)) }
+								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", console.KindClass(recurrence.Kind))}) {
+									{ shared.Money(ctx, shared.Signed(recurrence.Kind, recurrence.Amount)) }
 								}
 							}
 						}

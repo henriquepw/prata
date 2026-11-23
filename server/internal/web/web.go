@@ -15,6 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
+	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
@@ -31,6 +32,7 @@ type handler struct {
 	db              *store.Store
 	isSignupAllowed bool
 	openFinance     OpenFinance
+	home            homepage.Page
 }
 
 // OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
@@ -49,6 +51,7 @@ func (o OpenFinance) Enabled() bool {
 // wrapped in requireSession, and every page without a session in visitor.
 func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
+	h.home = homepage.New(db, h.shell)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
 	mux.HandleFunc("GET /login", visitor(h.loginForm))
@@ -61,11 +64,11 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
 		shared.Render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
 	}))
-	mux.Handle("GET /{$}", h.requireSession(h.home))
+	mux.Handle("GET /{$}", h.requireSession(h.home.Home))
 	mux.Handle("GET /welcome", h.requireSession(h.welcome))
 	mux.Handle("POST /welcome", h.requireSession(h.saveWelcome))
-	mux.Handle("GET /launch", h.requireSession(h.launchPreview))
-	mux.Handle("POST /launch", h.requireSession(h.launch))
+	mux.Handle("GET /launch", h.requireSession(h.home.LaunchPreview))
+	mux.Handle("POST /launch", h.requireSession(h.home.Launch))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
 	mux.Handle("GET /transactions/new", h.requireSession(h.newTransaction))
 	mux.Handle("GET /transactions/{id}", h.requireSession(h.editTransaction))
@@ -354,7 +357,7 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 // name, as "nav.devices".
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool) {
 	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
-	balance, err := h.balance(r.Context(), session.AccountID, now)
+	balance, err := shell.ReadBalance(r.Context(), h.db, session.AccountID, now)
 	if err != nil {
 		shared.InternalError(w, "reading balance", err)
 		return shell.Shell{}, false

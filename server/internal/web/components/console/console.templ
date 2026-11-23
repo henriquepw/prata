@@ -371,3 +371,8 @@ func AriaInvalid(message string, attributes ...templ.Attributes) templ.Attribute
 
 	return all
 }
+
+// CategoryName is a category's name after its "■" in the category color.
+templ CategoryName(name, color string) {
+	<span class="flex items-center gap-2"><span class={ ColorClass(color) } aria-hidden="true">■</span>{ name }</span>
+}

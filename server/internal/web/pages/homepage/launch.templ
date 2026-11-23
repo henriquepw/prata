@@ -1,4 +1,4 @@
-package web
+package homepage
 
 import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
@@ -66,7 +66,7 @@ templ launchPreview(line string, l launchLine) {
 			if l.Amount == 0 {
 				<span class="text-destructive">! { i18n.T(ctx, "launch.no_amount") }</span>
 			} else {
-				<span class={ utils.CN("tabular-nums", kindClass(l.Kind)) }>{ shared.Money(ctx, signed(l.Kind, l.Amount)) }</span>
+				<span class={ utils.CN("tabular-nums", console.KindClass(l.Kind)) }>{ shared.Money(ctx, shared.Signed(l.Kind, l.Amount)) }</span>
 			}
 			if l.Description == "" {
 				@console.Description(nil)
@@ -74,7 +74,7 @@ templ launchPreview(line string, l launchLine) {
 				<span>"{ l.Description }"</span>
 			}
 			if l.Category.ID != "" {
-				@categoryName(l.Category.Name, l.Category.Color)
+				@console.CategoryName(l.Category.Name, l.Category.Color)
 			}
 			if l.Tag.ID != "" {
 				<span class="text-muted-foreground">#{ l.Tag.Name }</span>

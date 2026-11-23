@@ -1,0 +1,39 @@
+package web
+
+import (
+	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/shared"
+)
+
+// occurrenceSheet is "confirmar ocorrência": the recurrence on a muted line over the transaction's fields filled from
+// it, and "> confirmar".
+templ occurrenceSheet(form occurrenceForm) {
+	@console.Sheet(console.SheetProps{
+		Title:  i18n.T(ctx, "occurrence.title"),
+		Action: "/recurrences/" + form.Recurrence.ID + "/occurrences/" + form.Date,
+		Submit: i18n.T(ctx, "month.confirm"),
+		Busy:   i18n.T(ctx, "form.confirming"),
+		Error:  form.Errors["form"],
+	}) {
+		<p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+			@console.Description(form.Recurrence.Description)
+			· { i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)) }
+			for _, category := range form.Categories {
+				if category.ID == shared.OrEmpty(form.Recurrence.CategoryID) {
+					· @console.CategoryName(category.Name, category.Color)
+				}
+			}
+		</p>
+		@console.KindChoice(form.Kind, form.Errors["kind"])
+		@console.AmountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"])
+		@console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
+			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
+		}
+		<div class="grid grid-cols-2 gap-4">
+			@console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
+			@console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
+		</div>
+	}
+}

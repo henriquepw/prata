@@ -1,4 +1,4 @@
-package web
+package homepage
 
 import (
 	"context"
@@ -12,7 +12,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
-	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -42,7 +41,7 @@ func meter(usage store.CategoryUsage) []string {
 	for i := range segments {
 		switch {
 		case int64(i) < on:
-			segments[i] = colorClass(usage.Color)
+			segments[i] = console.ColorClass(usage.Color)
 		case isOver:
 			segments[i] = "text-destructive"
 		}
@@ -242,7 +241,7 @@ templ monthContent(page month) {
 										}
 										@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 											if t.CategoryName != "" {
-												@categoryName(t.CategoryName, t.CategoryColor)
+												@console.CategoryName(t.CategoryName, t.CategoryColor)
 											}
 										}
 										@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden text-muted-foreground"}) {
@@ -250,8 +249,8 @@ templ monthContent(page month) {
 												{ "#" + t.TagName }
 											}
 										}
-										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(t.Kind))}) {
-											{ shared.Money(ctx, signed(t.Kind, t.Amount)) }
+										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", console.KindClass(t.Kind))}) {
+											{ shared.Money(ctx, shared.Signed(t.Kind, t.Amount)) }
 										}
 									}
 								}
@@ -280,7 +279,7 @@ templ monthContent(page month) {
 									aria-current="true"
 								}
 							>
-								@categoryName(usage.Name, usage.Color)
+								@console.CategoryName(usage.Name, usage.Color)
 								<b class={ "text-xs tabular-nums", templ.KV("text-destructive", isOver), templ.KV("text-muted-foreground", !isOver) }>{ percent(usage) }</b>
 								<span class="col-span-full flex h-2 gap-0.5" aria-hidden="true">
 									for _, segment := range meter(usage) {
@@ -301,7 +300,7 @@ templ statementActions(page month) {
 	<span class="flex items-center gap-2">
 		if page.Filter.ID != "" {
 			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class={ console.TextAction, "flex items-center gap-2" }>
-				@categoryName(page.Filter.Name, page.Filter.Color)
+				@console.CategoryName(page.Filter.Name, page.Filter.Color)
 				✕
 			</a>
 		}
@@ -356,7 +355,7 @@ templ pendingRow(page month, p shell.Occurrence, withDate bool) {
 		@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 			for _, usage := range page.Usages {
 				if usage.ID == shared.OrEmpty(p.Recurrence.CategoryID) {
-					@categoryName(usage.Name, usage.Color)
+					@console.CategoryName(usage.Name, usage.Color)
 				}
 			}
 		}
@@ -369,39 +368,8 @@ templ pendingRow(page month, p shell.Occurrence, withDate bool) {
 				}
 			</form>
 		}
-		@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums opacity-70", kindClass(p.Recurrence.Kind))}) {
-			{ shared.Money(ctx, signed(p.Recurrence.Kind, p.Recurrence.Amount)) }
+		@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums opacity-70", console.KindClass(p.Recurrence.Kind))}) {
+			{ shared.Money(ctx, shared.Signed(p.Recurrence.Kind, p.Recurrence.Amount)) }
 		}
-	}
-}
-
-// occurrenceSheet is "confirmar ocorrência": the recurrence on a muted line over the transaction's fields filled from
-// it, and "> confirmar".
-templ occurrenceSheet(form occurrenceForm) {
-	@console.Sheet(console.SheetProps{
-		Title:  i18n.T(ctx, "occurrence.title"),
-		Action: "/recurrences/" + form.Recurrence.ID + "/occurrences/" + form.Date,
-		Submit: i18n.T(ctx, "month.confirm"),
-		Busy:   i18n.T(ctx, "form.confirming"),
-		Error:  form.Errors["form"],
-	}) {
-		<p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-			@console.Description(form.Recurrence.Description)
-			· { i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)) }
-			for _, category := range form.Categories {
-				if category.ID == shared.OrEmpty(form.Recurrence.CategoryID) {
-					· @categoryName(category.Name, category.Color)
-				}
-			}
-		</p>
-		@console.KindChoice(form.Kind, form.Errors["kind"])
-		@console.AmountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"])
-		@console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
-			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
-		}
-		<div class="grid grid-cols-2 gap-4">
-			@console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
-			@console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
-		</div>
 	}
 }

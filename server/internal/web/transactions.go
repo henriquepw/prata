@@ -165,3 +165,13 @@ func (h handler) transaction(w http.ResponseWriter, r *http.Request) (store.Tran
 
 	return transaction, true
 }
+
+// transactions sends the old transactions list to the Mês, keeping its month.
+func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
+	url := "/"
+	if month := r.URL.Query().Get("month"); month != "" {
+		url += "?month=" + month
+	}
+
+	shared.Redirect(w, r, url)
+}

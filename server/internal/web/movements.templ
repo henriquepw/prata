@@ -118,8 +118,8 @@ templ movementsPanel(view movementsView) {
 							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 								@console.Description(&m.Description)
 							}
-							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
-								{ shared.Money(ctx, signed(m.Kind, m.Amount)) }
+							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + console.KindClass(m.Kind)}) {
+								{ shared.Money(ctx, shared.Signed(m.Kind, m.Amount)) }
 							}
 							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 								{ i18n.T(ctx, "kind."+m.Kind) }
@@ -191,7 +191,7 @@ templ occurrenceConfirm(m store.Movement, occurrences []shell.Occurrence) {
 			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "movements.occurrence")}}) {
 				for _, o := range occurrences {
 					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
-						{ movementDate(ctx, o.Date) } { cmp.Or(shared.OrEmpty(o.Recurrence.Description), i18n.T(ctx, "field.no_description")) } { shared.Money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
+						{ movementDate(ctx, o.Date) } { cmp.Or(shared.OrEmpty(o.Recurrence.Description), i18n.T(ctx, "field.no_description")) } { shared.Money(ctx, shared.Signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
 					}
 				}
 			}
