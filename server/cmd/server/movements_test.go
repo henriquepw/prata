@@ -40,28 +40,24 @@ func windows1252(s string) string {
 	return encoded
 }
 
-// upload sends the file like the browser does, as a multipart form with the destination account.
-func (w *webClient) upload(accountID, content string) *httptest.ResponseRecorder {
+// upload sends the file like the browser does, as a multipart form, into the session's account.
+func (w *webClient) upload(content string) *httptest.ResponseRecorder {
 	w.t.Helper()
 
-	return w.uploadFile(accountID, "extrato.ofx", content)
+	return w.uploadFile("extrato.ofx", content)
 }
 
 // uploadFile is upload with the name the browser sends for the file.
-func (w *webClient) uploadFile(accountID, name, content string) *httptest.ResponseRecorder {
-	return w.uploadConfirmed(accountID, name, content, false)
+func (w *webClient) uploadFile(name, content string) *httptest.ResponseRecorder {
+	return w.uploadConfirmed(name, content, false)
 }
 
 // uploadConfirmed is uploadFile, with the user's answer to the currency dialog when confirmed.
-func (w *webClient) uploadConfirmed(accountID, name, content string, confirmed bool) *httptest.ResponseRecorder {
+func (w *webClient) uploadConfirmed(name, content string, confirmed bool) *httptest.ResponseRecorder {
 	w.t.Helper()
 
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
-	if err := form.WriteField("account_id", accountID); err != nil {
-		w.t.Fatal(err)
-	}
-
 	if confirmed {
 		if err := form.WriteField("confirm_currency", "1"); err != nil {
 			w.t.Fatal(err)
@@ -116,7 +112,7 @@ func assertContains(t *testing.T, body string, texts ...string) {
 func TestMovements_ImportOFXBankStatement(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.upload(w.accountID(), windows1252(ofxBank))
+	response := w.upload(windows1252(ofxBank))
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -137,7 +133,7 @@ func TestMovements_ImportOFXKeepsWindows1252Punctuation(t *testing.T) {
 	w := newWebClient(t)
 
 	ofx := strings.Replace(ofxBank, "Padaria Pão Quente", "Padaria “Pão” – Quente", 1)
-	response := w.upload(w.accountID(), windows1252(ofx))
+	response := w.upload(windows1252(ofx))
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -148,7 +144,7 @@ func TestMovements_ImportOFXKeepsWindows1252Punctuation(t *testing.T) {
 func TestMovements_CardPurchaseIsAnExpenseAndCreditIsIncome(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.upload(w.accountID(), ofxCard)
+	response := w.upload(ofxCard)
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -156,22 +152,18 @@ func TestMovements_CardPurchaseIsAnExpenseAndCreditIsIncome(t *testing.T) {
 	assertContains(t, response.Body.String(), "2 novos", "Mercado &amp; Cia", "−R$ 80,00", "R$ 20,00", "Banco Inter", "9999")
 }
 
-func TestMovements_ReimportingAddsNothingAndAnotherAccountIsNew(t *testing.T) {
+func TestMovements_ReimportingAddsNothing(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), ofxCard)
+	w.upload(ofxCard)
 
-	assertContains(t, w.upload(w.accountID(), ofxCard).Body.String(), "0 novos, 2 já importados")
-
-	id := w.addAccount("Casa", "BRL")
-
-	assertContains(t, w.upload(id, ofxCard).Body.String(), "2 novos, 0 já importados")
+	assertContains(t, w.upload(ofxCard).Body.String(), "0 novos, 2 já importados")
 }
 
 func TestMovements_UnrecognizedFileIsRefusedWhole(t *testing.T) {
 	w := newWebClient(t)
 
 	for _, content := range []string{"id,name\n1,x", strings.Repeat("a", 1<<20+1)} {
-		response := w.upload(w.accountID(), content)
+		response := w.upload(content)
 		if response.Code != http.StatusUnprocessableEntity {
 			t.Errorf("import = %d, want %d", response.Code, http.StatusUnprocessableEntity)
 		}
@@ -189,7 +181,7 @@ const csvAccount = "Data,Valor,Identificador,Descrição\n05/02/2024,-35.40,id-1
 func TestMovements_NubankCardCSVPurchaseIsExpenseAndCreditIsIncome(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.uploadFile(w.accountID(), "nubank.csv", csvCard)
+	response := w.uploadFile("nubank.csv", csvCard)
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -197,13 +189,13 @@ func TestMovements_NubankCardCSVPurchaseIsExpenseAndCreditIsIncome(t *testing.T)
 	assertContains(t, response.Body.String(), "3 novos, 0 já importados", "Uber *Trip", "01/02/2024", "−R$ 23,50",
 		"Pagamento recebido", "R$ 100,00", "Nubank")
 
-	assertContains(t, w.uploadFile(w.accountID(), "nubank.csv", csvCard).Body.String(), "0 novos, 3 já importados")
+	assertContains(t, w.uploadFile("nubank.csv", csvCard).Body.String(), "0 novos, 3 já importados")
 }
 
 func TestMovements_NubankAccountCSVNegativeIsExpenseAndDedupsByIdentifier(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.uploadFile(w.accountID(), "NU_conta.csv", csvAccount)
+	response := w.uploadFile("NU_conta.csv", csvAccount)
 	if response.Code != http.StatusOK {
 		t.Fatalf("import = %d: %s", response.Code, response.Body)
 	}
@@ -212,12 +204,12 @@ func TestMovements_NubankAccountCSVNegativeIsExpenseAndDedupsByIdentifier(t *tes
 		"−R$ 35,40", "R$ 2.000,00", "Nubank")
 
 	overlap := csvAccount + "07/02/2024,-10.00,id-3,Pix\n"
-	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", overlap).Body.String(), "1 novos, 2 já importados")
+	assertContains(t, w.uploadFile("NU_conta.csv", overlap).Body.String(), "1 novos, 2 já importados")
 }
 
-func TestMovements_NotAMemberCannotImportNorSee(t *testing.T) {
+func TestMovements_NotAMemberCannotSeeNorImportIntoTheAccount(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), ofxCard)
+	w.upload(ofxCard)
 
 	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
 	if _, err := w.db.CreateAccount(context.Background(), signup, true); err != nil {
@@ -231,11 +223,9 @@ func TestMovements_NotAMemberCannotImportNorSee(t *testing.T) {
 		t.Errorf("stranger sees the movements: %s", body)
 	}
 
-	if response := stranger.upload(w.accountID(), ofxBank); response.Code < 400 {
-		t.Errorf("stranger import = %d, want an error", response.Code)
-	}
+	assertContains(t, stranger.upload(ofxBank).Body.String(), "2 novos")
 
-	assertContains(t, w.upload(w.accountID(), ofxBank).Body.String(), "2 novos")
+	assertContains(t, w.upload(ofxBank).Body.String(), "2 novos")
 }
 
 func TestMovements_RoutesRequireSession(t *testing.T) {
@@ -260,7 +250,7 @@ func (w *webClient) movementID(description string) string {
 
 func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 	id := w.movementID("Padaria Pão Quente")
 
@@ -291,7 +281,7 @@ func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 		t.Errorf("pending list after confirm = %s, want only Salário", body)
 	}
 
-	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
 		t.Errorf("reimport brought a confirmed movement back: %s", body)
@@ -300,7 +290,7 @@ func TestMovements_ConfirmCreatesTheTransactionOnce(t *testing.T) {
 
 func TestMovements_ConfirmedExpenseWithoutCategoryGoesToTheDefaultAndIncomeKeepsNone(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/confirm", url.Values{"description": {"Padaria"}})
@@ -314,14 +304,14 @@ func TestMovements_ConfirmedExpenseWithoutCategoryGoesToTheDefaultAndIncomeKeeps
 
 func TestMovements_IgnoreHidesItForGood(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	if response := w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/ignore", url.Values{}); response.Code >= 400 {
 		t.Fatalf("ignore = %d: %s", response.Code, response.Body)
 	}
 
-	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") {
 		t.Errorf("ignored movement is back: %s", body)
@@ -334,7 +324,7 @@ func TestMovements_IgnoreHidesItForGood(t *testing.T) {
 
 func TestMovements_ReviewRoutesRequireSessionAndMembership(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	id := w.movementID("Padaria Pão Quente")
 
 	for _, action := range []string{"confirm", "ignore"} {
@@ -363,7 +353,7 @@ func TestMovements_ForeignCurrencyFileAsksConfirmationAndImportsAsIs(t *testing.
 	w := newWebClient(t)
 	usd := strings.Replace(ofxCard, "<CURDEF>BRL", "<CURDEF>USD", 1)
 
-	response := w.upload(w.accountID(), usd)
+	response := w.upload(usd)
 	assertContains(t, response.Body.String(), "USD", "BRL", "sem conversão")
 	if response.Header().Get("HX-Retarget") != "#sheet" {
 		t.Errorf("HX-Retarget = %q, want #sheet", response.Header().Get("HX-Retarget"))
@@ -376,14 +366,14 @@ func TestMovements_ForeignCurrencyFileAsksConfirmationAndImportsAsIs(t *testing.
 		t.Errorf("movements before the confirmation = %d, %v", count, err)
 	}
 
-	response = w.uploadConfirmed(w.accountID(), "extrato.ofx", usd, true)
+	response = w.uploadConfirmed("extrato.ofx", usd, true)
 	assertContains(t, response.Body.String(), "2 novos", "Mercado")
 }
 
 func TestMovements_SameCurrencyFileImportsWithoutDialog(t *testing.T) {
 	w := newWebClient(t)
 
-	response := w.upload(w.accountID(), ofxCard)
+	response := w.upload(ofxCard)
 	if strings.Contains(response.Body.String(), "sem conversão") || response.Header().Get("HX-Retarget") != "" {
 		t.Errorf("unexpected dialog: %s", response.Body.String())
 	}
@@ -399,7 +389,7 @@ func TestMovements_NubankCSVIsBRLAndAsksConfirmationOnAnotherCurrencyAccount(t *
 		t.Fatal(err)
 	}
 
-	assertContains(t, w.uploadFile(w.accountID(), "nubank.csv", csvCard).Body.String(), "sem conversão", "BRL", "USD")
+	assertContains(t, w.uploadFile("nubank.csv", csvCard).Body.String(), "sem conversão", "BRL", "USD")
 }
 
 // expenseRecurrences pushes two monthly expense recurrences on day 5 from 2024-01 (Padaria for the movement's amount,
@@ -418,7 +408,7 @@ func expenseRecurrences(w *webClient) (padaria, internet, salary string) {
 
 func TestMovements_ConfirmAsOccurrenceListsPendingOfTheSameKindEqualAmountAndClosestDateFirst(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	padaria, internet, salary := expenseRecurrences(w)
 
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Salário")+"/ignore", url.Values{})
@@ -437,7 +427,7 @@ func TestMovements_ConfirmAsOccurrenceListsPendingOfTheSameKindEqualAmountAndClo
 
 func TestMovements_ConfirmAsOccurrenceCreatesTheOccurrencesTransactionOnce(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	padaria, _, _ := expenseRecurrences(w)
 	w.newOps()
 	id, second := w.movementID("Padaria Pão Quente"), w.movementID("Salário")
@@ -480,7 +470,7 @@ func TestMovements_ConfirmAsOccurrenceCreatesTheOccurrencesTransactionOnce(t *te
 
 func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	_, _, salary := expenseRecurrences(w)
 	w.newOps()
 
@@ -493,7 +483,7 @@ func TestMovements_ConfirmAsOccurrenceRefusesAnotherKind(t *testing.T) {
 
 func TestMovements_BatchConfirmCreatesOneTransactionEachInOnePullAndSkipsReviewed(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}, "category_id": {w.categories["Meta"]}}
@@ -524,7 +514,7 @@ func TestMovements_BatchConfirmCreatesOneTransactionEachInOnePullAndSkipsReviewe
 
 func TestMovements_BatchConfirmWithoutCategoryUsesTheDefault(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	w.submit(http.MethodPost, "/movements/confirm", url.Values{"id": {w.movementID("Padaria Pão Quente")}})
@@ -536,7 +526,7 @@ func TestMovements_BatchConfirmWithoutCategoryUsesTheDefault(t *testing.T) {
 
 func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 	w := newWebClient(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	form := url.Values{"id": {w.movementID("Padaria Pão Quente"), w.movementID("Salário")}}
@@ -546,7 +536,7 @@ func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 		}
 	}
 
-	assertContains(t, w.upload(w.accountID(), windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
+	assertContains(t, w.upload(windows1252(ofxBank)).Body.String(), "0 novos, 2 já importados")
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); strings.Contains(body, "Padaria") || strings.Contains(body, "Salário") {
 		t.Errorf("ignored movements are back: %s", body)
@@ -559,7 +549,7 @@ func TestMovements_BatchIgnoreHidesAllForGoodAndSkipsReviewed(t *testing.T) {
 
 func TestMovements_BatchRoutesRequireSessionAndSelectAllIsOffered(t *testing.T) {
 	w := newWebClient(t)
-	body := w.upload(w.accountID(), windows1252(ofxBank)).Body.String()
+	body := w.upload(windows1252(ofxBank)).Body.String()
 	assertContains(t, body, `name="id"`, `form="batch"`, `hx-post="/movements/confirm"`, `hx-post="/movements/ignore"`)
 
 	for _, action := range []string{"confirm", "ignore"} {
@@ -589,8 +579,14 @@ func (w *webClient) addAccount(name, currency string) string {
 func TestMovements_ReviewListsOnlyTheActiveAccountsMovements(t *testing.T) {
 	w := newWebClient(t)
 	casa := w.addAccount("Casa", "BRL")
-	w.upload(casa, windows1252(ofxBank))
-	w.upload(w.accountID(), ofxCard)
+	w.upload(windows1252(ofxBank))
+
+	query := "UPDATE movements SET account_id = ?"
+	if _, err := w.db.ExecContext(context.Background(), query, casa); err != nil {
+		t.Fatal(err)
+	}
+
+	w.upload(ofxCard)
 
 	body := get(w.handler, "/movements", w.cookie).Body.String()
 	assertContains(t, body, "Mercado")
@@ -602,9 +598,12 @@ func TestMovements_ReviewListsOnlyTheActiveAccountsMovements(t *testing.T) {
 
 func TestMovements_ImportsIntoAnAccountOfAnotherCurrencyWithoutEncryptionKey(t *testing.T) {
 	w := newWebClient(t)
-	usd := w.addAccount("Dólar", "USD")
+	query := "UPDATE accounts SET currency = 'USD'"
+	if _, err := w.db.ExecContext(context.Background(), query); err != nil {
+		t.Fatal(err)
+	}
 
-	response := w.upload(usd, strings.Replace(ofxCard, "<CURDEF>BRL", "<CURDEF>USD", 1))
+	response := w.upload(strings.Replace(ofxCard, "<CURDEF>BRL", "<CURDEF>USD", 1))
 	if response.Header().Get("HX-Retarget") != "" || !strings.Contains(response.Body.String(), "2 novos, 0 já importados") {
 		t.Errorf("import into a USD account = %d: %s", response.Code, response.Body)
 	}
@@ -618,7 +617,7 @@ func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T)
 		before[i] = get(w.handler, path, w.cookie).Body.String()
 	}
 
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 
 	for i, path := range paths {
 		if after := get(w.handler, path, w.cookie).Body.String(); after != before[i] {
@@ -630,6 +629,6 @@ func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T)
 func TestMovements_Latin1CSVKeepsItsAccents(t *testing.T) {
 	w := newWebClient(t)
 
-	assertContains(t, w.uploadFile(w.accountID(), "NU_conta.csv", windows1252(csvAccount)).Body.String(),
+	assertContains(t, w.uploadFile("NU_conta.csv", windows1252(csvAccount)).Body.String(),
 		"Compra no débito - Padaria", "Transferência recebida - Empresa")
 }

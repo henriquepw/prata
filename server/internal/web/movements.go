@@ -20,10 +20,9 @@ import (
 // maxImport is the size limit of an imported file.
 const maxImport = 1 << 20
 
-// movementsView is the review screen: the accounts to import into, the pending movements and, after an import, its
-// summary or the reason it was refused.
+// movementsView is the review screen: the pending movements and, after an import, its summary or the reason it was
+// refused.
 type movementsView struct {
-	Accounts    []store.AccountRef
 	Categories  []store.Category
 	Movements   []store.Movement
 	Occurrences []occurrence
@@ -41,7 +40,7 @@ func (h handler) movements(w http.ResponseWriter, r *http.Request) {
 	h.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
-// importMovements reads the uploaded file into pending movements of the chosen account, all or none, and answers
+// importMovements reads the uploaded file into pending movements of the session's account, all or none, and answers
 // the screen with the summary, or 422 with the reason and nothing stored.
 func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxImport+1<<16)
@@ -51,20 +50,12 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		view.Error = i18n.T(r.Context(), "movements.error.file")
 	} else {
-		if r.PostFormValue("confirm_currency") == "" {
-			answered, err := h.askCurrency(w, r, statements)
-			if err != nil {
-				internalError(w, "listing accounts", err)
-				return
-			}
-
-			if answered {
-				return
-			}
+		if r.PostFormValue("confirm_currency") == "" && askCurrency(w, r, statements) {
+			return
 		}
 
 		session := sessionFrom(r.Context())
-		added, existing, err := h.db.ImportMovements(r.Context(), session.UserID, r.PostFormValue("account_id"), statements)
+		added, existing, err := h.db.ImportMovements(r.Context(), session.UserID, session.AccountID, statements)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
 			return
@@ -87,33 +78,21 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 }
 
 // askCurrency answers, and reports it did, with the confirmation dialog swapped into #sheet when a statement
-// declares a Moeda other than the chosen account's, or with 404 when the account is not one of the user's. It fails
-// when the accounts cannot be listed, so the import never goes ahead unchecked.
-func (h handler) askCurrency(w http.ResponseWriter, r *http.Request, statements []importfile.Statement) (bool, error) {
-	accounts, err := h.db.UserAccounts(r.Context(), sessionFrom(r.Context()).UserID)
-	if err != nil {
-		return false, err
-	}
-
-	i := slices.IndexFunc(accounts, func(a store.AccountRef) bool { return a.ID == r.PostFormValue("account_id") })
-	if i < 0 {
-		http.NotFound(w, r)
-
-		return true, nil
-	}
-
+// declares a Moeda other than the session account's.
+func askCurrency(w http.ResponseWriter, r *http.Request, statements []importfile.Statement) bool {
+	currency := sessionFrom(r.Context()).Currency
 	for _, statement := range statements {
-		if statement.Currency != "" && statement.Currency != accounts[i].Currency {
+		if statement.Currency != "" && statement.Currency != currency {
 			w.Header().Set("HX-Retarget", "#sheet")
 			w.Header().Set("HX-Reswap", "innerHTML")
 			w.Header().Set("HX-Reselect", "#currency-dialog")
-			render(w, r, http.StatusOK, currencyDialog(currencyView{FileCurrency: statement.Currency, AccountCurrency: accounts[i].Currency}))
+			render(w, r, http.StatusOK, currencyDialog(currencyView{FileCurrency: statement.Currency, AccountCurrency: currency}))
 
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 // readImportFile reads the file of the multipart form, up to 1 MB, in any format it recognizes.
@@ -140,11 +119,6 @@ func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status 
 	session := sessionFrom(r.Context())
 
 	var err error
-	if view.Accounts, err = h.db.UserAccounts(r.Context(), session.UserID); err != nil {
-		internalError(w, "listing accounts", err)
-		return
-	}
-
 	if view.Categories, err = h.db.Categories(r.Context(), session.AccountID); err != nil {
 		internalError(w, "listing categories", err)
 		return

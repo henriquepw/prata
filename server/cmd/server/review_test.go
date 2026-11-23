@@ -62,7 +62,7 @@ func TestReview_IgnoredConnectionMovementNeverComesBackInLaterFetches(t *testing
 
 func TestReview_BatchConfirmAndIgnoreMixConnectionAndFileMovements(t *testing.T) {
 	w, _ := fetchedPadaria(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 
 	confirm := url.Values{"id": {w.movementID("Padaria"), w.movementID("Padaria Pão Quente")}}
@@ -99,7 +99,7 @@ func TestReview_BatchConfirmAndIgnoreMixConnectionAndFileMovements(t *testing.T)
 
 func TestReview_RemovingTheConnectionKeepsConfirmedTransactionsIgnoredAndFileMovementsAndReviewNeedsNoKey(t *testing.T) {
 	w, _ := fetchedPadaria(t)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria")+"/confirm", url.Values{"description": {"Padaria"}})
 	w.submit(http.MethodPost, "/movements/"+w.movementID("Padaria Pão Quente")+"/ignore", url.Values{})
 	w.newOps()
@@ -169,7 +169,7 @@ func confirmSameOccurrence(t *testing.T, first, second string) {
 	t.Helper()
 	w, _ := fetchedPadaria(t)
 	padaria, _, _ := expenseRecurrences(w)
-	w.upload(w.accountID(), windows1252(ofxBank))
+	w.upload(windows1252(ofxBank))
 	w.newOps()
 	form := url.Values{"occurrence": {padaria + ":2024-01-05"}}
 

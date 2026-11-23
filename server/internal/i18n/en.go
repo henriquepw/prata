@@ -34,6 +34,7 @@ var en = map[string]string{
 	"movements.file":               "File",
 	"movements.file_hint":          "OFX or Nubank CSV, up to 1 MB",
 	"movements.account":            "Account",
+	"movements.drop":               "click or drop the file",
 	"movements.bank_account":       "Bank account",
 	"movements.kind.CHECKING":      "checking",
 	"movements.kind.CARD":          "card",

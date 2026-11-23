@@ -34,6 +34,7 @@ var ptBR = map[string]string{
 	"movements.file":               "Arquivo",
 	"movements.file_hint":          "OFX ou CSV do Nubank, até 1 MB",
 	"movements.account":            "Conta",
+	"movements.drop":               "clique ou arraste o arquivo",
 	"movements.bank_account":       "Conta bancária",
 	"movements.kind.CHECKING":      "corrente",
 	"movements.kind.CARD":          "cartão",

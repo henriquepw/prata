@@ -19,33 +19,31 @@ templ movementsPage(s shell, view movementsView) {
 	}
 }
 
-// importPanel is the form that sends one file to one of the user's accounts, with the summary or the error of the
-// last import under it. A response, a 422 included, swaps the screen's main.
+// importPanel is the form that sends one file to the session's account: a drop zone to click or drop the file on,
+// and the submit button, at the right, once there is a file. The summary or the error of the last import goes under
+// it. A response, a 422 included, swaps the screen's main.
 templ importPanel(view movementsView) {
 	@panel(i18n.T(ctx, "movements.import"), "", nil) {
-		<form id="import-form" hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+		<form id="import-form" hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="import-form flex flex-col gap-[1lh]">
 			<input type="hidden" name="confirm_currency"/>
-			@hintField("file", i18n.T(ctx, "movements.file"), i18n.T(ctx, "movements.file_hint"), view.Error) {
-				@input.Input(input.Props{ID: "file", Name: "file", Type: "file", Required: true, Attributes: ariaInvalid(view.Error)})
-			}
-			@formField("account_id", i18n.T(ctx, "movements.account"), "") {
-				@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
-					for _, account := range view.Accounts {
-						@nativeselect.Option(nativeselect.OptionProps{Value: account.ID}) {
-							{ account.Name }
-						}
-					}
+			<label class="dropzone" aria-invalid?={ view.Error != "" }>
+				<input type="file" name="file" required aria-label={ i18n.T(ctx, "movements.file") } onchange={ templ.JSUnsafeFuncCall(showFileName) }/>
+				<span class="dropzone-name">{ i18n.T(ctx, "movements.drop") }</span>
+				@fieldNote(i18n.T(ctx, "movements.file_hint"), view.Error)
+			</label>
+			<div class="import-submit flex justify-end">
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "movements.importing")}}) {
+					<span>&gt; { i18n.T(ctx, "movements.import_submit") }</span>
 				}
-			}
-			@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "movements.importing")}}) {
-				<span>&gt; { i18n.T(ctx, "movements.import_submit") }</span>
-			}
+			</div>
 		</form>
 		if view.Summary != "" {
 			<p role="status" class="text-xs text-muted-foreground">{ view.Summary }</p>
 		}
 	}
 }
+
+const showFileName = "this.nextElementSibling.textContent = this.files[0]?.name ?? ''"
 
 // currencyDialog asks, in #sheet, to import a file whose Moeda is not the Conta's: confirming resubmits the import
 // form, whose file input still holds the file, with confirm_currency set.
