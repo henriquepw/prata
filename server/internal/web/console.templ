@@ -19,21 +19,25 @@ import (
 // decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
 // 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion leaves the
 // value as rendered.
-const decodeScript = `(() => {
-  const scramble = c => /\d/.test(c) ? Math.random() * 10 | 0 : /\p{L}/u.test(c) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.random() * 26 | 0] : c
-  const decode = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelectorAll('[data-decode]').forEach(e => {
-    const value = e.textContent, start = performance.now()
-    e.removeAttribute('data-decode')
-    const step = now => {
-      const n = Math.floor(Math.min(1, (now - start) / 300) * value.length)
-      e.textContent = value.slice(0, n) + [...value.slice(n)].map(scramble).join('')
-      if (n < value.length) requestAnimationFrame(step)
-    }
-    requestAnimationFrame(step)
-  })
-  addEventListener('DOMContentLoaded', decode)
-  addEventListener('htmx:after:swap', decode)
-})()`
+templ decodeScript() {
+	<script>
+		(() => {
+		  const scramble = c => /\d/.test(c) ? Math.random() * 10 | 0 : /\p{L}/u.test(c) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.random() * 26 | 0] : c
+		  const decode = () => matchMedia('(prefers-reduced-motion: reduce)').matches || document.querySelectorAll('[data-decode]').forEach(e => {
+		    const value = e.textContent, start = performance.now()
+		    e.removeAttribute('data-decode')
+		    const step = now => {
+		      const n = Math.floor(Math.min(1, (now - start) / 300) * value.length)
+		      e.textContent = value.slice(0, n) + [...value.slice(n)].map(scramble).join('')
+		      if (n < value.length) requestAnimationFrame(step)
+		    }
+		    requestAnimationFrame(step)
+		  })
+		  addEventListener('DOMContentLoaded', decode)
+		  addEventListener('htmx:after:swap', decode)
+		})()
+	</script>
+}
 
 // panelBox is a panel's frame: .panel draws the corners and the entry, the rest is its border and padding.
 const panelBox = "panel border border-line-faint px-4 py-5"
@@ -218,7 +222,7 @@ templ fieldNote(hint, message string) {
 templ amountField(value, hint, message string) {
 	@hintField("amount", i18n.T(ctx, "field.amount"), hint, message) {
 		@currencyPrefix() {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: amount(ctx, 0), Required: true, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "decimal", "autocomplete": "off", "autofocus": true})})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
 		}
 	}
 }

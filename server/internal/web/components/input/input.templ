@@ -2,6 +2,34 @@ package input
 
 import "github.com/henriquepw/prata/server/internal/web/utils"
 
+// Mask is how an Input reshapes what is typed; the zero value leaves it as typed.
+type Mask string
+
+const (
+	// MaskMoney fills the digits typed as an amount from the cents, through MoneyScript.
+	MaskMoney Mask = "money"
+)
+
+var moneyOnce = templ.NewOnceHandle()
+
+// MoneyScript masks every [data-mask=money] input as the digits are typed, filling from the cents: 1, 12 and 123 become
+// 0,01, 0,12 and 1,23, in the Formato de número of <html data-decimal data-thousands>. It renders once per page, and
+// listens in the capture phase so other input listeners already read the masked value. Input renders it with MaskMoney.
+templ MoneyScript() {
+	@moneyOnce.Once() {
+		<script>
+			if (!window.moneyMask) {
+				window.moneyMask = true
+				addEventListener('input', e => {
+					if (!e.target.matches('[data-mask=money]')) return
+					const d = document.documentElement.dataset, raw = e.target.value.replace(/\D/g, ''), n = raw.replace(/^0+/, '').padStart(3, '0')
+					e.target.value = !raw || (raw.match(/^0*$/) && e.inputType?.startsWith('delete')) ? '' : n.slice(0, -2).replace(/\B(?=(\d{3})+$)/g, d.thousands) + d.decimal + n.slice(-2)
+				}, true)
+			}
+		</script>
+	}
+}
+
 type Props struct {
 	ID          string
 	Class       string
@@ -14,13 +42,17 @@ type Props struct {
 	Disabled    bool
 	ReadOnly    bool
 	Required    bool
-	Accept  string
+	Accept      string
+	Mask        Mask
 }
 
 templ Input(props ...Props) {
 	{{ var p Props }}
 	if len(props) > 0 {
 		{{ p = props[0] }}
+	}
+	if p.Mask == MaskMoney {
+		@MoneyScript()
 	}
 	if p.ID == "" {
 		{{ p.ID = utils.RandomID() }}
@@ -52,6 +84,9 @@ templ Input(props ...Props) {
 		data-disabled?={ p.Disabled }
 		readonly?={ p.ReadOnly }
 		required?={ p.Required }
+		if p.Mask != "" {
+			data-mask={ string(p.Mask) }
+		}
 		class={
 			utils.CN(
 				// Structure from base/ui/input.tsx, look from the prata-web-ui skill.

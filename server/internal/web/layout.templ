@@ -67,86 +67,90 @@ func (s shell) newURL() string {
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
 // outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Mês prompt and enter opens
 // the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
-const headScript = `(() => {
-  const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
-  const applyTheme = () => {
-    const dark = theme() === 'dark' || (theme() === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
-    document.documentElement.classList.toggle('dark', dark)
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
-  }
-  applyTheme()
-  window.cycleTheme = () => {
-    document.cookie = 'theme=' + ({ system: 'light', light: 'dark' }[theme()] ?? 'system') + '; path=/; max-age=31536000; samesite=lax'
-    applyTheme()
-  }
-  document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
-  const pad = n => String(n).padStart(2, '0')
-  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => {
-    const d = new Date(), parts = { DD: pad(d.getDate()), MM: pad(d.getMonth() + 1), YYYY: d.getFullYear() }
-    e.textContent = e.dataset.clock.replace(/YYYY|MM|DD/g, k => parts[k]) + ' ' + d.toTimeString().slice(0, 8)
-  })
-  setInterval(tick, 1000)
-  addEventListener('DOMContentLoaded', tick)
-  addEventListener('htmx:after:swap', () => {
-    tick()
-    const sheet = document.getElementById('sheet')
-    if (sheet?.childElementCount && !sheet.open) sheet.showModal()
-  })
-  const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-  const options = () => [...document.querySelectorAll('#launcher [role=option]:not([hidden])')]
-  const select = option => {
-    document.querySelector('#launcher [aria-selected]')?.removeAttribute('aria-selected')
-    option?.setAttribute('aria-selected', 'true')
-    option?.scrollIntoView({ block: 'nearest' })
-  }
-  const filter = query => {
-    const words = norm(query).split(/\s+/).filter(Boolean)
-    document.querySelectorAll('#launcher [role=option]').forEach(o => o.hidden = !words.every(w => norm(o.textContent).includes(w)))
-    select(options()[0])
-  }
-  addEventListener('input', e => e.target.matches('#launcher input') && filter(e.target.value))
-  addEventListener('close', e => {
-    if (e.target.id !== 'launcher') return
-    e.target.querySelector('input').value = ''
-    filter('')
-  }, true)
-  addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
-  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
-  addEventListener('keydown', e => {
-    const launcher = document.getElementById('launcher')
-    if (!launcher) return
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault()
-      return launcher.open ? launcher.close() : launcher.showModal()
-    }
-    if (launcher.open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-      e.preventDefault()
-      const all = options()
-      return select(all[(all.indexOf(launcher.querySelector('[aria-selected]')) + (e.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length])
-    }
-    if (launcher.open && e.key === 'Enter') {
-      e.preventDefault()
-      return launcher.querySelector('[aria-selected]')?.click()
-    }
-    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
-    if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
-    else if (/^[1-9n,[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
-    else if (e.key === '/' && document.getElementById('launch')) {
-      e.preventDefault()
-      document.getElementById('launch').focus()
-    }
-  })
-  addEventListener('keydown', e => {
-    if (e.target.id !== 'launch') return
-    const first = document.querySelector('.launch-suggestions b')
-    if (e.key === 'Escape') e.target.blur()
-    else if (e.key === 'Tab' && first) {
-      e.preventDefault()
-      e.target.value = e.target.value.replace(/\S*$/, first.textContent + ' ')
-      e.target.dispatchEvent(new Event('input', { bubbles: true }))
-    }
-  })
-})()`
+templ headScript() {
+	<script>
+		(() => {
+		  const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
+		  const applyTheme = () => {
+		    const dark = theme() === 'dark' || (theme() === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+		    document.documentElement.classList.toggle('dark', dark)
+		    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+		  }
+		  applyTheme()
+		  window.cycleTheme = () => {
+		    document.cookie = 'theme=' + ({ system: 'light', light: 'dark' }[theme()] ?? 'system') + '; path=/; max-age=31536000; samesite=lax'
+		    applyTheme()
+		  }
+		  document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+		  const pad = n => String(n).padStart(2, '0')
+		  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => {
+		    const d = new Date(), parts = { DD: pad(d.getDate()), MM: pad(d.getMonth() + 1), YYYY: d.getFullYear() }
+		    e.textContent = e.dataset.clock.replace(/YYYY|MM|DD/g, k => parts[k]) + ' ' + d.toTimeString().slice(0, 8)
+		  })
+		  setInterval(tick, 1000)
+		  addEventListener('DOMContentLoaded', tick)
+		  addEventListener('htmx:after:swap', () => {
+		    tick()
+		    const sheet = document.getElementById('sheet')
+		    if (sheet?.childElementCount && !sheet.open) sheet.showModal()
+		  })
+		  const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+		  const options = () => [...document.querySelectorAll('#launcher [role=option]:not([hidden])')]
+		  const select = option => {
+		    document.querySelector('#launcher [aria-selected]')?.removeAttribute('aria-selected')
+		    option?.setAttribute('aria-selected', 'true')
+		    option?.scrollIntoView({ block: 'nearest' })
+		  }
+		  const filter = query => {
+		    const words = norm(query).split(/\s+/).filter(Boolean)
+		    document.querySelectorAll('#launcher [role=option]').forEach(o => o.hidden = !words.every(w => norm(o.textContent).includes(w)))
+		    select(options()[0])
+		  }
+		  addEventListener('input', e => e.target.matches('#launcher input') && filter(e.target.value))
+		  addEventListener('close', e => {
+		    if (e.target.id !== 'launcher') return
+		    e.target.querySelector('input').value = ''
+		    filter('')
+		  }, true)
+		  addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
+		  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
+		  addEventListener('keydown', e => {
+		    const launcher = document.getElementById('launcher')
+		    if (!launcher) return
+		    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+		      e.preventDefault()
+		      return launcher.open ? launcher.close() : launcher.showModal()
+		    }
+		    if (launcher.open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+		      e.preventDefault()
+		      const all = options()
+		      return select(all[(all.indexOf(launcher.querySelector('[aria-selected]')) + (e.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length])
+		    }
+		    if (launcher.open && e.key === 'Enter') {
+		      e.preventDefault()
+		      return launcher.querySelector('[aria-selected]')?.click()
+		    }
+		    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
+		    if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
+		    else if (/^[1-9n,[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+		    else if (e.key === '/' && document.getElementById('launch')) {
+		      e.preventDefault()
+		      document.getElementById('launch').focus()
+		    }
+		  })
+		  addEventListener('keydown', e => {
+		    if (e.target.id !== 'launch') return
+		    const first = document.querySelector('.launch-suggestions b')
+		    if (e.key === 'Escape') e.target.blur()
+		    else if (e.key === 'Tab' && first) {
+		      e.preventDefault()
+		      e.target.value = e.target.value.replace(/\S*$/, first.textContent + ' ')
+		      e.target.dispatchEvent(new Event('input', { bubbles: true }))
+		    }
+		  })
+		})()
+	</script>
+}
 
 // inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
 const inverted = "transition-colors hover:bg-foreground hover:text-background"
@@ -162,14 +166,15 @@ const cycleTheme = "cycleTheme()"
 
 templ document(title string) {
 	<!DOCTYPE html>
-	<html lang={ i18n.Language(ctx) }>
+	{{ format, _ := find(numberFormats, sessionFrom(ctx).NumberFormat) }}
+	<html lang={ i18n.Language(ctx) } data-decimal={ format.Decimal } data-thousands={ format.Thousands }>
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } · Prata</title>
-			@templ.Raw("<script>" + headScript + "</script>")
-			@templ.Raw("<script>" + decodeScript + "</script>")
-			@templ.Raw("<script>" + budgetScript + "</script>")
+			@headScript()
+			@decodeScript()
+			@budgetScript()
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="/static/htmx.min.js"></script>
 		</head>
