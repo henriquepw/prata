@@ -20,7 +20,12 @@ type authForm struct {
 	Error         string
 	CanSignUp     bool
 	HasUsers      bool
+	// Choices are the configurações iniciais the signup carries in hidden fields, by field name.
+	Choices map[string]string
 }
+
+// choiceNames are the fields of the configurações iniciais, in the order the screen shows them.
+var choiceNames = []string{"language", "date_format", "number_format", "currency"}
 
 // ariaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
 func ariaInvalid(message string, attributes ...templ.Attributes) templ.Attributes {
@@ -104,11 +109,35 @@ templ signupPage(form authForm) {
 	}
 }
 
+// setupPage is the configurações iniciais: the Idioma, Formato de data, Formato numérico and Moeda, asked before the
+// signup and stored by it.
+templ setupPage(form settingsForm) {
+	@document(i18n.T(ctx, "setup.title")) {
+		@entrance(figlet, "Prata", i18n.T(ctx, "setup.title")) {
+			<form method="post" action="/setup" class="flex flex-col gap-4">
+				<p class="text-xs text-muted-foreground">{ i18n.T(ctx, "setup.note") }</p>
+				@languageField(form)
+				@dateFormatField(form)
+				@numberFormatField(form)
+				@currencyField(form)
+				@button.Button(button.Props{Type: button.TypeSubmit}) {
+					{ "> " + i18n.T(ctx, "setup.continue") }
+				}
+			</form>
+		}
+	}
+}
+
 // authPage is the entrance shared by login and signup: a form under the PRATA figlet.
 templ authPage(title, action string, form authForm) {
 	@document(title) {
 		@entrance(figlet, "Prata", title) {
 			<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
+				for _, name := range choiceNames {
+					if form.Choices[name] != "" {
+						<input type="hidden" name={ name } value={ form.Choices[name] }/>
+					}
+				}
 				@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
 					@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
 				}

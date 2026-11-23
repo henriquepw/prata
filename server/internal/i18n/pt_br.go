@@ -15,6 +15,9 @@ var ptBR = map[string]string{
 	"auth.error.password":    "Informe uma senha.",
 	"auth.error.closed":      "Cadastro fechado nesta instalação.",
 	"auth.error.taken":       "Este e-mail já tem conta.",
+	"setup.title":            "Configurações iniciais",
+	"setup.note":             "Escolha como o Prata mostra textos, datas e valores. Dá para mudar depois nas Configurações.",
+	"setup.continue":         "continuar",
 
 	// Page not found.
 	"notfound.title": "Página não encontrada",

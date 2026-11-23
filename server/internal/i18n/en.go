@@ -15,6 +15,9 @@ var en = map[string]string{
 	"auth.error.password":    "Enter a password.",
 	"auth.error.closed":      "Sign-up is closed on this server.",
 	"auth.error.taken":       "This email already has an account.",
+	"setup.title":            "Initial settings",
+	"setup.note":             "Choose how Prata shows texts, dates and amounts. You can change it later in Settings.",
+	"setup.continue":         "continue",
 
 	// Page not found.
 	"notfound.title": "Page not found",

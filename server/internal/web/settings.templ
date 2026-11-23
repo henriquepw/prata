@@ -25,33 +25,9 @@ type settingsForm struct {
 // Open Finance is on. A 422 swaps the whole sheet.
 templ settingsSheet(form settingsForm) {
 	@sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
-		@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
-				for _, l := range languages {
-					@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
-						{ l.Label }
-					}
-				}
-			}
-		}
-		@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
-				for _, f := range dateFormats {
-					@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
-						{ i18n.T(ctx, "date_format."+f.Value) }
-					}
-				}
-			}
-		}
-		@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
-				for _, f := range numberFormats {
-					@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
-						{ f.Value }
-					}
-				}
-			}
-		}
+		@languageField(form)
+		@dateFormatField(form)
+		@numberFormatField(form)
 		@formField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: ariaInvalid(form.Errors["daily_limit_mode"])}) {
 				for _, m := range dailyLimitModes {
@@ -61,20 +37,60 @@ templ settingsSheet(form settingsForm) {
 				}
 			}
 		}
-		@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
-				for _, c := range currencies {
-					@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
-						{ c.Value + " (" + c.Symbol + ")" }
-					}
-				}
-			}
-			@field.Description() {
-				{ i18n.T(ctx, "settings.currency_note") }
-			}
-		}
+		@currencyField(form)
 		if form.OpenFinance {
 			@pluggyFields(form)
+		}
+	}
+}
+
+templ languageField(form settingsForm) {
+	@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
+			for _, l := range languages {
+				@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
+					{ l.Label }
+				}
+			}
+		}
+	}
+}
+
+templ dateFormatField(form settingsForm) {
+	@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
+			for _, f := range dateFormats {
+				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
+					{ i18n.T(ctx, "date_format."+f.Value) }
+				}
+			}
+		}
+	}
+}
+
+templ numberFormatField(form settingsForm) {
+	@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
+			for _, f := range numberFormats {
+				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
+					{ f.Value }
+				}
+			}
+		}
+	}
+}
+
+templ currencyField(form settingsForm) {
+	@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
+			for _, c := range currencies {
+				@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
+					{ c.Value + " (" + c.Symbol + ")" }
+				}
+			}
+		}
+		@field.Description() {
+			{ i18n.T(ctx, "settings.currency_note") }
 		}
 	}
 }
