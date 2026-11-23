@@ -268,10 +268,10 @@
     color: var(--background);
   }
 
-  /* Launcher: the ctrl+k dialog, a panel 14vh from the top whose options invert when selected. */
+  /* Launcher: the ctrl+k dialog, 14vh from the top over a blurred scrim, its options scrolling past 60vh. */
   .launcher {
     margin: 14vh auto auto;
-    width: min(100% - 4ch, 600px);
+    width: min(100% - --spacing(8), --spacing(150));
     max-width: none;
     padding: 0;
     overflow: visible;
@@ -284,19 +284,9 @@
     backdrop-filter: blur(2px);
   }
 
-  .launcher .panel {
-    background: var(--background);
-  }
-
-  .launcher kbd,
-  .option-n {
-    color: var(--muted-foreground);
-  }
-
-  .launcher kbd {
-    font: inherit;
-    font-size: 11px;
-    text-transform: uppercase;
+  #launcher-options {
+    max-height: 60vh;
+    overflow: auto;
   }
 
   .prompt {
@@ -316,133 +306,12 @@
     caret-shape: block;
   }
 
-  #launcher-options {
-    max-height: 60vh;
-    overflow: auto;
-  }
-
-  #launcher-options [role="option"] {
-    display: flex;
-    justify-content: space-between;
-    gap: 2ch;
-    width: 100%;
-    padding: 0.2lh 1ch;
-    text-align: left;
-    cursor: pointer;
-    transition:
-      background-color var(--snap) var(--ease),
-      color var(--snap) var(--ease);
-  }
-
-  #launcher-options [role="option"]:hover,
-  #launcher-options [aria-selected="true"] {
-    background: var(--foreground);
-    color: var(--background);
-  }
-
-  #launcher-options [role="option"]:hover *,
-  #launcher-options [aria-selected="true"] * {
-    color: inherit;
-  }
-
-  .launcher-empty {
-    display: none;
-    padding: 0.2lh 1ch;
-  }
-
-  #launcher-options:not(:has([role="option"]:not([hidden]))) + .launcher-empty {
-    display: block;
-  }
-
-  /* Console chrome: status bar, ticker, rail (or the mobile nav row), main and keybar. Only main scrolls. */
-  .console-frame {
-    position: relative;
-    height: 100dvh;
-    width: min(100%, --theme(--breakpoint-3xl));
-    margin-inline: auto;
-    background: var(--background);
-  }
-
-  .console {
-    container: console / inline-size;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    font-size: 13px;
-  }
-
-  .sbar {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2ch;
-    padding: 0.6lh 2ch;
-    border-bottom: 1px solid var(--line-soft);
-    white-space: nowrap;
-  }
-
-  .sbar-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .sbar-brand {
-    font-weight: 700;
-  }
-
-  .sbar-brand::before {
-    content: "▌";
-    color: var(--primary);
-  }
-
   .cursor {
     color: var(--primary);
     animation: blink 1s steps(1) infinite;
   }
 
-  .ticker {
-    display: flex;
-    font-size: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-  }
-
-  .ticker dl {
-    display: contents;
-  }
-
-  .ticker dl > div,
-  .ticker > div {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    padding-inline: 1.5ch;
-  }
-
-  .ticker dt {
-    color: var(--muted-foreground);
-    text-transform: uppercase;
-    font-size: 10.5px;
-    letter-spacing: 0.1em;
-  }
-
-  .ticker dd {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    font-variant-numeric: tabular-nums;
-  }
-
   /* Sync dot: "●", and the braille spinner while any htmx request is in flight. */
-  .sync-dot {
-    display: inline-block;
-    width: 1ch;
-    color: var(--cat-green);
-  }
-
   .sync-dot::before {
     content: "●";
   }
@@ -452,185 +321,31 @@
     animation: braille 0.8s steps(1) infinite;
   }
 
-  .console-body {
-    flex: 1;
-    display: flex;
-    min-height: 0;
-  }
-
-  .console-body > main {
-    flex: 1;
-    min-width: 0;
-    overflow: auto;
-    padding: 1.5lh 2ch 2lh;
-  }
-
-  .rail {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    width: 22ch;
-    padding: 1lh 0;
-    border-right: 1px solid var(--line-soft);
-  }
-
-  .rail a {
-    display: grid;
-    grid-template-columns: 4ch 1fr;
-    padding: 0.55lh 2ch;
-    border-left: 3px solid transparent;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .rail a[aria-current] {
-    border-left-color: var(--primary);
-    background: var(--line-soft);
-  }
-
-  .mnav {
-    display: none;
-    gap: 1ch;
-    padding: 0.5lh 2ch;
-    border-bottom: 1px solid var(--line);
-    overflow-x: auto;
-    scrollbar-width: none;
-    white-space: nowrap;
-    font-size: 12px;
-  }
-
-  .mnav a {
-    padding: 0 0.6ch;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .mnav a[aria-current] {
-    background: var(--foreground);
-    color: var(--background);
-  }
-
-  .rail a,
-  .mnav a {
-    transition:
-      background-color var(--snap) var(--ease),
-      color var(--snap) var(--ease);
-  }
-
-  .rail a:hover,
-  .mnav a:hover {
-    background: var(--foreground);
-    color: var(--background);
-  }
-
-  .rail a:hover * {
-    color: inherit;
-  }
-
-  .keybar {
-    display: flex;
-    align-items: center;
-    padding: 0.4lh 2ch;
-    border-top: 1px solid var(--line-soft);
-    overflow: hidden;
-    white-space: nowrap;
-    font-size: 11px;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-  }
-
-  .keybar > div {
-    display: flex;
-    align-items: center;
-  }
-
+  /* Keybar: "│" between the screen's keys; while a dialog is open its keys replace them: esc fechar, after ctrl enter
+     salvar for the sheet. */
   .keys span + span::before,
   .keys-sheet::after {
     content: "│";
-    margin-inline: 1.5ch;
+    margin-inline: --spacing(3);
     color: var(--line-strong);
   }
 
-  /* While a dialog is open its keys replace the screen's: esc fechar, after ctrl enter salvar for the sheet. */
-  .keybar .keys-open,
+  .keys-open,
   .keys-sheet,
-  body:has(dialog[open]) .keybar .keys {
+  body:has(dialog[open]) .keys {
     display: none;
   }
 
-  body:has(dialog[open]) .keybar .keys-open {
-    display: flex;
+  body:has(dialog[open]) .keys-open {
+    display: block;
   }
 
   body:has(#sheet[open]) .keys-sheet {
     display: inline;
   }
 
-  .keybar-clock {
-    margin-left: auto;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .keybar kbd {
-    font: inherit;
-    color: var(--primary);
-  }
-
-  /* Mobile balance line: the ticker's realized, projected and pending, under the status bar below @2xl. */
-  .mbal {
-    display: none;
-    justify-content: space-between;
-    gap: 1ch;
-    padding: 0.4lh 1.5ch;
-    border-bottom: 1px solid var(--line-soft);
-    font-size: 11px;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .mbal dt {
-    color: var(--muted-foreground);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 10px;
-  }
-
-  .mbal dd {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-  }
-
+  /* 44px touch targets below @2xl: text actions and the main's buttons; the nav links carry theirs in the markup. */
   @variant @max-2xl/console {
-    .rail,
-    .ticker,
-    .keybar {
-      display: none;
-    }
-
-    .mnav,
-    .mbal {
-      display: flex;
-    }
-
-    .console-body > main {
-      padding-inline: 1.5ch;
-    }
-
-    /* 44px touch targets: nav, text actions and the main's buttons. */
-    .mnav {
-      padding-block: 0;
-    }
-
-    .mnav a {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.6ch;
-      min-height: --spacing(11);
-      padding-inline: 1.2ch;
-    }
-
     .lnk {
       display: inline-flex;
       align-items: center;
@@ -668,10 +383,6 @@
     body:has(.console-frame) {
       overflow: hidden;
       background: color-mix(in oklab, var(--background) 90%, black);
-    }
-
-    .console-frame {
-      border-inline: 1px solid var(--line);
     }
 
     .sbar::before {
@@ -858,49 +569,6 @@
     background: repeating-linear-gradient(45deg, var(--line-soft) 0 4px, transparent 4px 8px);
   }
 
-  /* Import drop zone: a dashed box whose hidden file input covers it, so a click or a drop picks the file. */
-  .dropzone {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5lh;
-    padding: 2lh 2ch;
-    border: 1px dashed var(--line);
-    text-align: center;
-    cursor: pointer;
-    transition: border-color var(--snap) var(--ease);
-  }
-
-  .dropzone:hover,
-  .dropzone:focus-within {
-    border-color: var(--primary);
-  }
-
-  .dropzone[aria-invalid] {
-    border-color: var(--destructive);
-  }
-
-  .dropzone input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-  }
-
-  .dropzone-name {
-    font-size: 12px;
-  }
-
-  .dropzone:has(input:invalid) .dropzone-name {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-  }
-
-  .import-form:not(:has(.dropzone input:valid)) .import-submit {
-    display: none;
-  }
-
   /* The Categorias slider drawn as the meter: a native range whose track has 20 segments of 5%, filled in the
      category color up to --p and --line-soft past it, and a block cursor. The gaps are painted in --background: the
      grain sits above the whole page, so they read as the page behind; a mask would cut the cursor too. The track's
@@ -961,24 +629,6 @@
 
   .budget-range:active::-moz-range-thumb {
     transform: scaleY(0.8);
-  }
-
-  /* Activity log: the panel's list fills its height, so the prompt sits at the bottom. */
-  .log-panel {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .log {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    font-size: 12px;
-    line-height: 1.75;
-  }
-
-  .log-prompt {
-    margin-top: auto;
   }
 
   /* Busy submit: while its form's htmx request is in flight, a braille spinner runs before the label, and a
