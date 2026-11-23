@@ -95,8 +95,8 @@ func sheetRow(url string, flash bool) table.RowProps {
 // online is the server status of the ticker and the login footer, "● [online]"; the dot turns into the braille
 // spinner, in CSS, while any htmx request is in flight.
 templ online() {
-	<span class="inline-flex items-center gap-[1ch]">
-		<span class="sync-dot" aria-hidden="true"></span>
+	<span class="inline-flex items-center gap-2">
+		<span class="sync-dot inline-block w-2 text-cat-green" aria-hidden="true"></span>
 		@badge.Badge(badge.Props{Class: "bg-cat-green text-background"}) {
 			[online]
 		}
