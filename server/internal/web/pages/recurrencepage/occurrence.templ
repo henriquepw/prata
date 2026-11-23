@@ -1,9 +1,9 @@
-package web
+package recurrencepage
 
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/console"
-	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/entry"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
@@ -26,14 +26,6 @@ templ occurrenceSheet(form occurrenceForm) {
 				}
 			}
 		</p>
-		@console.KindChoice(form.Kind, form.Errors["kind"])
-		@console.AmountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"])
-		@console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
-			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
-		}
-		<div class="grid grid-cols-2 gap-4">
-			@console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
-			@console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
-		</div>
+		@entry.Fields(form.Form, i18n.T(ctx, "occurrence.hint"), false)
 	}
 }

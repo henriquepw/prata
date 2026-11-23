@@ -1,4 +1,5 @@
-package web
+// Package tagpage is the Tags screen and the tag sheet.
+package tagpage
 
 import (
 	"errors"
@@ -8,18 +9,31 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
-func (h handler) tags(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.db.Tags(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+// Page is the tags' handlers: the Tags screen and its sheet.
+type Page struct {
+	db    *store.Store
+	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+}
+
+// New returns the tags page over db; shell reads the console chrome of an authenticated page, as web's shell does.
+func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)) Page {
+	return Page{db: db, shell: shell}
+}
+
+// Tags is the Tags screen.
+func (p Page) Tags(w http.ResponseWriter, r *http.Request) {
+	tags, err := p.db.Tags(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
 		shared.InternalError(w, "listing tags", err)
 		return
 	}
 
-	s, ok := h.shell(w, r, "nav.tags")
+	s, ok := p.shell(w, r, "nav.tags")
 	if !ok {
 		return
 	}
@@ -27,8 +41,14 @@ func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, tagsPage(s, tags))
 }
 
-func (h handler) editTag(w http.ResponseWriter, r *http.Request) {
-	tag, ok := h.tag(w, r)
+// NewSheet is the sheet of a new tag.
+func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
+	shared.Render(w, r, http.StatusOK, tagSheet(tagForm{}))
+}
+
+// Edit is the sheet of a tag.
+func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
+	tag, ok := p.tag(w, r)
 	if !ok {
 		return
 	}
@@ -36,9 +56,9 @@ func (h handler) editTag(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, tagSheet(storedTagForm(tag, shared.Location(r))))
 }
 
-// saveTag creates the tag, or updates the one in the path, from the sheet's form. Dates are local midnights
+// Save creates the tag, or updates the one in the path, from the sheet's form. Dates are local midnights
 // in the user's time zone, stored in UTC.
-func (h handler) saveTag(w http.ResponseWriter, r *http.Request) {
+func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	form := tagForm{
 		ID:      r.PathValue("id"),
 		Name:    strings.TrimSpace(r.PostFormValue("name")),
@@ -70,21 +90,22 @@ func (h handler) saveTag(w http.ResponseWriter, r *http.Request) {
 		Fields: map[string]any{"name": form.Name, "start_at": startAt, "end_at": endAt}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
-	} else if _, ok := h.tag(w, r); !ok {
+	} else if _, ok := p.tag(w, r); !ok {
 		return
 	}
 
-	h.commit(w, r, form.Errors, tagSheet(form), change)
+	shared.Commit(p.db, w, r, form.Errors, tagSheet(form), change)
 }
 
-func (h handler) deleteTag(w http.ResponseWriter, r *http.Request) {
-	tag, ok := h.tag(w, r)
+// Delete tombstones the tag in the path.
+func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
+	tag, ok := p.tag(w, r)
 	if !ok {
 		return
 	}
 
 	form := storedTagForm(tag, shared.Location(r))
-	h.commit(w, r, form.Errors, tagSheet(form), store.Change{Entity: "TAG", EntityID: tag.ID, Kind: store.KindDelete})
+	shared.Commit(p.db, w, r, form.Errors, tagSheet(form), store.Change{Entity: "TAG", EntityID: tag.ID, Kind: store.KindDelete})
 }
 
 // storedTagForm fills the sheet with the stored tag, its dates in the user's time zone.
@@ -98,8 +119,8 @@ func storedTagForm(tag store.Tag, loc *time.Location) tagForm {
 }
 
 // tag reads the live tag in the path, answering 404 when the account has none.
-func (h handler) tag(w http.ResponseWriter, r *http.Request) (store.Tag, bool) {
-	tag, err := h.db.Tag(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+func (p Page) tag(w http.ResponseWriter, r *http.Request) (store.Tag, bool) {
+	tag, err := p.db.Tag(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Tag{}, false

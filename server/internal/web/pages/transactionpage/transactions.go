@@ -1,4 +1,5 @@
-package web
+// Package transactionpage is the transaction sheet, and the old transactions list that sends to the Mês.
+package transactionpage
 
 import (
 	"context"
@@ -10,13 +11,24 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/entry"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
-// newTransaction is an empty transaction sheet for today, in the category the Mês it is opened from is filtered by.
-func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
-	form, ok := h.transactionForm(w, r)
+// Page is the transactions' handlers: the transaction sheet.
+type Page struct {
+	db *store.Store
+}
+
+// New returns the transactions page over db.
+func New(db *store.Store) Page {
+	return Page{db: db}
+}
+
+// NewSheet is an empty transaction sheet for today, in the category the Mês it is opened from is filtered by.
+func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
+	form, ok := entry.Load(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -29,13 +41,14 @@ func (h handler) newTransaction(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, transactionSheet(form))
 }
 
-func (h handler) editTransaction(w http.ResponseWriter, r *http.Request) {
-	transaction, ok := h.transaction(w, r)
+// Edit is the sheet of a transaction.
+func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
+	transaction, ok := p.transaction(w, r)
 	if !ok {
 		return
 	}
 
-	form, ok := h.transactionForm(w, r)
+	form, ok := entry.Load(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -43,11 +56,11 @@ func (h handler) editTransaction(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, transactionSheet(storedTransactionForm(r.Context(), form, transaction, shared.Location(r))))
 }
 
-// saveTransaction creates the transaction, or updates the one in the path, from the sheet's form. The date is
+// Save creates the transaction, or updates the one in the path, from the sheet's form. The date is
 // local midnight in the user's time zone, stored in UTC. A category or tag left as displayed is not written, so a
 // stored reference to a deleted one, displayed as empty, survives editing other fields.
-func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
-	form, ok := h.transactionForm(w, r)
+func (p Page) Save(w http.ResponseWriter, r *http.Request) {
+	form, ok := entry.Load(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -60,16 +73,7 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	form.CategoryID = r.PostFormValue("category_id")
 	form.TagID = r.PostFormValue("tag_id")
 
-	amount := shared.ParseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
-	occurredAt, ok := shared.ParseDate(form.OccurredAt, shared.Location(r))
-	if !ok {
-		form.Errors["occurred_at"] = i18n.T(r.Context(), "form.error.date")
-	}
-
-	if form.CategoryID != "" && !shared.HasCategory(form.Categories, form.CategoryID) {
-		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
-	}
-
+	amount, occurredAt := form.Parse(r)
 	if form.TagID != "" && !shared.HasTag(form.Tags, form.TagID) {
 		form.Errors["tag_id"] = i18n.T(r.Context(), "form.error.tag")
 	}
@@ -81,7 +85,7 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
 	} else {
-		stored, ok := h.transaction(w, r)
+		stored, ok := p.transaction(w, r)
 		if !ok {
 			return
 		}
@@ -96,43 +100,28 @@ func (h handler) saveTransaction(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.commit(w, r, form.Errors, transactionSheet(form), change)
+	shared.Commit(p.db, w, r, form.Errors, transactionSheet(form), change)
 }
 
-func (h handler) deleteTransaction(w http.ResponseWriter, r *http.Request) {
-	transaction, ok := h.transaction(w, r)
+// Delete tombstones the transaction in the path.
+func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
+	transaction, ok := p.transaction(w, r)
 	if !ok {
 		return
 	}
 
-	form, ok := h.transactionForm(w, r)
+	form, ok := entry.Load(w, r, p.db)
 	if !ok {
 		return
 	}
 
 	form = storedTransactionForm(r.Context(), form, transaction, shared.Location(r))
-	h.commit(w, r, form.Errors, transactionSheet(form), store.Change{Entity: "TRANSACTION", EntityID: transaction.ID, Kind: store.KindDelete})
-}
-
-// transactionForm is an empty sheet with the live categories and tags to pick from, answering 500 when it
-// cannot read them.
-func (h handler) transactionForm(w http.ResponseWriter, r *http.Request) (transactionForm, bool) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
-	if !ok {
-		return transactionForm{}, false
-	}
-
-	tags, ok := shared.LiveTags(w, r, h.db)
-	if !ok {
-		return transactionForm{}, false
-	}
-
-	return transactionForm{Categories: categories, Tags: tags, Errors: map[string]string{}}, true
+	shared.Commit(p.db, w, r, form.Errors, transactionSheet(form), store.Change{Entity: "TRANSACTION", EntityID: transaction.ID, Kind: store.KindDelete})
 }
 
 // storedTransactionForm fills the sheet with the stored transaction as displayed: its date in loc, and its category
 // and tag only when they are among the sheet's live ones.
-func storedTransactionForm(ctx context.Context, form transactionForm, transaction store.Transaction, loc *time.Location) transactionForm {
+func storedTransactionForm(ctx context.Context, form entry.Form, transaction store.Transaction, loc *time.Location) entry.Form {
 	form.ID = transaction.ID
 	form.Description = shared.OrEmpty(transaction.Description)
 	form.Kind = transaction.Kind
@@ -151,8 +140,8 @@ func storedTransactionForm(ctx context.Context, form transactionForm, transactio
 }
 
 // transaction reads the live transaction in the path, answering 404 when the account has none.
-func (h handler) transaction(w http.ResponseWriter, r *http.Request) (store.Transaction, bool) {
-	transaction, err := h.db.Transaction(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+func (p Page) transaction(w http.ResponseWriter, r *http.Request) (store.Transaction, bool) {
+	transaction, err := p.db.Transaction(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Transaction{}, false
@@ -166,8 +155,8 @@ func (h handler) transaction(w http.ResponseWriter, r *http.Request) (store.Tran
 	return transaction, true
 }
 
-// transactions sends the old transactions list to the Mês, keeping its month.
-func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
+// Redirect sends the old transactions list to the Mês, keeping its month.
+func (p Page) Redirect(w http.ResponseWriter, r *http.Request) {
 	url := "/"
 	if month := r.URL.Query().Get("month"); month != "" {
 		url += "?month=" + month

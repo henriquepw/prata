@@ -17,6 +17,9 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
 	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
+	"github.com/henriquepw/prata/server/internal/web/pages/recurrencepage"
+	"github.com/henriquepw/prata/server/internal/web/pages/tagpage"
+	"github.com/henriquepw/prata/server/internal/web/pages/transactionpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/welcomepage"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
@@ -36,6 +39,9 @@ type handler struct {
 	openFinance     OpenFinance
 	home            homepage.Page
 	categories      categorypage.Page
+	tags            tagpage.Page
+	transactions    transactionpage.Page
+	recurrences     recurrencepage.Page
 	welcome         welcomepage.Page
 }
 
@@ -57,6 +63,9 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
 	h.home = homepage.New(db, h.shell)
 	h.categories = categorypage.New(db, h.shell)
+	h.tags = tagpage.New(db, h.shell)
+	h.transactions = transactionpage.New(db)
+	h.recurrences = recurrencepage.New(db, h.shell, h.home)
 	h.welcome = welcomepage.New(db)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
@@ -75,12 +84,12 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /welcome", h.requireSession(h.welcome.Save))
 	mux.Handle("GET /launch", h.requireSession(h.home.LaunchPreview))
 	mux.Handle("POST /launch", h.requireSession(h.home.Launch))
-	mux.Handle("GET /transactions", h.requireSession(h.transactions))
-	mux.Handle("GET /transactions/new", h.requireSession(h.newTransaction))
-	mux.Handle("GET /transactions/{id}", h.requireSession(h.editTransaction))
-	mux.Handle("POST /transactions", h.requireSession(h.saveTransaction))
-	mux.Handle("POST /transactions/{id}", h.requireSession(h.saveTransaction))
-	mux.Handle("DELETE /transactions/{id}", h.requireSession(h.deleteTransaction))
+	mux.Handle("GET /transactions", h.requireSession(h.transactions.Redirect))
+	mux.Handle("GET /transactions/new", h.requireSession(h.transactions.NewSheet))
+	mux.Handle("GET /transactions/{id}", h.requireSession(h.transactions.Edit))
+	mux.Handle("POST /transactions", h.requireSession(h.transactions.Save))
+	mux.Handle("POST /transactions/{id}", h.requireSession(h.transactions.Save))
+	mux.Handle("DELETE /transactions/{id}", h.requireSession(h.transactions.Delete))
 	mux.Handle("GET /categories", h.requireSession(h.categories.Categories))
 	mux.Handle("GET /categories/new", h.requireSession(h.categories.NewSheet))
 	mux.Handle("GET /categories/{id}", h.requireSession(h.categories.Edit))
@@ -88,22 +97,20 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /categories/{id}", h.requireSession(h.categories.Save))
 	mux.Handle("DELETE /categories/{id}", h.requireSession(h.categories.Delete))
 	mux.Handle("POST /budget", h.requireSession(h.categories.SaveBudget))
-	mux.Handle("GET /recurrences", h.requireSession(h.recurrences))
-	mux.Handle("GET /recurrences/new", h.requireSession(h.newRecurrence))
-	mux.Handle("GET /recurrences/{id}", h.requireSession(h.editRecurrence))
-	mux.Handle("POST /recurrences", h.requireSession(h.saveRecurrence))
-	mux.Handle("POST /recurrences/{id}", h.requireSession(h.saveRecurrence))
-	mux.Handle("DELETE /recurrences/{id}", h.requireSession(h.deleteRecurrence))
-	mux.Handle("GET /recurrences/{id}/occurrences/{date}", h.requireSession(h.occurrenceSheet))
-	mux.Handle("POST /recurrences/{id}/occurrences/{date}", h.requireSession(h.confirmOccurrence))
-	mux.Handle("GET /tags", h.requireSession(h.tags))
-	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		shared.Render(w, r, http.StatusOK, tagSheet(tagForm{}))
-	}))
-	mux.Handle("GET /tags/{id}", h.requireSession(h.editTag))
-	mux.Handle("POST /tags", h.requireSession(h.saveTag))
-	mux.Handle("POST /tags/{id}", h.requireSession(h.saveTag))
-	mux.Handle("DELETE /tags/{id}", h.requireSession(h.deleteTag))
+	mux.Handle("GET /recurrences", h.requireSession(h.recurrences.Recurrences))
+	mux.Handle("GET /recurrences/new", h.requireSession(h.recurrences.NewSheet))
+	mux.Handle("GET /recurrences/{id}", h.requireSession(h.recurrences.Edit))
+	mux.Handle("POST /recurrences", h.requireSession(h.recurrences.Save))
+	mux.Handle("POST /recurrences/{id}", h.requireSession(h.recurrences.Save))
+	mux.Handle("DELETE /recurrences/{id}", h.requireSession(h.recurrences.Delete))
+	mux.Handle("GET /recurrences/{id}/occurrences/{date}", h.requireSession(h.recurrences.OccurrenceSheet))
+	mux.Handle("POST /recurrences/{id}/occurrences/{date}", h.requireSession(h.recurrences.ConfirmOccurrence))
+	mux.Handle("GET /tags", h.requireSession(h.tags.Tags))
+	mux.Handle("GET /tags/new", h.requireSession(h.tags.NewSheet))
+	mux.Handle("GET /tags/{id}", h.requireSession(h.tags.Edit))
+	mux.Handle("POST /tags", h.requireSession(h.tags.Save))
+	mux.Handle("POST /tags/{id}", h.requireSession(h.tags.Save))
+	mux.Handle("DELETE /tags/{id}", h.requireSession(h.tags.Delete))
 	mux.Handle("GET /movements", h.requireSession(h.movements))
 	mux.Handle("POST /movements/import", h.requireSession(h.importMovements))
 	mux.Handle("POST /movements/confirm", h.requireSession(h.confirmMovements))

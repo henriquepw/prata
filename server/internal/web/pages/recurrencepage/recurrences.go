@@ -1,4 +1,5 @@
-package web
+// Package recurrencepage is the Recorrências screen, its sheet and the confirmation of an occurrence.
+package recurrencepage
 
 import (
 	"context"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
@@ -26,14 +28,33 @@ func ruleDay(rule string) string {
 	return strings.TrimPrefix(rule, monthlyPrefix)
 }
 
-func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
-	recurrences, err := h.db.Recurrences(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+// Page is the recurrences' handlers: the Recorrências screen, its sheet and the occurrence sheet.
+type Page struct {
+	db    *store.Store
+	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+	month Month
+}
+
+// Month is the Mês as the confirmation of an occurrence from its statement answers: homepage.Page.CreateInMonth.
+type Month interface {
+	CreateInMonth(w http.ResponseWriter, r *http.Request, change store.Change, conflict func() (string, error))
+}
+
+// New returns the recurrences page over db; shell reads the console chrome of an authenticated page, as web's shell
+// does, and month answers the confirmation of an occurrence made from the Mês.
+func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool), month Month) Page {
+	return Page{db: db, shell: shell, month: month}
+}
+
+// Recurrences is the Recorrências screen.
+func (p Page) Recurrences(w http.ResponseWriter, r *http.Request) {
+	recurrences, err := p.db.Recurrences(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
 		shared.InternalError(w, "listing recurrences", err)
 		return
 	}
 
-	s, ok := h.shell(w, r, "nav.recurrences")
+	s, ok := p.shell(w, r, "nav.recurrences")
 	if !ok {
 		return
 	}
@@ -41,8 +62,9 @@ func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
 }
 
-func (h handler) newRecurrence(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+// NewSheet is the sheet of a new recurrence.
+func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -51,13 +73,14 @@ func (h handler) newRecurrence(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, recurrenceSheet(form))
 }
 
-func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
-	recurrence, ok := h.recurrence(w, r)
+// Edit is the sheet of a recurrence.
+func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
+	recurrence, ok := p.recurrence(w, r)
 	if !ok {
 		return
 	}
 
-	categories, ok := shared.LiveCategories(w, r, h.db)
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -65,11 +88,11 @@ func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
 }
 
-// saveRecurrence creates the recurrence, or updates the one in the path, from the sheet's form. A category left
+// Save creates the recurrence, or updates the one in the path, from the sheet's form. A category left
 // as displayed is not written, so a stored reference to a deleted one, displayed as empty, survives editing
 // other fields.
-func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) Save(w http.ResponseWriter, r *http.Request) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
@@ -111,7 +134,7 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
 	} else {
-		stored, ok := h.recurrence(w, r)
+		stored, ok := p.recurrence(w, r)
 		if !ok {
 			return
 		}
@@ -121,23 +144,23 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.commit(w, r, form.Errors, recurrenceSheet(form), change)
+	shared.Commit(p.db, w, r, form.Errors, recurrenceSheet(form), change)
 }
 
-// deleteRecurrence tombstones the recurrence only; its confirmed transactions stay.
-func (h handler) deleteRecurrence(w http.ResponseWriter, r *http.Request) {
-	recurrence, ok := h.recurrence(w, r)
+// Delete tombstones the recurrence only; its confirmed transactions stay.
+func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
+	recurrence, ok := p.recurrence(w, r)
 	if !ok {
 		return
 	}
 
-	categories, ok := shared.LiveCategories(w, r, h.db)
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
 	form := storedRecurrenceForm(r.Context(), recurrence, categories)
-	h.commit(w, r, form.Errors, recurrenceSheet(form), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
+	shared.Commit(p.db, w, r, form.Errors, recurrenceSheet(form), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
 }
 
 // storedRecurrenceForm fills the sheet with the stored recurrence as displayed: its category only when it is
@@ -162,8 +185,8 @@ func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, cate
 }
 
 // recurrence reads the live recurrence in the path, answering 404 when the account has none.
-func (h handler) recurrence(w http.ResponseWriter, r *http.Request) (store.Recurrence, bool) {
-	recurrence, err := h.db.Recurrence(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+func (p Page) recurrence(w http.ResponseWriter, r *http.Request) (store.Recurrence, bool) {
+	recurrence, err := p.db.Recurrence(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Recurrence{}, false
