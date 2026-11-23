@@ -469,7 +469,7 @@ func Footer(props ...FooterProps) templ.Component {
 
 // rowClasses: --line-faint borders and, on a clickable row (hx-get), the inverted selection of a terminal on
 // hover and focus, in --snap.
-const rowClasses = "data-[state=selected]:bg-muted border-b border-line-faint transition-colors duration-(--snap) ease-(--ease) [&[hx-get]]:cursor-pointer [&[hx-get]]:outline-none [&[hx-get]:is(:hover,:focus-visible)]:bg-foreground [&[hx-get]:is(:hover,:focus-visible)]:text-background [&[hx-get]:is(:hover,:focus-visible)_*]:text-inherit!"
+const rowClasses = "data-[state=selected]:bg-muted border-b border-line-faint transition-colors [&[hx-get]]:cursor-pointer [&[hx-get]]:outline-none [&[hx-get]:is(:hover,:focus-visible)]:bg-foreground [&[hx-get]:is(:hover,:focus-visible)]:text-background [&[hx-get]:is(:hover,:focus-visible)_*]:text-inherit!"
 
 func Row(props ...RowProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

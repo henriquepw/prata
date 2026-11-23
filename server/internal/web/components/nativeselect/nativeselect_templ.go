@@ -145,7 +145,7 @@ func NativeSelect(props ...Props) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"border-line placeholder:text-muted-foreground focus-visible:border-primary aria-invalid:border-destructive transition-colors duration-(--snap) ease-(--ease) h-8 w-full min-w-0 appearance-none rounded-none border bg-transparent py-1 pr-8 pl-2.5 text-xs select-none data-[size=sm]:h-7 data-[size=sm]:rounded-none data-[size=sm]:py-0.5 outline-none disabled:pointer-events-none disabled:cursor-not-allowed\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" class=\"border-line placeholder:text-muted-foreground focus-visible:border-primary aria-invalid:border-destructive transition-colors h-8 w-full min-w-0 appearance-none rounded-none border bg-transparent py-1 pr-8 pl-2.5 text-xs select-none data-[size=sm]:h-7 data-[size=sm]:rounded-none data-[size=sm]:py-0.5 outline-none disabled:pointer-events-none disabled:cursor-not-allowed\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

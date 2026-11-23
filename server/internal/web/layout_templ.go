@@ -158,13 +158,13 @@ const headScript = `(() => {
 })()`
 
 // inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
-const inverted = "transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background"
+const inverted = "transition-colors hover:bg-foreground hover:text-background"
 
 // tickerCell is one cell of the ticker: its label and value, or the text actions.
 const tickerCell = "flex items-center gap-2 px-3"
 
 // launcherOption is a ctrl+k command, inverted while selected or hovered.
-const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background aria-selected:bg-foreground aria-selected:text-background"
+const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left " + inverted + " aria-selected:bg-foreground aria-selected:text-background"
 
 // cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
 const cycleTheme = "cycleTheme()"
@@ -1167,7 +1167,7 @@ func launcher(items []navItem) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "\" class=\"launcher\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 78, "\" class=\"launcher max-w-none overflow-visible bg-transparent p-0 text-foreground backdrop:bg-(--scrim) backdrop:backdrop-blur-xs\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

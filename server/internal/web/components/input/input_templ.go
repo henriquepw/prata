@@ -221,7 +221,7 @@ func Input(props ...Props) templ.Component {
 			}
 			var templ_7745c5c3_Var9 = []any{utils.CN(
 				// Structure from base/ui/input.tsx, look from the prata-web-ui skill.
-				"border-line focus-visible:border-primary aria-invalid:border-destructive caret-primary [caret-shape:block] transition-colors duration-(--snap) ease-(--ease) disabled:bg-line-soft h-8 rounded-none border bg-transparent px-2.5 py-1 text-xs file:h-6 file:text-xs file:font-medium md:text-xs w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+				"border-line focus-visible:border-primary aria-invalid:border-destructive caret-primary [caret-shape:block] transition-colors disabled:bg-line-soft h-8 rounded-none border bg-transparent px-2.5 py-1 text-xs file:h-6 file:text-xs file:font-medium md:text-xs w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
 				p.Class,
 			),
 			}

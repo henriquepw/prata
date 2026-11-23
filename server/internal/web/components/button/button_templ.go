@@ -56,7 +56,7 @@ type Props struct {
 
 // Structure from base/ui/button.tsx, look from the prata-web-ui skill: caps with tracking, --line-strong
 // border and a hover that inverts in --snap.
-const baseClasses = "aria-invalid:border-destructive rounded-none border border-line-strong bg-clip-padding text-xs font-medium uppercase tracking-wider hover:border-foreground hover:bg-foreground hover:text-background active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-colors duration-(--snap) ease-(--ease) select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
+const baseClasses = "aria-invalid:border-destructive rounded-none border border-line-strong bg-clip-padding text-xs font-medium uppercase tracking-wider hover:border-foreground hover:bg-foreground hover:text-background active:not-aria-[haspopup]:translate-y-px [&_svg:not([class*='size-'])]:size-4 group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap transition-colors select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0"
 
 func Button(props ...Props) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

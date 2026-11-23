@@ -63,13 +63,13 @@ const budgetScript = `(() => {
 const budgetInput = "min-w-0 bg-transparent tabular-nums caret-primary [caret-shape:block] outline-none"
 
 // budgetField is a category's limit field: an underline that turns primary on focus and destructive on error.
-const budgetField = "border-b border-line text-right transition-colors duration-(--snap) ease-(--ease) focus:border-primary aria-invalid:border-destructive"
+const budgetField = "border-b border-line text-right transition-colors focus:border-primary aria-invalid:border-destructive"
 
 // budgetName is a category's name opening its sheet, inverted on hover and focus.
-const budgetName = "cursor-pointer justify-self-start px-0.5 text-left transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background focus-visible:bg-foreground focus-visible:text-background"
+const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + inverted + " focus-visible:bg-foreground focus-visible:text-background"
 
 // budgetSlice is a slice of the 100% bar, its width set by the server and the script.
-const budgetSlice = "block bg-current transition-all duration-(--move) ease-(--ease)"
+const budgetSlice = "block bg-current transition-all duration-(--move)"
 
 // budgetScreen is the Categorias screen: the Receita mensal panel, with its prompt, the 100% bar and the line that
 // says what is missing or exceeds, and the Categorias panel, with a row per category (its name opening its sheet, a
@@ -264,7 +264,7 @@ func budgetScreen(form budgetForm, flash string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<label class=\"flex items-center gap-2 border-b border-line pb-1 text-base transition-colors duration-(--snap) ease-(--ease) focus-within:border-primary\"><span class=\"text-primary\" aria-hidden=\"true\">&gt;</span> <span class=\"text-xs text-muted-foreground\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<label class=\"flex items-center gap-2 border-b border-line pb-1 text-base transition-colors focus-within:border-primary\"><span class=\"text-primary\" aria-hidden=\"true\">&gt;</span> <span class=\"text-xs text-muted-foreground\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

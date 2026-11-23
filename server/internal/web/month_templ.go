@@ -77,10 +77,10 @@ const statementDay = "border-b border-line-soft px-2 pt-5 pb-1.5 text-2xs tracki
 const dailyDay = "group relative flex min-w-0 flex-col gap-0.5 border border-line-faint px-2 pt-2.5 pb-4 text-2xs outline-none hover:z-5 hover:border-foreground focus-visible:z-5 focus-visible:border-foreground data-today:outline data-today:outline-solid data-today:outline-offset-1 data-today:outline-primary data-[tone=red]:border-destructive data-[tone=gray]:*:not-[[role=tooltip]]:opacity-55"
 
 // dailyTipBox is a day's tooltip: inverted above the cell, centered or held inside the grid on the edge columns.
-const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity duration-(--snap) ease-(--ease) group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
+const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
 
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
-const tightTable = "@max-2xl:[&_:is(td,th)]:px-1"
+const tightTable = "@max-2xl/console:[&_:is(td,th)]:px-1"
 
 // shortDay writes a pure "YYYY-MM-DD" date without the year in the request's Formato de data, as "19/11".
 func shortDay(ctx context.Context, date string) string {
@@ -579,14 +579,14 @@ func dailyCalendar(page month) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span> <i class=\"absolute bottom-0 left-0 h-0.75 w-(--w) bg-(--tone)\" style=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "</span> <i class=\"absolute bottom-0 left-0 h-1 w-(--w) bg-(--tone)\" style=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 160, Col: 138}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 160, Col: 135}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 			if templ_7745c5c3_Err != nil {

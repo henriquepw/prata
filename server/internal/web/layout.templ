@@ -149,13 +149,13 @@ const headScript = `(() => {
 })()`
 
 // inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
-const inverted = "transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background"
+const inverted = "transition-colors hover:bg-foreground hover:text-background"
 
 // tickerCell is one cell of the ticker: its label and value, or the text actions.
 const tickerCell = "flex items-center gap-2 px-3"
 
 // launcherOption is a ctrl+k command, inverted while selected or hovered.
-const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background aria-selected:bg-foreground aria-selected:text-background"
+const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left " + inverted + " aria-selected:bg-foreground aria-selected:text-background"
 
 // cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
 const cycleTheme = "cycleTheme()"
@@ -296,7 +296,7 @@ templ balanceLine(b balance, oob bool) {
 // selects and runs them.
 templ launcher(items []navItem) {
 	{{ n := len(items) }}
-	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher">
+	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher max-w-none overflow-visible bg-transparent p-0 text-foreground backdrop:bg-(--scrim) backdrop:backdrop-blur-xs">
 		<div class={ panelBox, "bg-background" }>
 			<div class={ panelHead }>
 				<h2 class={ panelTitle }>{ i18n.T(ctx, "launcher.title") }</h2>

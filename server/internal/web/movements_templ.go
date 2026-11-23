@@ -109,7 +109,7 @@ func importPanel(view movementsView) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form id=\"import-form\" hx-post=\"/movements/import\" hx-encoding=\"multipart\" hx-target=\"main\" hx-select=\"main\" hx-swap=\"outerHTML\" hx-disable=\"find [type=submit]\" class=\"group/import flex flex-col gap-5\"><input type=\"hidden\" name=\"confirm_currency\"> <label class=\"group/drop relative flex cursor-pointer flex-col items-center gap-2.5 border border-dashed border-line px-4 py-10 text-center transition-colors duration-(--snap) ease-(--ease) focus-within:border-primary hover:border-primary aria-[invalid]:border-destructive\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<form id=\"import-form\" hx-post=\"/movements/import\" hx-encoding=\"multipart\" hx-target=\"main\" hx-select=\"main\" hx-swap=\"outerHTML\" hx-disable=\"find [type=submit]\" class=\"group/import flex flex-col gap-5\"><input type=\"hidden\" name=\"confirm_currency\"> <label class=\"group/drop relative flex cursor-pointer flex-col items-center gap-2.5 border border-dashed border-line px-4 py-10 text-center transition-colors focus-within:border-primary hover:border-primary aria-[invalid]:border-destructive\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

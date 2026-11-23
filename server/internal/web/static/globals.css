@@ -19,6 +19,8 @@
   --color-*: initial;
   --breakpoint-3xl: 90rem;
   --text-2xs: 11px;
+  --default-transition-duration: var(--snap);
+  --default-transition-timing-function: var(--ease);
   --text-2xs--line-height: 16px;
   --animate-blink: blink 1s steps(1) infinite;
   --font-sans: "Geist Mono", ui-monospace, monospace;
@@ -269,20 +271,10 @@
     color: var(--background);
   }
 
-  /* Launcher: the ctrl+k dialog, 14vh from the top over a blurred scrim, its options scrolling past 60vh. */
+  /* Launcher: the ctrl+k dialog, 14vh from the top, its options scrolling past 60vh; the rest is in the markup. */
   .launcher {
     margin: 14vh auto auto;
     width: min(100% - --spacing(8), --spacing(150));
-    max-width: none;
-    padding: 0;
-    overflow: visible;
-    background: transparent;
-    color: var(--foreground);
-  }
-
-  .launcher::backdrop {
-    background: var(--scrim);
-    backdrop-filter: blur(--spacing(0.5));
   }
 
   #launcher-options {
@@ -339,7 +331,7 @@
   }
 
   /* The sheet is a dialog outside the console container, so its 44px targets follow the viewport. */
-  @variant max-md {
+  @variant max-sm {
     .sheet :is([data-slot="button"], [data-slot="input"], [data-slot="native-select"], .lnk),
     .sheet [role="radiogroup"] > label > span {
       min-height: --spacing(11);
@@ -543,16 +535,16 @@ dialog.sheet[open] {
     transform: translate(0, 0);
   }
   20% {
-    transform: translate(--spacing(-9.25), --spacing(5.75));
+    transform: translate(--spacing(-9), --spacing(6));
   }
   40% {
-    transform: translate(--spacing(7.25), --spacing(-10.25));
+    transform: translate(--spacing(7), --spacing(-10));
   }
   60% {
-    transform: translate(--spacing(-3.25), --spacing(11.75));
+    transform: translate(--spacing(-3), --spacing(12));
   }
   80% {
-    transform: translate(--spacing(10.25), --spacing(2.75));
+    transform: translate(--spacing(10), --spacing(3));
   }
 }
 

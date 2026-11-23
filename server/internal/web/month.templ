@@ -68,10 +68,10 @@ const statementDay = "border-b border-line-soft px-2 pt-5 pb-1.5 text-2xs tracki
 const dailyDay = "group relative flex min-w-0 flex-col gap-0.5 border border-line-faint px-2 pt-2.5 pb-4 text-2xs outline-none hover:z-5 hover:border-foreground focus-visible:z-5 focus-visible:border-foreground data-today:outline data-today:outline-solid data-today:outline-offset-1 data-today:outline-primary data-[tone=red]:border-destructive data-[tone=gray]:*:not-[[role=tooltip]]:opacity-55"
 
 // dailyTipBox is a day's tooltip: inverted above the cell, centered or held inside the grid on the edge columns.
-const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity duration-(--snap) ease-(--ease) group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
+const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
 
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
-const tightTable = "@max-2xl:[&_:is(td,th)]:px-1"
+const tightTable = "@max-2xl/console:[&_:is(td,th)]:px-1"
 
 // shortDay writes a pure "YYYY-MM-DD" date without the year in the request's Formato de data, as "19/11".
 func shortDay(ctx context.Context, date string) string {
@@ -157,7 +157,7 @@ templ dailyCalendar(page month) {
 				<b class="font-medium text-muted-foreground group-data-today:text-primary group-data-today:before:content-['▌']">{ strconv.Itoa(cell.Day) }</b>
 				<span class="truncate text-xs font-semibold tabular-nums group-data-[tone=gray]:font-normal">{ money(ctx, cell.Spent) }</span>
 				<span class="truncate tabular-nums before:content-['/_'] text-muted-foreground">{ money(ctx, cell.Limit) }</span>
-				<i class="absolute bottom-0 left-0 h-0.75 w-(--w) bg-(--tone)" style={ "--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
+				<i class="absolute bottom-0 left-0 h-1 w-(--w) bg-(--tone)" style={ "--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
 				@dailyTip(page, cell)
 			</li>
 		}
