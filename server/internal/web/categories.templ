@@ -43,7 +43,7 @@ templ categoriesPage(s shell, form budgetForm) {
 
 // categoryName is a category's name after its "■" in the category color.
 templ categoryName(name, color string) {
-	<span class="flex items-center gap-[1ch]"><span class={ colorClass(color) } aria-hidden="true">■</span>{ name }</span>
+	<span class="flex items-center gap-2"><span class={ colorClass(color) } aria-hidden="true">■</span>{ name }</span>
 }
 
 templ categorySheet(form categoryForm) {

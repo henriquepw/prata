@@ -32,7 +32,7 @@ templ connectionFormPanel(view connectionsView) {
 				<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
 			</p>
 		} else {
-			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-[2ch]">
+			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-4">
 				@hintField("item_id", i18n.T(ctx, "connections.item_id"), i18n.T(ctx, "connections.item_id_hint"), view.Errors["item_id"]) {
 					@input.Input(input.Props{ID: "item_id", Name: "item_id", Value: view.ItemID, Required: true, Attributes: ariaInvalid(view.Errors["item_id"], templ.Attributes{"autocomplete": "off", "spellcheck": "false"})})
 				}
@@ -98,7 +98,7 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 						@table.Head(table.HeadProps{Class: "w-full"}) {
 							{ i18n.T(ctx, "connections.institution") }
 						}
-						@table.Head(table.HeadProps{Class: "hide-m"}) {
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
 							{ i18n.T(ctx, "movements.account") }
 						}
 						@table.Head() {
@@ -116,7 +116,7 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 								{ c.Institution }
 							}
-							@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden text-muted-foreground"}) {
 								{ c.AccountName }
 							}
 							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {

@@ -13,7 +13,7 @@ import (
 templ devicesPage(s shell, devices []store.Device, activity []store.Activity) {
 	{{ loc := s.Now.Location() }}
 	@layout(s) {
-		<div class="split">
+		<div class="flex flex-wrap gap-x-4 gap-y-5">
 			@devicesPanel(devices, loc)
 			@activityLog(activity, loc)
 		</div>
@@ -22,7 +22,7 @@ templ devicesPage(s shell, devices []store.Device, activity []store.Activity) {
 
 // devicesPanel lists the keyed devices, each with its revoke button.
 templ devicesPanel(devices []store.Device, loc *time.Location) {
-	@panel(i18n.T(ctx, "nav.devices"), "", nil) {
+	@panel(i18n.T(ctx, "nav.devices"), "min-w-0 grow-3 basis-101", nil) {
 		if len(devices) == 0 {
 			@empty(i18n.T(ctx, "devices.empty"))
 		} else {
@@ -35,7 +35,7 @@ templ devicesPanel(devices []store.Device, loc *time.Location) {
 						@table.Head() {
 							{ i18n.T(ctx, "devices.last_seen") }
 						}
-						@table.Head(table.HeadProps{Class: "hide-m"}) {
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
 							{ i18n.T(ctx, "devices.created_at") }
 						}
 						@table.Head()
@@ -50,7 +50,7 @@ templ devicesPanel(devices []store.Device, loc *time.Location) {
 							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 								{ localTime(ctx, device.LastSeenAt, loc) }
 							}
-							@table.Cell(table.CellProps{Class: "hide-m tabular-nums text-muted-foreground"}) {
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden tabular-nums text-muted-foreground"}) {
 								{ localTime(ctx, device.CreatedAt, loc) }
 							}
 							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
