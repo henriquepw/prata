@@ -100,7 +100,6 @@ templ loginPage(form authForm) {
 
 templ signupPage(form authForm) {
 	@authPage(i18n.T(ctx, "auth.sign_up"), "/signup", form) {
-		<p>{ i18n.T(ctx, "auth.app_note") }</p>
 		if form.HasUsers {
 			<p>
 				{ i18n.T(ctx, "auth.has_account") } <a href="/login" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_in") }</a>
@@ -165,8 +164,7 @@ templ authPage(title, action string, form authForm) {
 templ notFoundPage(path string) {
 	@document(i18n.T(ctx, "notfound.title")) {
 		@entrance(figlet404, "404", i18n.T(ctx, "notfound.title"), "max-w-100") {
-			<p class="mb-4 text-xs break-all"><span class="text-primary">&gt;</span> GET { path }</p>
-			<p class="mb-4 text-xs text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "notfound.text") }</p>
+			@empty(i18n.T(ctx, "notfound.text"), "mb-4 text-xs")
 			@button.Button(button.Props{Href: "/"}) {
 				{ "> " + i18n.T(ctx, "notfound.back") }
 			}

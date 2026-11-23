@@ -265,7 +265,7 @@ templ monthContent(page month) {
 			}
 			@panel(i18n.T(ctx, "nav.categories"), "min-w-0 grow basis-59", allCategories(page)) {
 				if len(page.Usages) == 0 {
-					@empty(i18n.T(ctx, "categories.empty"))
+				@empty(i18n.T(ctx, "categories.empty"))
 				} else {
 					<div class="flex flex-col">
 						for _, usage := range page.Usages {

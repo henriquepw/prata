@@ -449,6 +449,10 @@
 }
 
 /* Page change: only main animates, the chrome stays still. */
+@view-transition {
+  navigation: auto;
+}
+
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;

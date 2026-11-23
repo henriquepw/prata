@@ -27,7 +27,7 @@ templ activityLog(activity []store.Activity, loc *time.Location) {
 				<li><span class="text-muted-foreground">{ "> [" + formatDate(a.CreatedAt, loc, "15:04") + "]" }</span> { a.Device } · { activityPhrase(ctx, a) }</li>
 			}
 			if len(activity) == 0 {
-				<li class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "activity.empty") }</li>
+				<li>@empty(i18n.T(ctx, "activity.empty"))</li>
 			}
 			<li class="mt-auto" aria-hidden="true"><span class="text-muted-foreground">{ ">" }</span> <span class="animate-blink text-primary">▋</span></li>
 		</ol>

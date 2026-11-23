@@ -93,9 +93,12 @@ templ newAction(url string) {
 	}
 }
 
-// empty is a list's one-line empty state, as in "¯\_(ツ)_/¯ nenhuma categoria ainda".
-templ empty(text string) {
-	<p class="text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { text }</p>
+// empty is a list's one-line empty state.
+templ empty(text string, classes ...string) {
+	<p class={ utils.CN("text-muted-foreground", classes) }>
+		<span aria-hidden="true">{ randomASCIIEmoticon() }</span>
+		{ text }
+	</p>
 }
 
 // sheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.

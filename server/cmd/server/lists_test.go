@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -10,6 +11,7 @@ import (
 func TestWebLists_AreConsolePanelsWithEmptyStates(t *testing.T) {
 	w := newWebClient(t)
 	w.mustSubmit(http.MethodDelete, "/devices/"+w.deviceID, nil)
+	emoticons := []string{":-)", ":-(", ";-)", ":-/", ":-D", ":|", ":P", "^_^", "o_O", "O_o", "x_x"}
 
 	for path, empty := range map[string]string{
 		"/tags":        "nenhuma tag ainda",
@@ -17,7 +19,8 @@ func TestWebLists_AreConsolePanelsWithEmptyStates(t *testing.T) {
 		"/devices":     "nenhum dispositivo conectado",
 	} {
 		body := get(w.handler, path, w.cookie).Body.String()
-		if !strings.Contains(body, `class="panel`) || !strings.Contains(body, `¯\_(ツ)_/¯`) || !strings.Contains(body, empty) {
+		hasEmoticon := slices.ContainsFunc(emoticons, func(emoticon string) bool { return strings.Contains(body, emoticon) })
+		if !strings.Contains(body, `class="panel`) || !hasEmoticon || !strings.Contains(body, empty) {
 			t.Errorf("%s lacks a panel with the empty state %q: %s", path, empty, body)
 		}
 

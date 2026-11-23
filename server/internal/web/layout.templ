@@ -343,7 +343,7 @@ templ launcher(items []navItem) {
 					@optionLabel(n+3, i18n.T(ctx, "launcher.sign_out"))
 				</button>
 			</div>
-			<p class="hidden px-2 py-1 text-muted-foreground peer-[:not(:has([role=option]:not([hidden])))]:block">¯\_(ツ)_/¯ { i18n.T(ctx, "launcher.empty") }</p>
+			@empty(i18n.T(ctx, "launcher.empty"), "hidden px-2 py-1 peer-[:not(:has([role=option]:not([hidden])))]:block")
 		</div>
 	</dialog>
 }

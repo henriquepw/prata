@@ -27,11 +27,11 @@ func TestAuthPages_FollowTheBrowserLanguage(t *testing.T) {
 	signupKey(t, handler, newSignup())
 	english := map[string][]string{
 		"/login":  {`<html lang="en" `, "Sign in", "Email", "Password", "&gt; sign in", "Don&#39;t have an account yet?", "Create account"},
-		"/signup": {`<html lang="en" `, "Create account", "&gt; create account", "Already use Prata in the app?", "Already have an account?", "Sign in"},
+		"/signup": {`<html lang="en" `, "Create account", "&gt; create account", "Already have an account?", "Sign in"},
 	}
 	portuguese := map[string][]string{
 		"/login":  {`<html lang="pt-BR" `, "Entrar", "Senha", "&gt; entrar", "Ainda não tem conta?"},
-		"/signup": {`<html lang="pt-BR" `, "Criar conta", "&gt; criar conta", "Já usa o Prata no app?", "Já tem conta?"},
+		"/signup": {`<html lang="pt-BR" `, "Criar conta", "&gt; criar conta", "Já tem conta?"},
 	}
 	for language, pages := range map[string]map[string][]string{"en-US,en;q=0.9": english, "fr;q=0.1, en;q=0.9": english, "en;q=0.5, fr": portuguese, "fr": portuguese, "": portuguese} {
 		for path, texts := range pages {

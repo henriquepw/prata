@@ -74,7 +74,7 @@ const confirmCurrency = "const f = document.getElementById('import-form'); f.ele
 templ movementsPanel(view movementsView) {
 	@panel(i18n.T(ctx, "nav.movements"), "", nil) {
 		if len(view.Movements) == 0 {
-			@empty(i18n.T(ctx, "movements.empty"))
+		@empty(i18n.T(ctx, "movements.empty"))
 		} else {
 			@batchForm(view.Categories)
 			@table.Table() {

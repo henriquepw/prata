@@ -9,7 +9,6 @@ var en = map[string]string{
 	"auth.password":          "Password",
 	"auth.no_account":        "Don't have an account yet?",
 	"auth.has_account":       "Already have an account?",
-	"auth.app_note":          "Already use Prata in the app? Create the account in the app to keep its data; creating here starts an empty account.",
 	"auth.error.credentials": "Invalid email or password.",
 	"auth.error.email":       "Enter an email.",
 	"auth.error.password":    "Enter a password.",
