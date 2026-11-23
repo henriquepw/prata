@@ -16,13 +16,20 @@ import (
 func signedIn(t *testing.T) (http.Handler, *http.Cookie) {
 	t.Helper()
 
+	return signedInWith(t, OpenFinance{})
+}
+
+// signedInWith is signedIn with the given Open Finance configuration.
+func signedInWith(t *testing.T, openFinance OpenFinance) (http.Handler, *http.Cookie) {
+	t.Helper()
+
 	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "prata.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
 
-	routes := New(db, true, OpenFinance{})
+	routes := New(db, true, openFinance)
 	req := httptest.NewRequest(http.MethodPost, "/signup", strings.NewReader(url.Values{"email": {"ana@example.com"}, "password": {"correct horse"}}.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	rec := httptest.NewRecorder()
