@@ -1205,39 +1205,164 @@
     animation: flash 600ms var(--ease);
   }
 
-  /* Daily limit: the month as a week-wide grid, a cell per day with its day, spent and limit, tinted by how much of the
-     limit the day used. */
+  /* Daily limit: the month as a week-wide grid under the weekdays, a cell per day with its spent, its limit and a meter
+     of the share in the day's tone; today marked in primary, a day to come or without spending faded, and the tooltip
+     inverted above the cell, held inside the grid on the edge columns. */
   .daily {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 3px;
   }
 
+  .daily-weekday {
+    padding-bottom: 0.3lh;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  [data-tone="green"] {
+    --tone: var(--cat-green);
+  }
+
+  [data-tone="yellow"] {
+    --tone: var(--cat-yellow);
+  }
+
+  [data-tone="red"] {
+    --tone: var(--destructive);
+  }
+
+  [data-tone="gray"] {
+    --tone: var(--line-strong);
+  }
+
   .daily-day {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.2lh;
-    padding: 0.5lh 1ch;
+    gap: 0.15lh;
+    min-width: 0;
+    padding: 0.5lh 1ch 0.8lh;
     border: 1px solid var(--line-faint);
     font-size: 11px;
+    outline: none;
+  }
+
+  .daily-day > b {
+    color: var(--muted-foreground);
+    font-weight: 500;
+  }
+
+  .daily-spent,
+  .daily-limit {
     overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .daily-day[data-tone="green"] {
-    background: color-mix(in oklab, var(--cat-green) 35%, transparent);
+  .daily-spent {
+    font-size: 13px;
+    font-weight: 600;
   }
 
-  .daily-day[data-tone="yellow"] {
-    background: color-mix(in oklab, var(--cat-yellow) 40%, transparent);
+  .daily-limit::before {
+    content: "/ ";
+  }
+
+  .daily-meter {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--tone);
   }
 
   .daily-day[data-tone="red"] {
-    background: color-mix(in oklab, var(--destructive) 40%, transparent);
+    border-color: var(--destructive);
   }
 
-  .daily-day[data-tone="gray"] {
-    background: var(--line-faint);
+  .daily-day[data-tone="gray"] > :not(.daily-tip) {
+    opacity: 0.55;
+  }
+
+  .daily-day[data-tone="gray"] .daily-spent {
+    font-weight: 400;
+  }
+
+  .daily-day[data-today] {
+    outline: 1px solid var(--primary);
+    outline-offset: 1px;
+  }
+
+  .daily-day[data-today] > b {
+    color: var(--primary);
+    opacity: 1;
+  }
+
+  .daily-day[data-today] > b::before {
+    content: "▌";
+  }
+
+  .daily-day:is(:hover, :focus-visible) {
+    z-index: 5;
+    border-color: var(--foreground);
+  }
+
+  .daily-tip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2lh;
+    width: 32ch;
+    padding: 0.6lh 1.2ch;
+    background: var(--foreground);
+    color: var(--background);
+    opacity: 0;
+    pointer-events: none;
+    translate: -50% 0;
+    transition: opacity var(--snap) var(--ease);
+  }
+
+  .daily-tip em {
+    margin-top: 0.2lh;
+    padding-top: 0.3lh;
+    border-top: 1px solid color-mix(in oklab, var(--background) 30%, transparent);
+    font-style: normal;
+    opacity: 0.7;
+  }
+
+  .daily-day[data-edge="start"] > .daily-tip {
+    left: 0;
+    translate: none;
+  }
+
+  .daily-day[data-edge="end"] > .daily-tip {
+    right: 0;
+    left: auto;
+    translate: none;
+  }
+
+  .daily-day:is(:hover, :focus-visible) > .daily-tip {
+    opacity: 1;
+  }
+
+  .daily-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2ch;
+    margin-top: 1lh;
     color: var(--muted-foreground);
+    font-size: 11px;
+  }
+
+  .daily-legend > span::before {
+    content: "■ ";
+    color: var(--tone);
   }
 
   /* Split: a screen's panel and the one beside it, 3:1, the side one wrapping below when they don't fit. */

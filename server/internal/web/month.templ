@@ -105,6 +105,70 @@ templ monthBar(page month) {
 	</div>
 }
 
+var weekdays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
+
+// dailyBudget is the slot of the daily limit panel: the Modo do limite diário and the budget it spreads over the month.
+templ dailyBudget(d daily) {
+	if d.Defined {
+		<span class="month-keys">{ i18n.T(ctx, "month.daily_budget", money(ctx, d.Budget)) }</span>
+	}
+}
+
+// dailyCalendar is the month as a week-wide grid under the weekdays: a cell per day with its spent, its limit and a
+// meter of the share, today marked, and a tooltip on hover or focus with what was left or went over and how the limit
+// is made; the legend of the tones below.
+templ dailyCalendar(page month) {
+	<ol class="daily">
+		for _, weekday := range weekdays {
+			<li class="daily-weekday" aria-hidden="true">{ i18n.T(ctx, "weekday."+weekday) }</li>
+		}
+		for range page.Daily.Lead {
+			<li aria-hidden="true"></li>
+		}
+		for _, cell := range page.Daily.Cells {
+			{{ column := (page.Daily.Lead + cell.Day - 1) % 7 }}
+			<li
+				class="daily-day"
+				data-date={ cell.Date }
+				data-tone={ cell.Tone }
+				data-today?={ cell.Date == page.Today }
+				data-edge={ utils.IfElse(column < 3, "start", utils.IfElse(column > 4, "end", "")) }
+				tabindex="0"
+				aria-describedby={ "daily-tip-" + cell.Date }
+			>
+				<b>{ strconv.Itoa(cell.Day) }</b>
+				<span class="daily-spent tabular-nums">{ money(ctx, cell.Spent) }</span>
+				<span class="daily-limit tabular-nums text-muted-foreground">{ money(ctx, cell.Limit) }</span>
+				<i class="daily-meter" style={ "width:" + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
+				@dailyTip(page, cell)
+			</li>
+		}
+	</ol>
+	<p class="daily-legend">
+		for _, tone := range []string{"green", "yellow", "red", "gray"} {
+			<span data-tone={ tone }>{ i18n.T(ctx, "month.daily_"+tone) }</span>
+		}
+	</p>
+}
+
+// dailyTip is the tooltip of a day: its date, spent and limit, what was left or went over with the share, nothing of
+// that for a day still to come, and how the Modo do limite diário makes the limit.
+templ dailyTip(page month, cell dailyCell) {
+	<span id={ "daily-tip-" + cell.Date } role="tooltip" class="daily-tip">
+		<strong>{ i18n.T(ctx, "weekday."+dayOf(cell.Date).Weekday().String()) } { shortDay(ctx, cell.Date) }</strong>
+		<span>{ i18n.T(ctx, "month.daily_spent", money(ctx, cell.Spent)) }</span>
+		<span>{ i18n.T(ctx, "month.daily_limit", money(ctx, cell.Limit)) }</span>
+		switch  {
+			case cell.Date > page.Today:
+				<span>{ i18n.T(ctx, "month.daily_future") }</span>
+			case cell.Spent <= cell.Limit:
+				<span>{ i18n.T(ctx, "month.daily_left", money(ctx, cell.Limit-cell.Spent), cell.percent()) }</span>
+			default:
+				<span>{ i18n.T(ctx, "month.daily_over", money(ctx, cell.Spent-cell.Limit), cell.percent()) }</span>
+		}
+	</span>
+}
+
 // monthContent is the six boxes of the month's account and the grid of the statement and the categories.
 templ monthContent(page month) {
 	<div id="month" class="month">
@@ -120,22 +184,11 @@ templ monthContent(page month) {
 			@kpi(i18n.T(ctx, "month.projected"), page.realized()+page.Pending)
 		</div>
 		@launchPanel(page)
-		@panel(i18n.T(ctx, "month.daily"), "", nil) {
+		@panel(i18n.T(ctx, "month.daily"), "", dailyBudget(page.Daily)) {
 			if !page.Daily.Defined {
 				@empty(i18n.T(ctx, "month.daily_empty"))
 			} else {
-				<ol class="daily">
-					for range page.Daily.Lead {
-						<li aria-hidden="true"></li>
-					}
-					for _, cell := range page.Daily.Cells {
-						<li class="daily-day" data-date={ cell.Date } data-tone={ cell.Tone }>
-							<b>{ strconv.Itoa(cell.Day) }</b>
-							<span class="tabular-nums">{ money(ctx, cell.Spent) }</span>
-							<span class="tabular-nums text-muted-foreground">{ money(ctx, cell.Limit) }</span>
-						</li>
-					}
-				</ol>
+				@dailyCalendar(page)
 			}
 		}
 		<div class="split">

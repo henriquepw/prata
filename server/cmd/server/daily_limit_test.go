@@ -97,6 +97,20 @@ func TestWebMonth_DailyLimitPanelColorsTheDaysByTheShareOfTheLimit(t *testing.T)
 	assertInOrder(t, body, `data-date="2020-04-01"`, "R$ 80,00", "R$ 100,00", `data-date="2020-04-02"`)
 }
 
+func TestWebMonth_DailyLimitTooltipTellsWhatIsLeftOrOverAndHowTheLimitIsMade(t *testing.T) {
+	w := dailyBudget(t, "FIXED")
+	w.push(
+		w.spend("Livre", 8000, time.Date(2020, 4, 1, 12, 0, 0, 0, time.UTC)),
+		w.spend("Livre", 15000, time.Date(2020, 4, 2, 12, 0, 0, 0, time.UTC)),
+	)
+
+	body := get(w.handler, "/?month=2020-04", w.cookie).Body.String()
+	assertInOrder(t, body,
+		`data-date="2020-04-01"`, `role="tooltip"`, "sobrou R$ 20,00 (80%)", "dividido igualmente pelos dias do mês",
+		`data-date="2020-04-02"`, "estourou R$ 50,00 (150%)",
+	)
+}
+
 func TestWebMonth_DailyLimitPanelGraysAFutureDayEvenWithSpending(t *testing.T) {
 	w := dailyBudget(t, "FIXED")
 	future := time.Now().UTC().AddDate(0, 1, 0)

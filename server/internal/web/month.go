@@ -131,11 +131,14 @@ type day struct {
 }
 
 // daily is the daily limit panel: a cell per day of the month, Lead blank cells before the first to line it up on its
-// weekday, all empty (and Defined false) while the account has no Receita mensal.
+// weekday, the Modo do limite diário and the Budget of the daily categories it spreads, all empty (and Defined false)
+// while the account has no Receita mensal.
 type daily struct {
 	Defined bool
 	Lead    int
 	Cells   []dailyCell
+	Mode    string
+	Budget  int64
 }
 
 // dailyCell is a day of the month as YYYY-MM-DD: the Spent on the daily categories, the Limit and the Tone of it, one
@@ -174,7 +177,7 @@ func readDaily(session store.Session, first time.Time, today string, usages []st
 
 	days := first.AddDate(0, 1, -1).Day()
 	limit, spentBefore := dailyBudget/int64(days), int64(0)
-	d := daily{Defined: true, Lead: int(first.Weekday())}
+	d := daily{Defined: true, Lead: int(first.Weekday()), Mode: session.DailyLimitMode, Budget: dailyBudget}
 
 	for i := range days {
 		date := first.AddDate(0, 0, i).Format(time.DateOnly)
@@ -198,6 +201,15 @@ func readDaily(session store.Session, first time.Time, today string, usages []st
 	}
 
 	return d
+}
+
+// percent is the rounded share of the Limit the day spent, 0 with no limit.
+func (c dailyCell) percent() int64 {
+	if c.Limit == 0 {
+		return 0
+	}
+
+	return (c.Spent*100 + c.Limit/2) / c.Limit
 }
 
 // yearMonth is the month shown, as YYYY-MM.
