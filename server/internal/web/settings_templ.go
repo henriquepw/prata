@@ -493,7 +493,7 @@ func pluggyFields(form settingsForm) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if form.HasPluggy {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-wrap gap-[1ch]\" data-confirm>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"flex flex-wrap gap-2\" data-confirm>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

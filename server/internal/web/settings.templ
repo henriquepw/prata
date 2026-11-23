@@ -89,7 +89,7 @@ templ pluggyFields(form settingsForm) {
 		@input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: ariaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})})
 	}
 	if form.HasPluggy {
-		<div class="flex flex-wrap gap-[1ch]" data-confirm>
+		<div class="flex flex-wrap gap-2" data-confirm>
 			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
 				{ i18n.T(ctx, "settings.pluggy_delete") }
 			}

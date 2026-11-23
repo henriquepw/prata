@@ -647,13 +647,8 @@
   /* The sheet is a dialog outside the console container, so its 44px targets follow the viewport. */
   @variant max-md {
     .sheet :is([data-slot="button"], [data-slot="input"], [data-slot="native-select"], .lnk),
-    .sheet .choice span {
+    .sheet [role="radiogroup"] > label > span {
       min-height: --spacing(11);
-    }
-
-    .sheet .choice span {
-      display: flex;
-      align-items: center;
     }
 
     .sheet .lnk {
@@ -1134,7 +1129,7 @@
      data-busy replaces the label, as in "⠋ salvando". */
   .htmx-request [type="submit"]::before {
     content: "⠋";
-    margin-inline-end: 1ch;
+    margin-inline-end: --spacing(2);
     animation: braille 0.8s steps(1) infinite;
   }
 
@@ -1326,115 +1321,6 @@
   .split > :nth-child(2) {
     flex: 1 1 28ch;
     min-width: 0;
-  }
-
-  /* Sheet: a dialog on the right holding a borderless panel, set apart only by a --line-soft left border. */
-  .sheet {
-    margin: 0 0 0 auto;
-    width: min(100%, 440px);
-    max-width: none;
-    height: 100dvh;
-    max-height: none;
-    padding: 0;
-    border: 0;
-    background: var(--background);
-    color: var(--foreground);
-    font-size: 13px;
-  }
-
-  .sheet::backdrop {
-    background: var(--scrim);
-  }
-
-  .sheet-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 1lh;
-    min-height: 100%;
-    border: 0;
-    border-left: 1px solid var(--line-soft);
-  }
-
-  /* Corners inside the dialog, which would scroll on any overflow. */
-  .sheet-panel::after {
-    inset: 0;
-  }
-
-  /* An income has no category: [receita] checked hides the sheet's category field. */
-  .sheet:has(input[name="kind"][value="INCOME"]:checked) .category-field {
-    display: none;
-  }
-
-  /* Help mark "?" after a field label: its data-tip shows on hover or focus. */
-  .tip {
-    position: relative;
-    margin-left: 0.5ch;
-    color: var(--primary);
-    cursor: help;
-  }
-
-  .tip::after {
-    content: attr(data-tip);
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    z-index: 10;
-    width: 34ch;
-    padding: 0.5lh 1ch;
-    background: var(--foreground);
-    color: var(--background);
-    font-size: 11px;
-    letter-spacing: normal;
-    text-transform: none;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity var(--snap) var(--ease);
-  }
-
-  .tip:hover::after,
-  .tip:focus-visible::after {
-    opacity: 1;
-  }
-
-  /* Short choice (despesa receita, ■ verde): radios drawn as buttons that wrap, the checked one inverted. */
-  .choice {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1ch;
-  }
-
-  .choice input {
-    position: absolute;
-    opacity: 0;
-  }
-
-  .choice input + span {
-    display: block;
-    padding: 0.25rem 1.4ch;
-    border: 1px solid var(--line);
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition:
-      background-color var(--snap) var(--ease),
-      color var(--snap) var(--ease);
-  }
-
-  .choice input + span:hover,
-  .choice input:checked + span {
-    border-color: var(--foreground);
-    background: var(--foreground);
-    color: var(--background);
-  }
-
-  .choice input:focus-visible + span {
-    outline: 1px solid var(--primary);
-    outline-offset: 2px;
-  }
-
-  .choice[aria-invalid="true"] input + span {
-    border-color: var(--destructive);
   }
 
   @variant @max-2xl/console {

@@ -36,7 +36,7 @@ templ transactionSheet(form transactionForm) {
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		<div class="grid grid-cols-2 gap-[2ch]">
+		<div class="grid grid-cols-2 gap-4">
 			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
 			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>

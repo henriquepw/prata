@@ -77,13 +77,13 @@ templ recurrenceSheet(form recurrenceForm) {
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		<div class="grid grid-cols-2 gap-[2ch]">
+		<div class="grid grid-cols-2 gap-4">
 			@hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
 				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
 			}
 			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>
-		<div class="grid grid-cols-2 gap-[2ch]">
+		<div class="grid grid-cols-2 gap-4">
 			@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
 				@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
 			}

@@ -237,7 +237,7 @@ templ layout(s shell) {
 			</div>
 		</div>
 		@launcher(s.nav())
-		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet"></dialog>
+		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full max-w-110 border-0 bg-background p-0 text-xs text-foreground backdrop:bg-(--scrim)"></dialog>
 	}
 }
 
@@ -332,7 +332,7 @@ templ launcher(items []navItem) {
 
 // currencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
 templ currencyPrefix() {
-	<div class="flex items-center gap-[1ch]">
+	<div class="flex items-center gap-2">
 		<span class="text-xs text-muted-foreground">{ currencySymbol(ctx) }</span>
 		{ children... }
 	</div>

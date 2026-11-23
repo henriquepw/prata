@@ -105,6 +105,10 @@ templ online() {
 
 const closeSheet = "this.closest('dialog').close()"
 
+// sheetPanel is the panel inside #sheet: borderless but for a --line-soft left border, its fields a line apart, and
+// its corners inside the dialog, which would scroll on any overflow. group/sheet lets a field react to the choices.
+const sheetPanel = "panel group/sheet flex min-h-full flex-col gap-5 border-l border-line-soft px-4 py-5 after:inset-0"
+
 // sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir", which asks Confirm inline
 // first, as in "excluir esta tag? <consequência>"; Error is a form-level message, such as a rejected commit. Submit
 // and Busy name the submit and its spinner, "salvar" and "salvando" when empty.
@@ -123,7 +127,7 @@ type sheetProps struct {
 // submit reads "⠋ salvando", and "excluir" swaps the footer for its confirmInline. Every response, a 422 included,
 // swaps into #sheet.
 templ sheet(p sheetProps) {
-	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel px-4 py-5">
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class={ sheetPanel }>
 		<header class={ utils.CN(panelHead, "mb-0") }>
 			<h2 class={ panelTitle }>{ p.Title }</h2>
 			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
@@ -134,7 +138,7 @@ templ sheet(p sheetProps) {
 				{ p.Error }
 			}
 		}
-		<footer class="mt-auto flex flex-wrap justify-between gap-[1ch]" data-confirm>
+		<footer class="mt-auto flex flex-wrap justify-between gap-2" data-confirm>
 			<div>
 				if p.DeleteURL != "" {
 					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
@@ -142,7 +146,7 @@ templ sheet(p sheetProps) {
 					}
 				}
 			</div>
-			<div class="flex gap-[1ch]">
+			<div class="flex gap-2">
 				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
 					{ i18n.T(ctx, "sheet.cancel") }
 				}
@@ -164,7 +168,7 @@ const toggleConfirm = "const c = this.closest('[data-confirm]'); for (const e of
 // confirmInline is the hidden "! <question> [sim, …] [não]" that toggleConfirm swaps in for the actions of the
 // closest [data-confirm], without a round-trip: yes carries the request in attrs, "não" swaps back.
 templ confirmInline(question, yes string, attrs templ.Attributes) {
-	<div class="inline-flex flex-wrap items-center gap-[1ch]" hidden>
+	<div class="inline-flex flex-wrap items-center gap-2" hidden>
 		<span class="text-xs text-destructive">! { question }</span>
 		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: attrs}) {
 			{ yes }
@@ -194,7 +198,7 @@ templ fieldNote(hint, message string) {
 			{ message }
 		}
 	} else if hint != "" {
-		<p class="text-[11px] text-muted-foreground">{ hint }</p>
+		<p class="text-2xs text-muted-foreground">{ hint }</p>
 	}
 }
 
@@ -218,7 +222,7 @@ templ nameField(value, message string) {
 // categoryField is the category of an entry, picked from categories with selected picked; the sheet hides it while
 // [receita] is checked, since an income has none.
 templ categoryField(categories []store.Category, selected, message string) {
-	<div class="category-field">
+	<div class="group-has-[[name=kind][value=INCOME]:checked]/sheet:hidden">
 		@formField("category_id", i18n.T(ctx, "field.category"), message) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(message)}) {
 				for _, category := range categories {
@@ -247,11 +251,11 @@ func fillDate(id string, days int) string {
 // date picker.
 templ dateField(id, label, value, message string) {
 	@field.Field() {
-		<div class="flex items-center justify-between gap-[1ch]">
+		<div class="flex items-center justify-between gap-2">
 			@field.Label(field.LabelProps{For: id}) {
 				{ label }
 			}
-			<span class="flex gap-[.5ch]">
+			<span class="flex gap-1">
 				<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(fillDate(id, 0)) }>[{ i18n.T(ctx, "date.today") }]</button>
 				<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(fillDate(id, 1)) }>[{ i18n.T(ctx, "date.yesterday") }]</button>
 			</span>
@@ -265,24 +269,35 @@ templ dateField(id, label, value, message string) {
 // with the checked one inverted.
 templ choiceField(name, label, help, message string) {
 	@field.Field() {
-		<span id={ name + "-label" } class="text-[11px] uppercase tracking-widest text-muted-foreground">
+		<span id={ name + "-label" } class="text-2xs tracking-widest text-muted-foreground uppercase">
 			{ label }
 			if help != "" {
-				<span class="tip" tabindex="0" role="img" aria-label={ help } data-tip={ help }>?</span>
+				@helpMark(help)
 			}
 		</span>
-		<div role="radiogroup" aria-labelledby={ name + "-label" } class="choice" { ariaInvalid(message)... }>
+		<div role="radiogroup" aria-labelledby={ name + "-label" } class={ choiceGroup } { ariaInvalid(message)... }>
 			{ children... }
 		</div>
 		@fieldNote("", message)
 	}
 }
 
-// choiceOption is one radio of a choiceField, with its label as children.
+// helpMark is the primary "?" after a field label: help, which it reads as, shows inverted under it on hover or focus.
+templ helpMark(help string) {
+	<span class="group/tip relative ml-1 cursor-help text-primary" tabindex="0" role="img" aria-label={ help }>
+		?
+		<span aria-hidden="true" class="pointer-events-none absolute top-full left-0 z-10 mt-1 w-72 bg-foreground px-2 py-2.5 text-2xs tracking-normal text-background normal-case opacity-0 transition-opacity duration-(--snap) ease-(--ease) group-hover/tip:opacity-100 group-focus-visible/tip:opacity-100">{ help }</span>
+	</span>
+}
+
+// choiceGroup lays out the choiceOption buttons of a short choice, wrapping; aria-invalid turns their borders red.
+const choiceGroup = "group/choice flex flex-wrap gap-2"
+
+// choiceOption is one radio of a choiceField, with its label as children: a button whose checked state is inverted.
 templ choiceOption(name, value string, checked bool) {
 	<label>
-		<input type="radio" name={ name } value={ value } checked?={ checked }/>
-		<span>
+		<input type="radio" name={ name } value={ value } checked?={ checked } class="peer absolute opacity-0"/>
+		<span class="flex cursor-pointer items-center gap-2 border border-line px-3 py-1 text-xs tracking-wider uppercase transition-colors duration-(--snap) ease-(--ease) group-aria-invalid/choice:border-destructive peer-checked:border-foreground peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:border-foreground hover:bg-foreground hover:text-background">
 			{ children... }
 		</span>
 	</label>

@@ -208,7 +208,7 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 		if hasIncome {
 			<span class="flex items-center gap-[1ch]">
 				<span id="mode-label" class="text-[11px] uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "budget.mode") }</span>
-				<span role="radiogroup" aria-labelledby="mode-label" class="choice">
+				<span role="radiogroup" aria-labelledby="mode-label" class={ choiceGroup }>
 					@choiceOption("mode", budgetInValue, !form.percent()) {
 						{ i18n.T(ctx, "budget.mode_value") }
 					}

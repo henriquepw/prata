@@ -360,7 +360,7 @@ templ occurrenceSheet(form occurrenceForm) {
 		Busy:   i18n.T(ctx, "form.confirming"),
 		Error:  form.Errors["form"],
 	}) {
-		<p class="flex flex-wrap items-center gap-[1ch] text-xs text-muted-foreground">
+		<p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 			@description(form.Recurrence.Description)
 			· { i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)) }
 			for _, category := range form.Categories {
@@ -374,7 +374,7 @@ templ occurrenceSheet(form occurrenceForm) {
 		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
-		<div class="grid grid-cols-2 gap-[2ch]">
+		<div class="grid grid-cols-2 gap-4">
 			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
 			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>

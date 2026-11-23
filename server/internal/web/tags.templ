@@ -66,7 +66,7 @@ templ tagSheet(form tagForm) {
 		Error:     form.Errors["form"],
 	}) {
 		@nameField(form.Name, form.Errors["name"])
-		<div class="grid grid-cols-2 gap-[2ch]">
+		<div class="grid grid-cols-2 gap-4">
 			@dateField("start_at", i18n.T(ctx, "field.start"), form.StartAt, form.Errors["start_at"])
 			@endField(form.EndAt, form.Errors["end_at"])
 		</div>
