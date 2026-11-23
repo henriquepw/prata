@@ -98,74 +98,67 @@ templ signupPage(form authForm) {
 	}
 }
 
-// authPage is the console entrance shared by login and signup: the particle field behind the figlet,
-// the tagline, a panel with the form and a footer with the version, the server status and a clock.
+// authPage is the entrance shared by login and signup: a form under the PRATA figlet.
 templ authPage(title, action string, form authForm) {
 	@document(title) {
-		<main class="login">
-			<pre class="login-particles" data-particles aria-hidden="true"></pre>
-			<div class="login-center">
-				<pre class="login-figlet" role="img" aria-label="Prata">{ figlet }</pre>
-				<section class="panel login-panel">
-					<header class="panel-head">
-						<h1 class="panel-title">{ title }</h1>
-					</header>
-					<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
-						@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
-							@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
-						}
-						@formField("password", i18n.T(ctx, "auth.password"), form.PasswordError) {
-							@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
-						}
-						if form.Error != "" {
-							@field.Error() {
-								{ form.Error }
-							}
-						}
-						@button.Button(button.Props{Type: button.TypeSubmit}) {
-							{ "> " + strings.ToLower(title) }
-						}
-					</form>
-					<div class="mt-4 flex flex-col gap-2 text-xs text-muted-foreground">
-						{ children... }
-					</div>
-				</section>
+		@entrance(figlet, "Prata", title) {
+			<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
+				@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
+					@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
+				}
+				@formField("password", i18n.T(ctx, "auth.password"), form.PasswordError) {
+					@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
+				}
+				if form.Error != "" {
+					@field.Error() {
+						{ form.Error }
+					}
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit}) {
+					{ "> " + strings.ToLower(title) }
+				}
+			</form>
+			<div class="mt-4 flex flex-col gap-2 text-xs text-muted-foreground">
+				{ children... }
 			</div>
-			<footer class="login-foot">
-				<span>prata v1</span>
-				@online()
-				<span data-clock={ sessionFrom(ctx).DateFormat }></span>
-			</footer>
-			@templ.Raw("<script>" + authScript + "</script>")
-		</main>
+		}
 	}
 }
 
-// notFoundPage is the console entrance for a path with no route: the particle field behind the 404 figlet and a
-// panel logging the missing path, with the way back home.
+// notFoundPage is the entrance for a path with no route: a panel under the 404 figlet logging the missing path,
+// with the way back home.
 templ notFoundPage(path string) {
 	@document(i18n.T(ctx, "notfound.title")) {
-		<main class="login">
-			<pre class="login-particles" data-particles aria-hidden="true"></pre>
-			<div class="login-center">
-				<pre class="login-figlet" role="img" aria-label="404">{ figlet404 }</pre>
-				<section class="panel login-panel">
-					<header class="panel-head">
-						<h1 class="panel-title">{ i18n.T(ctx, "notfound.title") }</h1>
-					</header>
-					<p class="mb-4 text-xs break-all"><span class="text-primary">&gt;</span> GET { path }</p>
-					<p class="mb-4 text-xs text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "notfound.text") }</p>
-					@button.Button(button.Props{Href: "/"}) {
-						{ "> " + i18n.T(ctx, "notfound.back") }
-					}
-				</section>
-			</div>
-			<footer class="login-foot">
-				<span>prata v1</span>
-				@online()
-				<span data-clock={ sessionFrom(ctx).DateFormat }></span>
-			</footer>
-			@templ.Raw("<script>" + authScript + "</script>")
-		</main>
+		@entrance(figlet404, "404", i18n.T(ctx, "notfound.title")) {
+			<p class="mb-4 text-xs break-all"><span class="text-primary">&gt;</span> GET { path }</p>
+			<p class="mb-4 text-xs text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "notfound.text") }</p>
+			@button.Button(button.Props{Href: "/"}) {
+				{ "> " + i18n.T(ctx, "notfound.back") }
+			}
+		}
 	}
+}
+
+// entrance is the console entrance of the pages without a session: the particle field behind the figlet art,
+// a panel with the title and the children, and a footer pinned to the bottom with the version, the server status
+// and a clock.
+templ entrance(art, label, title string) {
+	<main class="relative grid min-h-dvh place-items-center overflow-hidden pb-10">
+		<pre class="pointer-events-none absolute inset-0 overflow-hidden text-xs leading-tight whitespace-pre text-muted-foreground opacity-55 select-none" data-particles aria-hidden="true"></pre>
+		<div class="relative flex w-full max-w-100 flex-col items-center gap-5 p-4">
+			<pre class="bg-background px-2 py-1 font-figlet text-2xs leading-none" role="img" aria-label={ label }>{ art }</pre>
+			<section class="panel w-full bg-background">
+				<header class="panel-head">
+					<h1 class="panel-title">{ title }</h1>
+				</header>
+				{ children... }
+			</section>
+		</div>
+		<footer class="absolute inset-x-0 bottom-0 flex justify-between gap-4 border-t border-line-soft bg-background px-4 py-2.5 text-2xs tracking-wider uppercase">
+			<span>prata v1</span>
+			@online()
+			<span data-clock={ sessionFrom(ctx).DateFormat }></span>
+		</footer>
+		@templ.Raw("<script>" + authScript + "</script>")
+	</main>
 }
