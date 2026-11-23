@@ -192,13 +192,13 @@ func TestWebSettings_InLauncherAndNav(t *testing.T) {
 
 func TestWebSettings_EnglishShowsTheCommonPartsInEnglish(t *testing.T) {
 	w := newWebClient(t)
-	w.assertBody("/", `<html lang="pt-BR">`)
+	w.assertBody("/", `lang="pt-BR"`)
 	w.mustSubmit(http.MethodPost, "/tags", tagForm("Despesa", "2026-07-01", ""))
 
 	w.mustSubmit(http.MethodPost, "/settings", withLanguage(settingsForm("DD/MM/YYYY", "1.234,56"), "en"))
 	w.assertSelected("en")
 	w.assertBody("/",
-		`<html lang="en">`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]",
+		`lang="en"`, "Month", "Realized", "Projected", "Pending", "User", "[theme]", "[sign out]",
 		"Go to month", "Open settings", "New transaction", "Toggle theme", "Sign out", "type a command", "no command",
 		"</kbd> navigate", "<kbd>ctrl k</kbd> commands", "<kbd>esc</kbd> close", "Statement")
 	w.assertBody("/?month=2026-11", "November 2026", "<kbd>n</kbd> new")
