@@ -197,6 +197,15 @@ func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, pref
 	return tx.Commit()
 }
 
+// SaveDailyLimitMode stores the user's Modo do limite diário.
+func (s *Store) SaveDailyLimitMode(ctx context.Context, userID, mode string) error {
+	query := "UPDATE users SET daily_limit_mode = ?, updated_at = ? WHERE id = ?"
+
+	_, err := s.ExecContext(ctx, query, mode, formatTime(time.Now()), userID)
+
+	return err
+}
+
 // DeleteSession deletes only the session of this token.
 func (s *Store) DeleteSession(ctx context.Context, token string) error {
 	query := "DELETE FROM sessions WHERE token_hash = ?"

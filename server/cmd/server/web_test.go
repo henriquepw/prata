@@ -166,8 +166,8 @@ func TestWebSignup(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 
 	response := postForm(handler, "/signup", credentials())
-	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/" {
-		t.Fatalf("signup = %d to %q, want %d to /", response.Code, response.Header().Get("Location"), http.StatusSeeOther)
+	if response.Code != http.StatusSeeOther || response.Header().Get("Location") != "/welcome" {
+		t.Fatalf("signup = %d to %q, want %d to /welcome", response.Code, response.Header().Get("Location"), http.StatusSeeOther)
 	}
 
 	if got := get(handler, "/", sessionCookie(t, response)).Code; got != http.StatusOK {

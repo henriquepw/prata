@@ -15,6 +15,12 @@ var en = map[string]string{
 	"auth.error.password":    "Enter a password.",
 	"auth.error.closed":      "Sign-up is closed on this server.",
 	"auth.error.taken":       "This email already has an account.",
+	"welcome.title":          "Income and categories",
+	"welcome.income":         "The monthly income is what you have to spend in a month: salary, side income, everything added up.",
+	"welcome.division":       "It is split between the categories: each one gets a slice, which is its limit for the month. We suggest 50% for fixed expenses, 20% for investment, 15% for goals and 15% for what is free; edit it as you like.",
+	"welcome.daily_limit":    "The daily limit is how much you can spend per day in the daily categories, such as Livre.",
+	"welcome.modes":          "Fixed: the same limit every day of the month. Dynamic: what is left divided by the days left, so it adjusts to what you have already spent.",
+	"welcome.later":          "set up later",
 
 	// Page not found.
 	"notfound.title": "Page not found",

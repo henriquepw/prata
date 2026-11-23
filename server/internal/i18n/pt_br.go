@@ -15,6 +15,12 @@ var ptBR = map[string]string{
 	"auth.error.password":    "Informe uma senha.",
 	"auth.error.closed":      "Cadastro fechado nesta instalação.",
 	"auth.error.taken":       "Este e-mail já tem conta.",
+	"welcome.title":          "Renda e categorias",
+	"welcome.income":         "A receita mensal é o que você tem para gastar em um mês: salário, rendas extras, tudo somado.",
+	"welcome.division":       "Ela se divide entre as categorias: cada uma recebe uma fatia, que é o seu limite no mês. Sugerimos 50% para gastos fixos, 20% para investimento, 15% para metas e 15% para o que for livre; edite como preferir.",
+	"welcome.daily_limit":    "O limite diário é quanto você pode gastar por dia nas categorias diárias, como a Livre.",
+	"welcome.modes":          "Fixo: o mesmo limite todos os dias do mês. Dinâmico: o que sobrou dividido pelos dias que faltam, então ele se ajusta ao que você já gastou.",
+	"welcome.later":          "configurar depois",
 
 	// Page not found.
 	"notfound.title": "Página não encontrada",

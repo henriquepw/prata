@@ -26,6 +26,9 @@ type budgetForm struct {
 	Cents      map[string]int64
 	Points     map[string]int64
 	Errors     map[string]string
+	// Welcome is the form of the tela inicial: it posts to /welcome as a plain form, always shows the limit fields
+	// and leaves the categories without a sheet.
+	Welcome bool
 }
 
 // The budgetForm modes: limits typed in value or in percent of the Receita mensal.
@@ -93,6 +96,30 @@ func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	form, budget := parseBudget(r, categories)
+	if len(form.Errors) == 0 {
+		err := h.db.SaveBudget(r.Context(), sessionFrom(r.Context()), budget)
+		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
+			internalError(w, "saving budget", err)
+			return
+		}
+
+		if err == nil {
+			w.Header().Set("HX-Refresh", "true")
+			w.WriteHeader(http.StatusNoContent)
+
+			return
+		}
+
+		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
+	}
+
+	render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
+}
+
+// parseBudget reads the division form: the typed form, with an error message per invalid field, and the Budget it
+// stores when there is none.
+func parseBudget(r *http.Request, categories []store.Category) (budgetForm, store.Budget) {
 	form := newBudgetForm(categories, r.PostFormValue("mode"))
 	if !form.percent() {
 		form.Mode = budgetInValue
@@ -124,24 +151,7 @@ func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if len(form.Errors) == 0 {
-		err := h.db.SaveBudget(r.Context(), sessionFrom(r.Context()), budget)
-		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
-			internalError(w, "saving budget", err)
-			return
-		}
-
-		if err == nil {
-			w.Header().Set("HX-Refresh", "true")
-			w.WriteHeader(http.StatusNoContent)
-
-			return
-		}
-
-		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
-	}
-
-	render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
+	return form, budget
 }
 
 // storedBudgetForm fills the screen with the stored Receita mensal and division, typed in percent.

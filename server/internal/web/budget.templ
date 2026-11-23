@@ -73,15 +73,12 @@ const budgetSlice = "block bg-current transition-all duration-(--move)"
 // asks for it first: no bar, slider nor limit field, and the stored division goes along hidden, in percent, until a
 // typed one above zero comes back in a 422. flash is the category a sheet just saved.
 templ budgetScreen(form budgetForm, flash string) {
-	{{ hasIncome := form.income > 0 || sessionFrom(ctx).MonthlyIncome > 0 }}
+	{{ hasIncome := form.Welcome || form.income > 0 || sessionFrom(ctx).MonthlyIncome > 0 }}
 	{{ format, _ := find(numberFormats, sessionFrom(ctx).NumberFormat) }}
 	@input.MoneyScript()
 	<form
 		id="budget"
-		hx-post="/budget"
-		hx-target="this"
-		hx-swap="outerHTML"
-		hx-disable="find [type=submit]"
+		{ utils.IfElse(form.Welcome, templ.Attributes{"method": "post", "action": "/welcome"}, templ.Attributes{"hx-post": "/budget", "hx-target": "this", "hx-swap": "outerHTML", "hx-disable": "find [type=submit]"})... }
 		class={ "flex flex-col gap-5", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed()) }
 		data-budget
 		data-mode={ form.Mode }
@@ -130,6 +127,7 @@ templ budgetScreen(form budgetForm, flash string) {
 				<p class="sr-only" data-hint></p>
 			}
 		}
+		{ children... }
 		@panel(i18n.T(ctx, "nav.categories"), "", budgetActions(form, hasIncome)) {
 			if len(form.Categories) == 0 {
 				@empty(i18n.T(ctx, "categories.empty"))
@@ -164,9 +162,15 @@ templ budgetScreen(form budgetForm, flash string) {
 // hidden and disabled, so only the typed mode is sent) and the value in the other mode.
 templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 	<div class="contents" data-row={ id }>
-		<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
-			@categoryName(name, color)
-		</button>
+		if form.Welcome {
+			<span class="px-0.5">
+				@categoryName(name, color)
+			</span>
+		} else {
+			<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
+				@categoryName(name, color)
+			</button>
+		}
 		<input
 			type="range"
 			min="0"
@@ -243,7 +247,9 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 		} else {
 			<input type="hidden" name="mode" value={ budgetInPercent }/>
 		}
-		@newAction("/categories/new")
+		if !form.Welcome {
+			@newAction("/categories/new")
+		}
 	</span>
 }
 

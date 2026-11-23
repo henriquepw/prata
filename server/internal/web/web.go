@@ -66,6 +66,8 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 		render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
 	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home))
+	mux.Handle("GET /welcome", h.requireSession(h.welcome))
+	mux.Handle("POST /welcome", h.requireSession(h.saveWelcome))
 	mux.Handle("GET /launch", h.requireSession(h.launchPreview))
 	mux.Handle("POST /launch", h.requireSession(h.launch))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
@@ -132,7 +134,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.startSession(w, r, userID)
+	h.startSession(w, r, userID, "/")
 }
 
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +161,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 			internalError(w, "creating account", err)
 			return
 		default:
-			h.startSession(w, r, signup.OwnerID)
+			h.startSession(w, r, signup.OwnerID, "/welcome")
 			return
 		}
 	}
@@ -179,7 +181,8 @@ func (h handler) logout(w http.ResponseWriter, r *http.Request) {
 	redirect(w, r, "/login")
 }
 
-func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID string) {
+// startSession opens the user's session and redirects to the page they land on.
+func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, landing string) {
 	now := time.Now()
 	token, err := h.db.CreateSession(r.Context(), userID, now)
 	if err != nil {
@@ -188,7 +191,7 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID str
 	}
 
 	setSessionCookie(w, r, token, now.Add(store.SessionTTL))
-	redirect(w, r, "/")
+	redirect(w, r, landing)
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends

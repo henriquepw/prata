@@ -101,7 +101,7 @@ templ signupPage(form authForm) {
 // authPage is the entrance shared by login and signup: a form under the PRATA figlet.
 templ authPage(title, action string, form authForm) {
 	@document(title) {
-		@entrance(figlet, "Prata", title) {
+		@entrance(figlet, "Prata", title, "max-w-100") {
 			<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
 				@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
 					@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
@@ -129,7 +129,7 @@ templ authPage(title, action string, form authForm) {
 // with the way back home.
 templ notFoundPage(path string) {
 	@document(i18n.T(ctx, "notfound.title")) {
-		@entrance(figlet404, "404", i18n.T(ctx, "notfound.title")) {
+		@entrance(figlet404, "404", i18n.T(ctx, "notfound.title"), "max-w-100") {
 			<p class="mb-4 text-xs break-all"><span class="text-primary">&gt;</span> GET { path }</p>
 			<p class="mb-4 text-xs text-muted-foreground"><span aria-hidden="true">{ `¯\_(ツ)_/¯` }</span> { i18n.T(ctx, "notfound.text") }</p>
 			@button.Button(button.Props{Href: "/"}) {
@@ -142,10 +142,10 @@ templ notFoundPage(path string) {
 // entrance is the console entrance of the pages without a session: the particle field behind the figlet art,
 // a panel with the title and the children, and a footer pinned to the bottom with the version, the server status
 // and a clock.
-templ entrance(art, label, title string) {
-	<main class="relative grid min-h-dvh place-items-center overflow-hidden pb-10">
+templ entrance(art, label, title, width string) {
+	<main class="relative grid min-h-dvh place-items-center overflow-x-hidden pb-10">
 		<pre class="pointer-events-none absolute inset-0 overflow-hidden text-xs leading-tight whitespace-pre text-muted-foreground opacity-55 select-none" data-particles aria-hidden="true"></pre>
-		<div class="relative flex w-full max-w-100 flex-col items-center gap-5 p-4">
+		<div class={ "relative flex w-full flex-col items-center gap-5 p-4", width }>
 			<pre class="bg-background px-2 py-1 font-figlet text-2xs leading-none" role="img" aria-label={ label }>{ art }</pre>
 			<section class={ panelBox, "w-full bg-background" }>
 				<header class={ panelHead }>
