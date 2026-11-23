@@ -20,6 +20,7 @@
   --breakpoint-3xl: 90rem;
   --text-2xs: 11px;
   --text-2xs--line-height: 16px;
+  --animate-blink: blink 1s steps(1) infinite;
   --font-sans: "Geist Mono", ui-monospace, monospace;
   --font-mono: "Geist Mono", ui-monospace, monospace;
   /* The system mono, so the ANSI Shadow blocks of the figlet line up. */
@@ -190,7 +191,7 @@
   body::before {
     content: "";
     position: fixed;
-    inset: -200px;
+    inset: --spacing(-50);
     z-index: 9999;
     pointer-events: none;
     opacity: 0.05;
@@ -281,34 +282,12 @@
 
   .launcher::backdrop {
     background: var(--scrim);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(--spacing(0.5));
   }
 
   #launcher-options {
     max-height: 60vh;
     overflow: auto;
-  }
-
-  .prompt {
-    display: flex;
-    align-items: center;
-    gap: 1ch;
-    margin-bottom: 0.5lh;
-    padding-bottom: 0.5lh;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .prompt input {
-    flex: 1;
-    background: transparent;
-    outline: none;
-    caret-color: var(--primary);
-    caret-shape: block;
-  }
-
-  .cursor {
-    color: var(--primary);
-    animation: blink 1s steps(1) infinite;
   }
 
   /* Sync dot: "●", and the braille spinner while any htmx request is in flight. */
@@ -384,10 +363,10 @@
       content: "";
       position: absolute;
       z-index: 5;
-      bottom: -2px;
-      left: -3px;
-      width: 5px;
-      height: 5px;
+      bottom: --spacing(-0.5);
+      left: --spacing(-0.75);
+      width: --spacing(1.25);
+      height: --spacing(1.25);
       background: var(--line-strong);
       box-shadow: calc(--theme(--breakpoint-3xl) - 1px) 0 0 var(--line-strong);
     }
@@ -427,7 +406,7 @@
 
   /* The undivided part of the 100% bar on Categorias, hatched. */
   .budget-free {
-    background: repeating-linear-gradient(45deg, var(--line-soft) 0 4px, transparent 4px 8px);
+    background: repeating-linear-gradient(45deg, var(--line-soft) 0 --spacing(1), transparent --spacing(1) --spacing(2));
   }
 
   /* The Categorias slider drawn as the meter: a native range whose track has 20 segments of 5%, filled in the
@@ -564,16 +543,16 @@ dialog.sheet[open] {
     transform: translate(0, 0);
   }
   20% {
-    transform: translate(-37px, 23px);
+    transform: translate(--spacing(-9.25), --spacing(5.75));
   }
   40% {
-    transform: translate(29px, -41px);
+    transform: translate(--spacing(7.25), --spacing(-10.25));
   }
   60% {
-    transform: translate(-13px, 47px);
+    transform: translate(--spacing(-3.25), --spacing(11.75));
   }
   80% {
-    transform: translate(41px, 11px);
+    transform: translate(--spacing(10.25), --spacing(2.75));
   }
 }
 

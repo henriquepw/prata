@@ -21,9 +21,10 @@ templ launchPanel(page month) {
 		>
 			<input type="hidden" name="month" value={ page.yearMonth() }/>
 			<input type="hidden" name="category" value={ page.Filter.ID }/>
-			<label class="prompt mb-0 text-base">
+			<label class={ utils.CN(prompt, "mb-0 text-base") }>
 				<span class="text-primary" aria-hidden="true">&gt;</span>
 				<input
+					class={ promptInput }
 					id="launch"
 					name="line"
 					autofocus?={ page.Focus }

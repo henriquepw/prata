@@ -44,6 +44,13 @@ const panelHead = "mb-5 flex items-center justify-between gap-4"
 // panelTitle is a panel's title: caps with a 3px primary bar on its left.
 const panelTitle = "border-l-3 border-primary pl-2 text-xs leading-tight tracking-widest uppercase"
 
+// prompt is the "> " line of the launcher and the Mês prompt, over a --line bottom border; promptInput is its
+// borderless input with the block caret.
+const (
+	prompt      = "mb-2.5 flex items-center gap-2 border-b border-line pb-2.5"
+	promptInput = "flex-1 bg-transparent caret-primary [caret-shape:block] outline-none"
+)
+
 // panel is the unit of every screen: the decoded title, the action on the right of it when not nil, and the content
 // as children. class adds to the panel.
 templ panel(title, class string, action templ.Component) {

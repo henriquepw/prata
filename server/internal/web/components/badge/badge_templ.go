@@ -249,7 +249,7 @@ func Badge(props ...Props) templ.Component {
 }
 
 // Structure from base/ui/badge.tsx, look of the prata-web-ui [status] chip: solid, 11px caps with tracking.
-const baseClasses = "h-5 gap-1 rounded-none border border-transparent px-[.6ch] text-[11px] font-normal uppercase tracking-[.06em] has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3! group/badge inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap aria-invalid:border-destructive [&>svg]:pointer-events-none"
+const baseClasses = "h-5 gap-1 rounded-none border border-transparent px-1 text-2xs font-normal uppercase tracking-wider has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3! group/badge inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap aria-invalid:border-destructive [&>svg]:pointer-events-none"
 
 func badgeClasses(p Props) string {
 	return utils.CN(baseClasses, p.variantClasses(), p.Class)

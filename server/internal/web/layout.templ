@@ -302,9 +302,9 @@ templ launcher(items []navItem) {
 				<h2 class={ panelTitle }>{ i18n.T(ctx, "launcher.title") }</h2>
 				<kbd class="text-2xs uppercase text-muted-foreground">esc</kbd>
 			</div>
-			<label class="prompt">
+			<label class={ prompt }>
 				<span class="text-primary">&gt;</span>
-				<input type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
+				<input class={ promptInput } type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
 			</label>
 			<div id="launcher-options" role="listbox" class="peer">
 				for i, item := range items {
