@@ -21,6 +21,9 @@ var en = map[string]string{
 	"welcome.daily_limit":    "The daily limit is how much you can spend per day in the daily categories, such as Livre.",
 	"welcome.modes":          "Fixed: the same limit every day of the month. Dynamic: what is left divided by the days left, so it adjusts to what you have already spent.",
 	"welcome.later":          "set up later",
+	"setup.title":            "Initial settings",
+	"setup.note":             "Choose how Prata shows texts, dates and amounts. You can change it later in Settings.",
+	"setup.continue":         "continue",
 
 	// Page not found.
 	"notfound.title": "Page not found",

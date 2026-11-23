@@ -81,21 +81,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, ok := find(languages, form.Language); !ok {
-		form.Errors["language"] = i18n.T(r.Context(), "settings.error.language")
-	}
-
-	if _, ok := find(dateFormats, form.DateFormat); !ok {
-		form.Errors["date_format"] = i18n.T(r.Context(), "settings.error.date_format")
-	}
-
-	if _, ok := find(numberFormats, form.NumberFormat); !ok {
-		form.Errors["number_format"] = i18n.T(r.Context(), "settings.error.number_format")
-	}
-
-	if _, ok := find(currencies, form.Currency); !ok {
-		form.Errors["currency"] = i18n.T(r.Context(), "settings.error.currency")
-	}
+	form.validateChoices(r.Context())
 
 	if _, ok := find(dailyLimitModes, form.DailyLimitMode); !ok {
 		form.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
@@ -166,4 +152,23 @@ func secretHint(ctx context.Context, hasPluggy bool) string {
 	}
 
 	return i18n.T(ctx, "settings.pluggy_keep")
+}
+
+// validateChoices flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
+func (f settingsForm) validateChoices(ctx context.Context) {
+	if _, ok := find(languages, f.Language); !ok {
+		f.Errors["language"] = i18n.T(ctx, "settings.error.language")
+	}
+
+	if _, ok := find(dateFormats, f.DateFormat); !ok {
+		f.Errors["date_format"] = i18n.T(ctx, "settings.error.date_format")
+	}
+
+	if _, ok := find(numberFormats, f.NumberFormat); !ok {
+		f.Errors["number_format"] = i18n.T(ctx, "settings.error.number_format")
+	}
+
+	if _, ok := find(currencies, f.Currency); !ok {
+		f.Errors["currency"] = i18n.T(ctx, "settings.error.currency")
+	}
 }

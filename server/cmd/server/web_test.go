@@ -120,6 +120,7 @@ func TestLogin_WrongPasswordRerendersForm(t *testing.T) {
 
 func TestAuthenticatedRoute_WithoutSessionRedirectsToLogin(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
+	signupKey(t, handler, newSignup())
 
 	assertRedirectsToLogin(t, get(handler, "/"))
 	assertRedirectsToLogin(t, get(handler, "/", &http.Cookie{Name: "session", Value: "forged"}))
@@ -183,7 +184,8 @@ func TestWebSignup(t *testing.T) {
 }
 
 func TestAuthPages_ShowTheConsoleEntrance(t *testing.T) {
-	handler := newHandler(openStore(t), config{})
+	handler := newHandler(openStore(t), config{isSignupAllowed: true})
+	signupKey(t, handler, newSignup())
 
 	for path, action := range map[string]string{"/login": "&gt; entrar", "/signup": "&gt; criar conta"} {
 		body := get(handler, path).Body.String()
@@ -221,10 +223,11 @@ func TestWebEntrance_FollowsTheSignupState(t *testing.T) {
 		hasUsers        bool
 		isSignupAllowed bool
 		signupRedirect  string
+		loginRedirect   string
 		loginHasSignup  bool
 		signupHasLogin  bool
 	}{
-		{name: "empty database", loginHasSignup: true},
+		{name: "empty database", signupRedirect: "/setup", loginRedirect: "/setup"},
 		{name: "users and signup closed", hasUsers: true, signupRedirect: "/login", signupHasLogin: true},
 		{name: "users and signup open", hasUsers: true, isSignupAllowed: true, loginHasSignup: true, signupHasLogin: true},
 	}
@@ -244,7 +247,10 @@ func TestWebEntrance_FollowsTheSignupState(t *testing.T) {
 				t.Errorf("signup page links to login = %t, want %t", got, tt.signupHasLogin)
 			}
 
-			if got := strings.Contains(get(handler, "/login").Body.String(), `href="/signup"`); got != tt.loginHasSignup {
+			loginPage := get(handler, "/login")
+			if tt.loginRedirect != "" {
+				assertRedirect(t, loginPage, tt.loginRedirect)
+			} else if got := strings.Contains(loginPage.Body.String(), `href="/signup"`); got != tt.loginHasSignup {
 				t.Errorf("login page links to signup = %t, want %t", got, tt.loginHasSignup)
 			}
 		})

@@ -32,15 +32,18 @@ var (
 )
 
 // Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup. Language,
-// the Idioma of the signup page, only comes from the web; empty is pt-BR.
+// the Idioma of the signup page, DateFormat, NumberFormat and Currency only come from the web; empty is the default.
 type Signup struct {
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	DeviceName string `json:"device_name"`
-	AccountID  string `json:"account_id"`
-	OwnerID    string `json:"owner_id"`
-	DeviceID   string `json:"device_id"`
-	Language   string `json:"-"`
+	Email        string `json:"email"`
+	Password     string `json:"password"`
+	DeviceName   string `json:"device_name"`
+	AccountID    string `json:"account_id"`
+	OwnerID      string `json:"owner_id"`
+	DeviceID     string `json:"device_id"`
+	Language     string `json:"-"`
+	DateFormat   string `json:"-"`
+	NumberFormat string `json:"-"`
+	Currency     string `json:"-"`
 }
 
 type Signin struct {
@@ -100,14 +103,18 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	now := formatTime(time.Now())
 	webDeviceID := ulid.Make().String()
+	insertUser := `
+		INSERT INTO users (id, email, secret, language, date_format, number_format, created_at, updated_at)
+		VALUES (?, ?, ?, COALESCE(NULLIF(?, ''), 'pt-BR'), COALESCE(NULLIF(?, ''), 'DD/MM/YYYY'), COALESCE(NULLIF(?, ''), '1.234,56'), ?, ?)
+	`
 	statements := []statement{
 		{
-			"INSERT INTO users (id, email, secret, language, created_at, updated_at) VALUES (?, ?, ?, COALESCE(NULLIF(?, ''), 'pt-BR'), ?, ?)",
-			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), signup.Language, now, now},
+			insertUser,
+			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), signup.Language, signup.DateFormat, signup.NumberFormat, now, now},
 		},
 		{
-			"INSERT INTO accounts (id, name, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
-			[]any{signup.AccountID, signup.Email, signup.OwnerID, now, now},
+			"INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at) VALUES (?, ?, COALESCE(NULLIF(?, ''), 'BRL'), ?, ?, ?)",
+			[]any{signup.AccountID, signup.Email, signup.Currency, signup.OwnerID, now, now},
 		},
 		{
 			"INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'OWNER', ?)",

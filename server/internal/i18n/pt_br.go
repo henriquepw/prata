@@ -21,6 +21,9 @@ var ptBR = map[string]string{
 	"welcome.daily_limit":    "O limite diário é quanto você pode gastar por dia nas categorias diárias, como a Livre.",
 	"welcome.modes":          "Fixo: o mesmo limite todos os dias do mês. Dinâmico: o que sobrou dividido pelos dias que faltam, então ele se ajusta ao que você já gastou.",
 	"welcome.later":          "configurar depois",
+	"setup.title":            "Configurações iniciais",
+	"setup.note":             "Escolha como o Prata mostra textos, datas e valores. Dá para mudar depois nas Configurações.",
+	"setup.continue":         "continuar",
 
 	// Page not found.
 	"notfound.title": "Página não encontrada",

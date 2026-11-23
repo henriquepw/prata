@@ -32,11 +32,11 @@ func TestWebWelcome_ShowsTheSuggestedDivisionAndDynamicModeWithoutTheAppNavigati
 	}
 }
 
-func TestWebWelcome_WithoutSessionRedirectsToLogin(t *testing.T) {
+func TestWebWelcome_WithoutSessionRedirectsToSetup(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 
-	assertRedirectsToLogin(t, get(handler, "/welcome"))
-	assertRedirectsToLogin(t, postForm(handler, "/welcome", url.Values{}))
+	assertRedirect(t, get(handler, "/welcome"), "/setup")
+	assertRedirect(t, postForm(handler, "/welcome", url.Values{}), "/setup")
 }
 
 func TestWebWelcome_SavesTheDivisionThatClosesTheIncomeWithTheRemainderOnLivreAndTheMode(t *testing.T) {

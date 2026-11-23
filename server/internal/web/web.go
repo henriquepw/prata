@@ -61,6 +61,8 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.HandleFunc("POST /login", visitor(h.login))
 	mux.HandleFunc("GET /signup", visitor(h.signupForm))
 	mux.HandleFunc("POST /signup", visitor(h.signup))
+	mux.HandleFunc("GET /setup", visitor(h.setupForm))
+	mux.HandleFunc("POST /setup", visitor(h.setup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
 		render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
@@ -122,13 +124,40 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 }
 
 func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
+	if h.redirectToSetup(w, r) {
+		return
+	}
+
 	h.renderEntrance(w, r, http.StatusOK, authForm{}, loginPage)
 }
 
+// redirectToSetup sends the request to /setup and reports true when the Servidor has no user yet.
+func (h handler) redirectToSetup(w http.ResponseWriter, r *http.Request) bool {
+	empty, err := h.db.IsEmpty(r.Context())
+	if err != nil {
+		internalError(w, "checking users", err)
+		return true
+	}
+
+	if empty {
+		redirect(w, r, "/setup")
+	}
+
+	return empty
+}
+
+// signupForm shows the signup in the Idioma of the configurações iniciais it carries. With no user, it needs them and
+// otherwise goes back to /setup; with users, it goes to /login when signup is closed.
 func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 	empty, err := h.db.IsEmpty(r.Context())
 	if err != nil {
 		internalError(w, "checking users", err)
+		return
+	}
+
+	choices, r := chosen(r)
+	if empty && choices.Language == "" {
+		redirect(w, r, "/setup")
 		return
 	}
 
@@ -137,7 +166,7 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, authForm{}, signupPage)
+	h.renderEntrance(w, r, http.StatusOK, authForm{Choices: choices.fields()}, signupPage)
 }
 
 // renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
@@ -171,9 +200,10 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
+	choices, r := chosen(r)
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
-	form := authForm{Email: email}
+	form := authForm{Email: email, Choices: choices.fields()}
 	if !strings.Contains(email, "@") {
 		form.EmailError = i18n.T(r.Context(), "auth.error.email")
 	}
@@ -183,7 +213,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if form.EmailError == "" && form.PasswordError == "" {
-		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: i18n.Language(r.Context())}
+		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: i18n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
 		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 		switch {
 		case errors.Is(err, store.ErrSignupClosed):
@@ -228,18 +258,18 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, la
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
-// visitors without a live session to /login. The session and its Idioma ride in the request context.
+// visitors without a live session to /setup or /login, per redirectToEntrance. The session and its Idioma ride in the request context.
 func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
 		if err != nil {
-			redirect(w, r, "/login")
+			h.redirectToEntrance(w, r)
 			return
 		}
 
 		session, err := h.db.SessionByToken(r.Context(), cookie.Value, time.Now())
 		if errors.Is(err, store.ErrInvalidSession) {
-			redirect(w, r, "/login")
+			h.redirectToEntrance(w, r)
 			return
 		}
 
@@ -253,6 +283,13 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 		ctx = i18n.WithLanguage(ctx, session.Language)
 		next(w, r.WithContext(ctx))
 	})
+}
+
+// redirectToEntrance sends a visitor to /setup while the Servidor has no user, and to /login after.
+func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
+	if !h.redirectToSetup(w, r) {
+		redirect(w, r, "/login")
+	}
 }
 
 // visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and
