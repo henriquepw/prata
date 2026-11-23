@@ -50,6 +50,18 @@ const budgetScript = `(() => {
   })
 })()`
 
+// budgetInput is a bare input of the division, with the block caret.
+const budgetInput = "min-w-0 bg-transparent tabular-nums caret-primary [caret-shape:block] outline-none"
+
+// budgetField is a category's limit field: an underline that turns primary on focus and destructive on error.
+const budgetField = "border-b border-line text-right transition-colors duration-(--snap) ease-(--ease) focus:border-primary aria-invalid:border-destructive"
+
+// budgetName is a category's name opening its sheet, inverted on hover and focus.
+const budgetName = "cursor-pointer justify-self-start px-0.5 text-left transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background focus-visible:bg-foreground focus-visible:text-background"
+
+// budgetSlice is a slice of the 100% bar, its width set by the server and the script.
+const budgetSlice = "block bg-current transition-all duration-(--move) ease-(--ease)"
+
 // budgetScreen is the Categorias screen: the Receita mensal panel, with its prompt, the 100% bar and the line that
 // says what is missing or exceeds, and the Categorias panel, with a row per category (its name opening its sheet, a
 // slider, the field in the typed mode and the value in the other) and "> salvar divisão". Without a Receita mensal it
@@ -64,7 +76,7 @@ templ budgetScreen(form budgetForm, flash string) {
 		hx-target="this"
 		hx-swap="outerHTML"
 		hx-disable="find [type=submit]"
-		class={ "budget", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed()) }
+		class={ "flex flex-col gap-5", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed()) }
 		data-budget
 		data-mode={ form.Mode }
 		data-decimal={ format.Decimal }
@@ -77,11 +89,12 @@ templ budgetScreen(form budgetForm, flash string) {
 		data-hint-value={ i18n.T(ctx, "budget.hint_value") }
 	>
 		@panel(i18n.T(ctx, "budget.title"), "", nil) {
-			<label class="budget-prompt">
+			<label class="flex items-center gap-2 border-b border-line pb-1 text-base transition-colors duration-(--snap) ease-(--ease) focus-within:border-primary">
 				<span class="text-primary" aria-hidden="true">&gt;</span>
 				<span class="text-xs text-muted-foreground">{ currencySymbol(ctx) }</span>
 				<input
 					id="income"
+					class={ budgetInput, "flex-1" }
 					name="income"
 					value={ form.Income }
 					placeholder={ amount(ctx, 0) }
@@ -94,15 +107,15 @@ templ budgetScreen(form budgetForm, flash string) {
 			</label>
 			@fieldNote(utils.IfElse(hasIncome, "", i18n.T(ctx, "budget.income_first")), form.Errors["income"])
 			if hasIncome {
-				<p class="mt-1 text-[11px] text-muted-foreground" data-hint>{ i18n.T(ctx, utils.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
-				<div class="budget-bar" aria-hidden="true">
+				<p class="mt-1 text-2xs text-muted-foreground" data-hint>{ i18n.T(ctx, utils.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
+				<div class="mt-5 flex h-6 gap-0.5 bg-line-faint" aria-hidden="true">
 					for _, category := range form.Categories {
-						<i class={ colorClass(category.Color) } data-slice={ category.ID } title={ category.Name } style={ width(form.Points[category.ID]) }></i>
+						<i class={ budgetSlice, colorClass(category.Color) } data-slice={ category.ID } title={ category.Name } style={ width(form.Points[category.ID]) }></i>
 					}
 					{{ _, free := form.gap() }}
-					<i class="budget-free" data-slice="free" title={ i18n.T(ctx, "budget.free") } style={ width(free) }></i>
+					<i class={ budgetSlice, "budget-free" } data-slice="free" title={ i18n.T(ctx, "budget.free") } style={ width(free) }></i>
 				</div>
-				<div class="mt-1 flex justify-between gap-[2ch] text-xs tabular-nums">
+				<div class="mt-1 flex justify-between gap-4 text-xs tabular-nums">
 					@budgetStatus(form)
 					<span class="text-muted-foreground">100%</span>
 				</div>
@@ -114,12 +127,12 @@ templ budgetScreen(form budgetForm, flash string) {
 			if len(form.Categories) == 0 {
 				@empty(i18n.T(ctx, "categories.empty"))
 			}
-			<div class="budget-rows">
+			<div class="grid grid-cols-[auto_1fr_auto_--spacing(30)] items-center gap-x-4 gap-y-3 text-sm @max-2xl/console:grid-flow-row-dense @max-2xl/console:grid-cols-[1fr_auto_auto] @max-2xl/console:gap-x-2 @max-2xl/console:gap-y-1.5">
 				for _, category := range form.Categories {
 					if hasIncome {
 						@budgetRow(form, category.ID, category.Name, category.Color, category.ID == flash)
 					} else {
-						<button type="button" class="budget-name" hx-get={ "/categories/" + category.ID } hx-target="#sheet" data-flash?={ category.ID == flash }>
+						<button type="button" class={ budgetName } hx-get={ "/categories/" + category.ID } hx-target="#sheet" data-flash?={ category.ID == flash }>
 							@categoryName(category.Name, category.Color)
 						</button>
 						<input type="hidden" name={ "limit_" + category.ID } value={ form.Percents[category.ID] }/>
@@ -131,7 +144,7 @@ templ budgetScreen(form budgetForm, flash string) {
 					{ form.Errors["form"] }
 				}
 			}
-			<footer class="mt-[1lh] flex justify-end">
+			<footer class="mt-5 flex justify-end">
 				@button.Button(button.Props{Type: button.TypeSubmit, Disabled: !form.closed(), Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "form.saving")}}) {
 					<span>&gt; { i18n.T(ctx, "budget.save") }</span>
 				}
@@ -144,7 +157,7 @@ templ budgetScreen(form budgetForm, flash string) {
 // hidden and disabled, so only the typed mode is sent) and the value in the other mode.
 templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 	<div class="contents" data-row={ id }>
-		<button type="button" class="budget-name" hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
+		<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
 			@categoryName(name, color)
 		</button>
 		<input
@@ -154,11 +167,11 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 			step="0.5"
 			value={ fmt.Sprintf("%.2f", float64(form.Points[id])/100) }
 			aria-label={ i18n.T(ctx, "budget.in_percent", name) }
-			class={ "budget-range", colorClass(color) }
+			class={ "budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", colorClass(color) }
 			style={ templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[id])/100)))) }
 		/>
-		<span class="budget-field">
-			<span class="by-percent">
+		<span class="flex justify-end">
+			<span class="in-data-[mode=value]:hidden">
 				<input
 					name={ "limit_" + id }
 					value={ form.Percents[id] }
@@ -167,12 +180,13 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 					inputmode="decimal"
 					autocomplete="off"
 					disabled?={ !form.percent() }
+					class={ budgetInput, budgetField, "w-15" }
 					data-percent
 					{ ariaInvalid(utils.IfElse(form.percent(), form.Errors["limit_"+id], ""))... }
 				/>
 				<span aria-hidden="true">%</span>
 			</span>
-			<span class="by-value">
+			<span class="in-data-[mode=percent]:hidden">
 				<input
 					name={ "limit_" + id }
 					value={ form.Values[id] }
@@ -181,12 +195,13 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 					inputmode="decimal"
 					autocomplete="off"
 					disabled?={ form.percent() }
+					class={ budgetInput, budgetField, "w-25" }
 					data-value
 					{ ariaInvalid(utils.IfElse(form.percent(), "", form.Errors["limit_"+id]))... }
 				/>
 			</span>
 		</span>
-		<span class="budget-derived" data-derived>
+		<span class="text-right text-muted-foreground tabular-nums" data-derived>
 			if form.percent() {
 				{ money(ctx, form.Cents[id]) }
 			} else {
@@ -204,10 +219,10 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 // budgetActions is the Categorias panel's "editar em [valor] [%]", only while there is a Receita mensal to divide,
 // and its "+ nova [n]".
 templ budgetActions(form budgetForm, hasIncome bool) {
-	<span class="flex flex-wrap items-center justify-end gap-[2ch]">
+	<span class="flex flex-wrap items-center justify-end gap-4">
 		if hasIncome {
-			<span class="flex items-center gap-[1ch]">
-				<span id="mode-label" class="text-[11px] uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "budget.mode") }</span>
+			<span class="flex items-center gap-2">
+				<span id="mode-label" class="text-2xs uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "budget.mode") }</span>
 				<span role="radiogroup" aria-labelledby="mode-label" class="choice">
 					@choiceOption("mode", budgetInValue, !form.percent()) {
 						{ i18n.T(ctx, "budget.mode_value") }
@@ -228,7 +243,7 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 // destructive, or "fechado em 100%".
 templ budgetStatus(form budgetForm) {
 	{{ cents, points := form.gap() }}
-	<span role="status" data-status>
+	<span class="text-muted-foreground in-[.closed]:text-cat-green in-[.over]:text-destructive" role="status" data-status>
 		switch {
 			case form.closed():
 				{ i18n.T(ctx, "budget.closed") }
