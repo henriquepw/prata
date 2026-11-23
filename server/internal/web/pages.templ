@@ -4,6 +4,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strings"
+	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
@@ -58,15 +59,15 @@ templ signupPage(form authForm) {
 
 // setupPage is the configurações iniciais: the Idioma, Formato de data, Formato numérico and Moeda, asked before the
 // signup and stored by it.
-templ setupPage(form settingsForm) {
+templ setupPage(form settingpage.Form) {
 	@shell.Document(i18n.T(ctx, "setup.title")) {
 		@entrance(console.Figlet, "Prata", i18n.T(ctx, "setup.title"), "max-w-100") {
 			<form method="post" action="/setup" class="flex flex-col gap-4">
 				<p class="text-xs text-muted-foreground">{ i18n.T(ctx, "setup.note") }</p>
-				@languageField(form)
-				@dateFormatField(form)
-				@numberFormatField(form)
-				@currencyField(form)
+				@settingpage.LanguageField(form)
+				@settingpage.DateFormatField(form)
+				@settingpage.NumberFormatField(form)
+				@settingpage.CurrencyField(form)
 				@button.Button(button.Props{Type: button.TypeSubmit}) {
 					{ "> " + i18n.T(ctx, "setup.continue") }
 				}

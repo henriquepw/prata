@@ -1,4 +1,5 @@
-package web
+// Package settingpage is the Configurações sheet, and the settings form the initial setup shares.
+package settingpage
 
 import (
 	"context"
@@ -13,7 +14,19 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
-func (h handler) settings(w http.ResponseWriter, r *http.Request) {
+// Page is the Configurações handlers.
+type Page struct {
+	db          *store.Store
+	openFinance shared.OpenFinance
+}
+
+// New returns the settings page over db.
+func New(db *store.Store, openFinance shared.OpenFinance) Page {
+	return Page{db: db, openFinance: openFinance}
+}
+
+// Settings answers the Configurações sheet; a full-page request goes home.
+func (h Page) Settings(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") != "true" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
@@ -23,20 +36,20 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 }
 
 // renderSettings answers the Configurações sheet with the saved values.
-func (h handler) renderSettings(w http.ResponseWriter, r *http.Request) {
+func (h Page) renderSettings(w http.ResponseWriter, r *http.Request) {
 	session := shared.SessionFrom(r.Context())
-	form := settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}
+	form := Form{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}
 	if _, err := h.showSavedPluggy(r.Context(), &form); err != nil {
 		shared.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, settingsSheet(form))
+	shared.Render(w, r, http.StatusOK, sheet(form))
 }
 
 // showSavedPluggy turns the form's Pluggy fields on when Open Finance is, marking whether the user has credentials
 // saved, showing their client id when none was typed, and returns the saved client id, empty when there is none.
-func (h handler) showSavedPluggy(ctx context.Context, form *settingsForm) (string, error) {
+func (h Page) showSavedPluggy(ctx context.Context, form *Form) (string, error) {
 	if !h.openFinance.Enabled() {
 		return "", nil
 	}
@@ -59,13 +72,13 @@ func (h handler) showSavedPluggy(ctx context.Context, form *settingsForm) (strin
 	return credentials.ClientID, nil
 }
 
-// saveSettings stores the Preferences, Idioma included, the account's Moeda and, when a secret is typed, the
+// Save stores the Preferences, Idioma included, the account's Moeda and, when a secret is typed, the
 // Pluggy credentials after Pluggy accepts them, all at once, and reloads the page in them, or answers 422 with the
 // form and stores nothing when a value is not one of the options, a new client id comes without its secret, or
 // Pluggy refuses the credentials or is unavailable.
-func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
+func (h Page) Save(w http.ResponseWriter, r *http.Request) {
 	session := shared.SessionFrom(r.Context())
-	form := settingsForm{
+	form := Form{
 		Preferences: store.Preferences{
 			Language:       r.PostFormValue("language"),
 			DateFormat:     r.PostFormValue("date_format"),
@@ -82,7 +95,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form.validateChoices(r.Context())
+	form.Validate(r.Context())
 
 	if _, ok := shared.Find(shared.DailyLimitModes, form.DailyLimitMode); !ok {
 		form.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
@@ -109,7 +122,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(form.Errors) > 0 {
-		shared.Render(w, r, http.StatusUnprocessableEntity, settingsSheet(form))
+		shared.Render(w, r, http.StatusUnprocessableEntity, sheet(form))
 		return
 	}
 
@@ -131,8 +144,8 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// deletePluggyCredentials removes the user's Pluggy credentials and answers the sheet without them.
-func (h handler) deletePluggyCredentials(w http.ResponseWriter, r *http.Request) {
+// DeletePluggy removes the user's Pluggy credentials and answers the sheet without them.
+func (h Page) DeletePluggy(w http.ResponseWriter, r *http.Request) {
 	if !h.openFinance.Enabled() {
 		http.NotFound(w, r)
 		return
@@ -155,8 +168,8 @@ func secretHint(ctx context.Context, hasPluggy bool) string {
 	return i18n.T(ctx, "settings.pluggy_keep")
 }
 
-// validateChoices flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
-func (f settingsForm) validateChoices(ctx context.Context) {
+// Validate flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
+func (f Form) Validate(ctx context.Context) {
 	if _, ok := shared.Find(shared.Languages, f.Language); !ok {
 		f.Errors["language"] = i18n.T(ctx, "settings.error.language")
 	}
@@ -172,4 +185,34 @@ func (f settingsForm) validateChoices(ctx context.Context) {
 	if _, ok := shared.Find(shared.Currencies, f.Currency); !ok {
 		f.Errors["currency"] = i18n.T(ctx, "settings.error.currency")
 	}
+}
+
+// FromRequest reads the configurações iniciais from the request's form or query.
+func FromRequest(r *http.Request) Form {
+	return Form{
+		Preferences: store.Preferences{Language: r.FormValue("language"), DateFormat: r.FormValue("date_format"), NumberFormat: r.FormValue("number_format")},
+		Currency:    r.FormValue("currency"),
+		Errors:      map[string]string{},
+	}
+}
+
+// Fields are the choices by field name, nil when there are none.
+func (f Form) Fields() map[string]string {
+	if f.Language == "" {
+		return nil
+	}
+
+	return map[string]string{"language": f.Language, "date_format": f.DateFormat, "number_format": f.NumberFormat, "currency": f.Currency}
+}
+
+// Chosen is the configurações iniciais the signup request carries, none when they are missing or not all valid, and
+// the request in the chosen Idioma.
+func Chosen(r *http.Request) (Form, *http.Request) {
+	form := FromRequest(r)
+	form.Validate(r.Context())
+	if len(form.Errors) > 0 {
+		return Form{}, r
+	}
+
+	return form, r.WithContext(i18n.WithLanguage(r.Context(), form.Language))
 }

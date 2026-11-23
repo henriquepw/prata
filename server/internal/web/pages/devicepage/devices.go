@@ -1,17 +1,28 @@
-package web
+// Package devicepage is the Dispositivos screen and its activity log.
+package devicepage
 
 import (
-	"context"
 	"errors"
 	"net/http"
-	"time"
 
-	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
-func (h handler) devices(w http.ResponseWriter, r *http.Request) {
+// Page is the Dispositivos handlers.
+type Page struct {
+	db    *store.Store
+	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+}
+
+// New returns the devices page over db; shell reads the console chrome of an authenticated page, as web's shell does.
+func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)) Page {
+	return Page{db: db, shell: shell}
+}
+
+// Devices is the Dispositivos screen.
+func (h Page) Devices(w http.ResponseWriter, r *http.Request) {
 	devices, err := h.db.Devices(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
 		shared.InternalError(w, "listing devices", err)
@@ -32,7 +43,8 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, devicesPage(s, devices, activity))
 }
 
-func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
+// Revoke revokes the account's device.
+func (h Page) Revoke(w http.ResponseWriter, r *http.Request) {
 	err := h.db.RevokeDevice(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
@@ -46,14 +58,4 @@ func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusNoContent)
-}
-
-// localTime writes an RFC 3339 time in loc in the request's Formato de data and 24h time, as "02/01/2006 15:04", or
-// "nunca" when it is empty.
-func localTime(ctx context.Context, value string, loc *time.Location) string {
-	if value == "" {
-		return i18n.T(ctx, "devices.never")
-	}
-
-	return shared.FormatDate(value, loc, shared.DateLayout(ctx)+" 15:04")
 }

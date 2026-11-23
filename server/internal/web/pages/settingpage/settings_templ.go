@@ -2,7 +2,7 @@
 
 // templ: version: v0.3.1100
 
-package web
+package settingpage
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
@@ -20,10 +20,10 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
-// settingsForm is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
+// Form is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
 // per field name. With OpenFinance on, it also has the Pluggy client id, never the secret, and whether credentials
 // are saved.
-type settingsForm struct {
+type Form struct {
 	store.Preferences
 	Currency       string
 	OpenFinance    bool
@@ -32,9 +32,9 @@ type settingsForm struct {
 	Errors         map[string]string
 }
 
-// settingsSheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
+// sheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
 // Open Finance is on. A 422 swaps the whole sheet.
-func settingsSheet(form settingsForm) templ.Component {
+func sheet(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -63,15 +63,15 @@ func settingsSheet(form settingsForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = languageField(form).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = LanguageField(form).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = dateFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = DateFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = numberFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = NumberFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -115,7 +115,7 @@ func settingsSheet(form settingsForm) templ.Component {
 							var templ_7745c5c3_Var6 string
 							templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "daily_limit_mode."+m.Value))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 37, Col: 48}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 37, Col: 48}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 							if templ_7745c5c3_Err != nil {
@@ -140,7 +140,7 @@ func settingsSheet(form settingsForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = currencyField(form).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = CurrencyField(form).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -160,7 +160,7 @@ func settingsSheet(form settingsForm) templ.Component {
 	})
 }
 
-func languageField(form settingsForm) templ.Component {
+func LanguageField(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -217,7 +217,7 @@ func languageField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var11 string
 						templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(l.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 54, Col: 14}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 54, Col: 14}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 						if templ_7745c5c3_Err != nil {
@@ -246,7 +246,7 @@ func languageField(form settingsForm) templ.Component {
 	})
 }
 
-func dateFormatField(form settingsForm) templ.Component {
+func DateFormatField(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -303,7 +303,7 @@ func dateFormatField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var16 string
 						templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "date_format."+f.Value))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 66, Col: 42}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 66, Col: 42}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 						if templ_7745c5c3_Err != nil {
@@ -332,7 +332,7 @@ func dateFormatField(form settingsForm) templ.Component {
 	})
 }
 
-func numberFormatField(form settingsForm) templ.Component {
+func NumberFormatField(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -389,7 +389,7 @@ func numberFormatField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var21 string
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(f.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 78, Col: 14}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 78, Col: 14}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 						if templ_7745c5c3_Err != nil {
@@ -418,7 +418,7 @@ func numberFormatField(form settingsForm) templ.Component {
 	})
 }
 
-func currencyField(form settingsForm) templ.Component {
+func CurrencyField(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -475,7 +475,7 @@ func currencyField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var26 string
 						templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(c.Value + " (" + c.Symbol + ")")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 90, Col: 38}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 90, Col: 38}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 						if templ_7745c5c3_Err != nil {
@@ -509,7 +509,7 @@ func currencyField(form settingsForm) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "settings.currency_note"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 95, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 95, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -533,7 +533,7 @@ func currencyField(form settingsForm) templ.Component {
 
 // pluggyFields are the user's Pluggy client id and secret, with "apagar credenciais" and its inline confirmation
 // when they are saved.
-func pluggyFields(form settingsForm) templ.Component {
+func pluggyFields(form Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -614,7 +614,7 @@ func pluggyFields(form settingsForm) templ.Component {
 				var templ_7745c5c3_Var33 string
 				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "settings.pluggy_delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 112, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/settingpage/settings.templ`, Line: 112, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {

@@ -113,3 +113,13 @@ func LiveTags(w http.ResponseWriter, r *http.Request, db *store.Store) ([]store.
 
 	return tags, true
 }
+
+// LocalTime writes an RFC 3339 time in loc in the request's Formato de data and 24h time, as "02/01/2006 15:04", or
+// "nunca" when it is empty.
+func LocalTime(ctx context.Context, value string, loc *time.Location) string {
+	if value == "" {
+		return i18n.T(ctx, "devices.never")
+	}
+
+	return FormatDate(value, loc, DateLayout(ctx)+" 15:04")
+}

@@ -1,4 +1,4 @@
-package web
+package settingpage
 
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -11,10 +11,10 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
-// settingsForm is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
+// Form is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
 // per field name. With OpenFinance on, it also has the Pluggy client id, never the secret, and whether credentials
 // are saved.
-type settingsForm struct {
+type Form struct {
 	store.Preferences
 	Currency       string
 	OpenFinance    bool
@@ -23,13 +23,13 @@ type settingsForm struct {
 	Errors         map[string]string
 }
 
-// settingsSheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
+// sheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
 // Open Finance is on. A 422 swaps the whole sheet.
-templ settingsSheet(form settingsForm) {
+templ sheet(form Form) {
 	@console.Sheet(console.SheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
-		@languageField(form)
-		@dateFormatField(form)
-		@numberFormatField(form)
+		@LanguageField(form)
+		@DateFormatField(form)
+		@NumberFormatField(form)
 		@console.FormField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["daily_limit_mode"])}) {
 				for _, m := range shared.DailyLimitModes {
@@ -39,14 +39,14 @@ templ settingsSheet(form settingsForm) {
 				}
 			}
 		}
-		@currencyField(form)
+		@CurrencyField(form)
 		if form.OpenFinance {
 			@pluggyFields(form)
 		}
 	}
 }
 
-templ languageField(form settingsForm) {
+templ LanguageField(form Form) {
 	@console.FormField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["language"])}) {
 			for _, l := range shared.Languages {
@@ -58,7 +58,7 @@ templ languageField(form settingsForm) {
 	}
 }
 
-templ dateFormatField(form settingsForm) {
+templ DateFormatField(form Form) {
 	@console.FormField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["date_format"])}) {
 			for _, f := range shared.DateFormats {
@@ -70,7 +70,7 @@ templ dateFormatField(form settingsForm) {
 	}
 }
 
-templ numberFormatField(form settingsForm) {
+templ NumberFormatField(form Form) {
 	@console.FormField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["number_format"])}) {
 			for _, f := range shared.NumberFormats {
@@ -82,7 +82,7 @@ templ numberFormatField(form settingsForm) {
 	}
 }
 
-templ currencyField(form settingsForm) {
+templ CurrencyField(form Form) {
 	@console.FormField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["currency"])}) {
 			for _, c := range shared.Currencies {
@@ -99,7 +99,7 @@ templ currencyField(form settingsForm) {
 
 // pluggyFields are the user's Pluggy client id and secret, with "apagar credenciais" and its inline confirmation
 // when they are saved.
-templ pluggyFields(form settingsForm) {
+templ pluggyFields(form Form) {
 	@console.HintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]) {
 		@input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: console.AriaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})})
 	}

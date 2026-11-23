@@ -12,13 +12,15 @@ import (
 
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
+	"github.com/henriquepw/prata/server/internal/web/pages/connectionpage"
+	"github.com/henriquepw/prata/server/internal/web/pages/devicepage"
 	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
 	"github.com/henriquepw/prata/server/internal/web/pages/movementpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/recurrencepage"
+	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/tagpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/transactionpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/welcomepage"
@@ -45,19 +47,14 @@ type handler struct {
 	recurrences     recurrencepage.Page
 	movements       movementpage.Page
 	welcome         welcomepage.Page
+	connections     connectionpage.Page
+	devices         devicepage.Page
+	settings        settingpage.Page
 }
 
 // OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
 // turns the feature off.
-type OpenFinance struct {
-	Key    string
-	Pluggy pluggy.Client
-}
-
-// Enabled reports whether Open Finance is on, that is, whether the instance has a Key.
-func (o OpenFinance) Enabled() bool {
-	return o.Key != ""
-}
+type OpenFinance = shared.OpenFinance
 
 // New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
 // wrapped in requireSession, and every page without a session in visitor.
@@ -70,6 +67,9 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	h.recurrences = recurrencepage.New(db, h.shell, h.home)
 	h.movements = movementpage.New(db, h.shell)
 	h.welcome = welcomepage.New(db)
+	h.connections = connectionpage.New(db, h.shell, openFinance)
+	h.devices = devicepage.New(db, h.shell)
+	h.settings = settingpage.New(db, openFinance)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
 	mux.HandleFunc("GET /login", visitor(h.loginForm))
@@ -121,15 +121,15 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /movements/{id}/confirm", h.requireSession(h.movements.Confirm))
 	mux.Handle("POST /movements/{id}/occurrence", h.requireSession(h.movements.ConfirmAsOccurrence))
 	mux.Handle("POST /movements/{id}/ignore", h.requireSession(h.movements.Ignore))
-	mux.Handle("GET /connections", h.requireSession(h.connections))
-	mux.Handle("POST /connections", h.requireSession(h.saveConnection))
-	mux.Handle("POST /connections/fetch", h.requireSession(h.fetchConnections))
-	mux.Handle("DELETE /connections/{id}", h.requireSession(h.deleteConnection))
-	mux.Handle("GET /devices", h.requireSession(h.devices))
-	mux.Handle("DELETE /devices/{id}", h.requireSession(h.revokeDevice))
-	mux.Handle("GET /settings", h.requireSession(h.settings))
-	mux.Handle("POST /settings", h.requireSession(h.saveSettings))
-	mux.Handle("DELETE /settings/pluggy", h.requireSession(h.deletePluggyCredentials))
+	mux.Handle("GET /connections", h.requireSession(h.connections.Connections))
+	mux.Handle("POST /connections", h.requireSession(h.connections.Save))
+	mux.Handle("POST /connections/fetch", h.requireSession(h.connections.Fetch))
+	mux.Handle("DELETE /connections/{id}", h.requireSession(h.connections.Delete))
+	mux.Handle("GET /devices", h.requireSession(h.devices.Devices))
+	mux.Handle("DELETE /devices/{id}", h.requireSession(h.devices.Revoke))
+	mux.Handle("GET /settings", h.requireSession(h.settings.Settings))
+	mux.Handle("POST /settings", h.requireSession(h.settings.Save))
+	mux.Handle("DELETE /settings/pluggy", h.requireSession(h.settings.DeletePluggy))
 
 	return http.NewCrossOriginProtection().Handler(mux)
 }
@@ -168,7 +168,7 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	choices, r := chosen(r)
+	choices, r := settingpage.Chosen(r)
 	if empty && choices.Language == "" {
 		shared.Redirect(w, r, "/setup")
 		return
@@ -179,7 +179,7 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, empty, authForm{Choices: choices.fields()}, signupPage)
+	h.renderEntrance(w, r, http.StatusOK, empty, authForm{Choices: choices.Fields()}, signupPage)
 }
 
 // renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
@@ -212,10 +212,10 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
-	choices, r := chosen(r)
+	choices, r := settingpage.Chosen(r)
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
-	form := authForm{Email: email, Choices: choices.fields()}
+	form := authForm{Email: email, Choices: choices.Fields()}
 	if !strings.Contains(email, "@") {
 		form.EmailError = i18n.T(r.Context(), "auth.error.email")
 	}
