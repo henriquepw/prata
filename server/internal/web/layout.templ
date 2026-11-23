@@ -191,9 +191,9 @@ templ layout(s shell) {
 					<div class="flex overflow-hidden whitespace-nowrap @max-2xl/console:hidden">
 						@ticker(s, false)
 						<div class={ tickerCell }>
-							<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
-							<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
-							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
+							<button type="button" class={ textAction } hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
+							<button type="button" class={ textAction } onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
+							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class={ textAction }>{ i18n.T(ctx, "layout.sign_out") }</button></form>
 						</div>
 					</div>
 				</header>

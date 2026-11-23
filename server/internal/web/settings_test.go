@@ -57,7 +57,7 @@ func TestSettingsSheet(t *testing.T) {
 	t.Run("htmx gets the form without the layout", func(t *testing.T) {
 		rec := do(routes, cookie, http.MethodGet, "/settings", true, nil)
 		body := rec.Body.String()
-		if rec.Code != http.StatusOK || !strings.Contains(body, `hx-post="/settings"`) || strings.Contains(body, `class="rail"`) {
+		if rec.Code != http.StatusOK || !strings.Contains(body, `hx-post="/settings"`) || strings.Contains(body, `aria-label="Telas"`) {
 			t.Errorf("status %d, body %s", rec.Code, body)
 		}
 	})
@@ -88,7 +88,7 @@ func TestHomeChrome(t *testing.T) {
 	routes, cookie := signedIn(t)
 	body := do(routes, cookie, http.MethodGet, "/", false, nil).Body.String()
 
-	settings, theme := strings.Index(body, `hx-get="/settings"`), strings.Index(body, `class="lnk" onclick`)
+	settings, theme := strings.Index(body, `hx-get="/settings"`), strings.Index(body, `onclick="cycleTheme()"`)
 	if settings < 0 || theme < 0 || settings > theme {
 		t.Errorf("settings link at %d, theme at %d, want the link before theme", settings, theme)
 	}

@@ -29,7 +29,7 @@ templ connectionFormPanel(view connectionsView) {
 		if !view.HasCredentials {
 			<p class="text-muted-foreground">
 				{ i18n.T(ctx, "connections.no_credentials") }
-				<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
+				<button type="button" class={ textAction } hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
 			</p>
 		} else {
 			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-4">

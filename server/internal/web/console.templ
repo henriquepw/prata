@@ -112,6 +112,10 @@ templ online() {
 
 const closeSheet = "this.closest('dialog').close()"
 
+// textAction is a text action ([tema], [sair], [esc ✕]): muted caps that invert on hover, widened to a 44px touch
+// target below @2xl in the console and below sm in the sheet, which sits outside the console container.
+const textAction = "cursor-pointer px-0.5 tracking-wider whitespace-nowrap text-muted-foreground uppercase transition-colors hover:bg-foreground hover:text-background @max-2xl/console:inline-flex @max-2xl/console:min-h-11 @max-2xl/console:min-w-11 @max-2xl/console:items-center @max-2xl/console:justify-center in-[.sheet]:max-sm:inline-flex in-[.sheet]:max-sm:min-h-11 in-[.sheet]:max-sm:items-center"
+
 // sheetPanel is the panel inside #sheet: borderless but for a --line-soft left border, its fields a line apart, and
 // its corners inside the dialog, which would scroll on any overflow. group/sheet lets a field react to the choices.
 const sheetPanel = "panel group/sheet flex min-h-full flex-col gap-5 border-l border-line-soft px-4 py-5 after:inset-0"
@@ -137,7 +141,7 @@ templ sheet(p sheetProps) {
 	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class={ sheetPanel }>
 		<header class={ utils.CN(panelHead, "mb-0") }>
 			<h2 class={ panelTitle }>{ p.Title }</h2>
-			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+			<button type="button" class={ textAction } aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
 		{ children... }
 		if p.Error != "" {
@@ -263,8 +267,8 @@ templ dateField(id, label, value, message string) {
 				{ label }
 			}
 			<span class="flex gap-1">
-				<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(fillDate(id, 0)) }>[{ i18n.T(ctx, "date.today") }]</button>
-				<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(fillDate(id, 1)) }>[{ i18n.T(ctx, "date.yesterday") }]</button>
+				<button type="button" class={ textAction } onclick={ templ.JSUnsafeFuncCall(fillDate(id, 0)) }>[{ i18n.T(ctx, "date.today") }]</button>
+				<button type="button" class={ textAction } onclick={ templ.JSUnsafeFuncCall(fillDate(id, 1)) }>[{ i18n.T(ctx, "date.yesterday") }]</button>
 			</span>
 		</div>
 		@input.Input(input.Props{ID: id, Name: id, Type: "date", Value: value, Required: true, Attributes: ariaInvalid(message)})

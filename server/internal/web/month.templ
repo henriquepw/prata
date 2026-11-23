@@ -113,11 +113,11 @@ templ monthSwap(s shell, page month) {
 templ monthBar(page month) {
 	<div class="mb-5 flex items-center justify-between gap-4">
 		<div class="flex items-center gap-2">
-			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, -1), page.Filter.ID)) } class="lnk" data-key="[" aria-label={ i18n.T(ctx, "month.previous") }>‹</a>
+			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, -1), page.Filter.ID)) } class={ textAction } data-key="[" aria-label={ i18n.T(ctx, "month.previous") }>‹</a>
 			<span class="min-w-38 text-center tracking-widest uppercase">{ i18n.T(ctx, "month.year", i18n.T(ctx, "month."+page.Month.Month().String()), page.Month.Year()) }</span>
-			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, 1), page.Filter.ID)) } class="lnk" data-key="]" aria-label={ i18n.T(ctx, "month.next") }>›</a>
+			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, 1), page.Filter.ID)) } class={ textAction } data-key="]" aria-label={ i18n.T(ctx, "month.next") }>›</a>
 			if !page.isCurrent() {
-				<a href={ templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID)) } class="lnk">{ i18n.T(ctx, "month.current") }</a>
+				<a href={ templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID)) } class={ textAction }>{ i18n.T(ctx, "month.current") }</a>
 			}
 		</div>
 	</div>
@@ -236,12 +236,12 @@ templ monthContent(page month) {
 										@table.Cell(table.CellProps{Class: "w-full whitespace-normal"}) {
 											@description(t.Description)
 										}
-										@table.Cell(table.CellProps{Class: "hide-m"}) {
+										@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 											if t.CategoryName != "" {
 												@categoryName(t.CategoryName, t.CategoryColor)
 											}
 										}
-										@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+										@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden text-muted-foreground"}) {
 											if t.TagName != "" {
 												{ "#" + t.TagName }
 											}
@@ -268,7 +268,7 @@ templ monthContent(page month) {
 							{{ isOver := usage.MonthlyLimit > 0 && usage.Used > usage.MonthlyLimit }}
 							<a
 								href={ templ.SafeURL(monthURL(page.yearMonth(), usage.ID)) }
-								class="usage"
+								class="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1 border-l-3 border-transparent px-2 py-2.5 transition-colors hover:bg-line-soft aria-current:border-primary aria-current:bg-line-soft"
 								if usage.ID == page.Filter.ID {
 									aria-current="true"
 								}
@@ -293,7 +293,7 @@ templ monthContent(page month) {
 templ statementActions(page month) {
 	<span class="flex items-center gap-2">
 		if page.Filter.ID != "" {
-			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk flex items-center gap-2">
+			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class={ textAction, "flex items-center gap-2" }>
 				@categoryName(page.Filter.Name, page.Filter.Color)
 				✕
 			</a>
@@ -305,7 +305,7 @@ templ statementActions(page month) {
 // allCategories is "[todas]", which clears the filter, only while there is one.
 templ allCategories(page month) {
 	if page.Filter.ID != "" {
-		<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk">{ i18n.T(ctx, "month.all") }</a>
+		<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class={ textAction }>{ i18n.T(ctx, "month.all") }</a>
 	}
 }
 
@@ -346,14 +346,14 @@ templ pendingRow(page month, p occurrence, withDate bool) {
 				}
 			}
 		}
-		@table.Cell(table.CellProps{Class: "hide-m"}) {
+		@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 			for _, usage := range page.Usages {
 				if usage.ID == orEmpty(p.Recurrence.CategoryID) {
 					@categoryName(usage.Name, usage.Color)
 				}
 			}
 		}
-		@table.Cell(table.CellProps{Class: "hide-m"}) {
+		@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 			<form hx-post={ url } hx-target="#month" hx-swap="outerHTML" onclick="event.stopPropagation()" class="flex justify-end">
 				<input type="hidden" name="month" value={ page.yearMonth() }/>
 				<input type="hidden" name="category" value={ page.Filter.ID }/>

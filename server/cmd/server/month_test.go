@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -260,8 +261,12 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 	shown := "/?month=" + month.Format("2006-01")
 	body := get(w.handler, shown+"&category="+categoryID, w.cookie).Body.String()
 	assertInOrder(t, body, boxes("R$ 0,00", "R$ 0,00", "−R$ 75,90", "−R$ 75,90", "−R$ 50,00", "−R$ 125,90")...)
-	selected := `href="` + shown + "&amp;category=" + categoryID + `" class="usage" aria-current="true"`
-	for _, text := range []string{"padaria", "Mercado</span> ✕</a>", "[todas]", selected, "∞"} {
+	selected := regexp.MustCompile(`<a href="` + regexp.QuoteMeta(shown+"&amp;category="+categoryID) + `"[^>]*aria-current="true"`)
+	if !selected.MatchString(body) {
+		t.Errorf("filtered month does not mark its category as current: %s", body)
+	}
+
+	for _, text := range []string{"padaria", "Mercado</span> ✕</a>", "[todas]", "∞"} {
 		if !strings.Contains(body, text) {
 			t.Errorf("filtered month lacks %q: %s", text, body)
 		}
@@ -419,7 +424,7 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 	page := get(w.handler, "/", w.cookie).Body.String()
 	for _, status := range []string{"[atrasada]", "[pendente]"} {
 		i := strings.Index(page, status)
-		if cell := page[strings.LastIndex(page[:max(i, 0)], "<td"):max(i, 0)]; i < 0 || strings.Contains(cell, "hide-m") {
+		if cell := page[strings.LastIndex(page[:max(i, 0)], "<td"):max(i, 0)]; i < 0 || strings.Contains(cell, "@max-2xl/console:hidden") {
 			t.Errorf("month hides %s on mobile: %s", status, page)
 		}
 	}

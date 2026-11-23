@@ -54,7 +54,7 @@ templ currencyDialog(v currencyView) {
 	<div id="currency-dialog" class={ sheetPanel }>
 		<header class={ utils.CN(panelHead, "mb-0") }>
 			<h2 class={ panelTitle }>{ i18n.T(ctx, "movements.currency.title") }</h2>
-			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+			<button type="button" class={ textAction } aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
 		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.FileCurrency, v.AccountCurrency) }</p>
 		<footer class="mt-auto flex flex-wrap justify-end gap-2">
@@ -92,10 +92,10 @@ templ movementsPanel(view movementsView) {
 						@table.Head(table.HeadProps{Class: "text-right"}) {
 							{ i18n.T(ctx, "field.amount") }
 						}
-						@table.Head(table.HeadProps{Class: "hide-m"}) {
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
 							{ i18n.T(ctx, "kind.label") }
 						}
-						@table.Head(table.HeadProps{Class: "hide-m"}) {
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
 							{ i18n.T(ctx, "movements.bank_account") }
 						}
 						@table.Head() {
@@ -118,10 +118,10 @@ templ movementsPanel(view movementsView) {
 							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
 								{ money(ctx, signed(m.Kind, m.Amount)) }
 							}
-							@table.Cell(table.CellProps{Class: "hide-m"}) {
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 								{ i18n.T(ctx, "kind."+m.Kind) }
 							}
-							@table.Cell(table.CellProps{Class: "hide-m text-muted-foreground"}) {
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden text-muted-foreground"}) {
 								{ i18n.T(ctx, "movements.kind."+m.BankAccountKind) } { m.Institution } { m.BankAccount }
 							}
 							@table.Cell() {
