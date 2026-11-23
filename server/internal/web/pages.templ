@@ -18,6 +18,8 @@ type authForm struct {
 	EmailError    string
 	PasswordError string
 	Error         string
+	CanSignUp     bool
+	HasUsers      bool
 }
 
 // ariaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
@@ -83,18 +85,22 @@ const authScript = `(() => {
 
 templ loginPage(form authForm) {
 	@authPage(i18n.T(ctx, "auth.sign_in"), "/login", form) {
-		<p>
-			{ i18n.T(ctx, "auth.no_account") } <a href="/signup" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_up") }</a>
-		</p>
+		if form.CanSignUp {
+			<p>
+				{ i18n.T(ctx, "auth.no_account") } <a href="/signup" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_up") }</a>
+			</p>
+		}
 	}
 }
 
 templ signupPage(form authForm) {
 	@authPage(i18n.T(ctx, "auth.sign_up"), "/signup", form) {
 		<p>{ i18n.T(ctx, "auth.app_note") }</p>
-		<p>
-			{ i18n.T(ctx, "auth.has_account") } <a href="/login" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_in") }</a>
-		</p>
+		if form.HasUsers {
+			<p>
+				{ i18n.T(ctx, "auth.has_account") } <a href="/login" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "auth.sign_in") }</a>
+			</p>
+		}
 	}
 }
 

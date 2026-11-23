@@ -23,7 +23,8 @@ func browse(handler http.Handler, method, path, language string, form url.Values
 }
 
 func TestAuthPages_FollowTheBrowserLanguage(t *testing.T) {
-	handler := newHandler(openStore(t), config{})
+	handler := newHandler(openStore(t), config{isSignupAllowed: true})
+	signupKey(t, handler, newSignup())
 	english := map[string][]string{
 		"/login":  {`<html lang="en">`, "Sign in", "Email", "Password", "&gt; sign in", "Don&#39;t have an account yet?", "Create account"},
 		"/signup": {`<html lang="en">`, "Create account", "&gt; create account", "Already use Prata in the app?", "Already have an account?", "Sign in"},

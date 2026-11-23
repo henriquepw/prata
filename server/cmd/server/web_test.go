@@ -215,6 +215,42 @@ func TestWebSignup_FlagsEachMissingField(t *testing.T) {
 	}
 }
 
+func TestWebEntrance_FollowsTheSignupState(t *testing.T) {
+	tests := []struct {
+		name            string
+		hasUsers        bool
+		isSignupAllowed bool
+		signupRedirect  string
+		loginHasSignup  bool
+		signupHasLogin  bool
+	}{
+		{name: "empty database", loginHasSignup: true},
+		{name: "users and signup closed", hasUsers: true, signupRedirect: "/login", signupHasLogin: true},
+		{name: "users and signup open", hasUsers: true, isSignupAllowed: true, loginHasSignup: true, signupHasLogin: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler := newHandler(openStore(t), config{isSignupAllowed: tt.isSignupAllowed})
+			if tt.hasUsers {
+				signupKey(t, handler, newSignup())
+			}
+
+			signupPage := get(handler, "/signup")
+			if tt.signupRedirect != "" {
+				if signupPage.Code != http.StatusSeeOther || signupPage.Header().Get("Location") != tt.signupRedirect {
+					t.Errorf("GET /signup = %d to %q, want %d to %s", signupPage.Code, signupPage.Header().Get("Location"), http.StatusSeeOther, tt.signupRedirect)
+				}
+			} else if got := strings.Contains(signupPage.Body.String(), `href="/login"`); got != tt.signupHasLogin {
+				t.Errorf("signup page links to login = %t, want %t", got, tt.signupHasLogin)
+			}
+
+			if got := strings.Contains(get(handler, "/login").Body.String(), `href="/signup"`); got != tt.loginHasSignup {
+				t.Errorf("login page links to signup = %t, want %t", got, tt.loginHasSignup)
+			}
+		})
+	}
+}
+
 func TestWebLauncher_ListsTheCommandsOnEveryPage(t *testing.T) {
 	w := newWebClient(t)
 	for _, path := range []string{"/", "/devices"} {

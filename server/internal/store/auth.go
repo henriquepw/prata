@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/argon2"
 	"modernc.org/sqlite"
@@ -56,6 +57,25 @@ type Actor struct {
 	DeviceID  string `db:"id"`
 }
 
+// hasUsers is the check that tells an empty installation, the only one where signup is always open.
+func hasUsers(ctx context.Context, q sqlx.QueryerContext) (bool, error) {
+	query := "SELECT EXISTS (SELECT 1 FROM users)"
+
+	var exists bool
+	if err := sqlx.GetContext(ctx, q, &exists, query); err != nil {
+		return false, fmt.Errorf("counting users: %w", err)
+	}
+
+	return exists, nil
+}
+
+// IsEmpty reports whether the installation has no user yet.
+func (s *Store) IsEmpty(ctx context.Context) (bool, error) {
+	exists, err := hasUsers(ctx, s)
+
+	return !exists, err
+}
+
 // CreateAccount creates the user, account, owner link, hidden web device and, unless DeviceID is empty
 // (signup from the web), the client device in one transaction, and returns the client device's API key.
 func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowed bool) (string, error) {
@@ -65,11 +85,9 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	defer tx.Rollback()
 
-	query := "SELECT EXISTS (SELECT 1 FROM users)"
-
-	var hasUsers bool
-	if err := tx.GetContext(ctx, &hasUsers, query); err != nil {
-		return "", fmt.Errorf("counting users: %w", err)
+	hasUsers, err := hasUsers(ctx, tx)
+	if err != nil {
+		return "", err
 	}
 
 	if hasUsers && !isSignupAllowed {
