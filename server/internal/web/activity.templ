@@ -6,6 +6,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // activityPhrase is what an op did, such as `transação "Uber" criada`, without the quoted label when it has none.
@@ -24,7 +25,7 @@ templ activityLog(activity []store.Activity, loc *time.Location) {
 	@panel(i18n.T(ctx, "activity.title"), "flex min-w-0 grow basis-59 flex-col", nil) {
 		<ol class="flex flex-1 flex-col text-xs/5">
 			for _, a := range activity {
-				<li><span class="text-muted-foreground">{ "> [" + formatDate(a.CreatedAt, loc, "15:04") + "]" }</span> { a.Device } · { activityPhrase(ctx, a) }</li>
+				<li><span class="text-muted-foreground">{ "> [" + shared.FormatDate(a.CreatedAt, loc, "15:04") + "]" }</span> { a.Device } · { activityPhrase(ctx, a) }</li>
 			}
 			if len(activity) == 0 {
 				<li>@empty(i18n.T(ctx, "activity.empty"))</li>

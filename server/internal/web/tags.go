@@ -8,13 +8,14 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
 func (h handler) tags(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.db.Tags(r.Context(), sessionFrom(r.Context()).AccountID)
+	tags, err := h.db.Tags(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
-		internalError(w, "listing tags", err)
+		shared.InternalError(w, "listing tags", err)
 		return
 	}
 
@@ -23,7 +24,7 @@ func (h handler) tags(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, tagsPage(s, tags))
+	shared.Render(w, r, http.StatusOK, tagsPage(s, tags))
 }
 
 func (h handler) editTag(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +33,7 @@ func (h handler) editTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, tagSheet(storedTagForm(tag, location(r))))
+	shared.Render(w, r, http.StatusOK, tagSheet(storedTagForm(tag, shared.Location(r))))
 }
 
 // saveTag creates the tag, or updates the one in the path, from the sheet's form. Dates are local midnights
@@ -49,15 +50,15 @@ func (h handler) saveTag(w http.ResponseWriter, r *http.Request) {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
-	loc := location(r)
-	startAt, ok := parseDate(form.StartAt, loc)
+	loc := shared.Location(r)
+	startAt, ok := shared.ParseDate(form.StartAt, loc)
 	if !ok {
 		form.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
 	}
 
 	var endAt any
 	if form.EndAt != "" {
-		end, ok := parseDate(form.EndAt, loc)
+		end, ok := shared.ParseDate(form.EndAt, loc)
 		if !ok || (startAt != "" && end < startAt) {
 			form.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
 		}
@@ -82,15 +83,15 @@ func (h handler) deleteTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := storedTagForm(tag, location(r))
+	form := storedTagForm(tag, shared.Location(r))
 	h.commit(w, r, form.Errors, tagSheet(form), store.Change{Entity: "TAG", EntityID: tag.ID, Kind: store.KindDelete})
 }
 
 // storedTagForm fills the sheet with the stored tag, its dates in the user's time zone.
 func storedTagForm(tag store.Tag, loc *time.Location) tagForm {
-	form := tagForm{ID: tag.ID, Name: tag.Name, StartAt: formatDate(tag.StartAt, loc, time.DateOnly), Errors: map[string]string{}}
+	form := tagForm{ID: tag.ID, Name: tag.Name, StartAt: shared.FormatDate(tag.StartAt, loc, time.DateOnly), Errors: map[string]string{}}
 	if tag.EndAt != nil {
-		form.EndAt = formatDate(*tag.EndAt, loc, time.DateOnly)
+		form.EndAt = shared.FormatDate(*tag.EndAt, loc, time.DateOnly)
 	}
 
 	return form
@@ -98,14 +99,14 @@ func storedTagForm(tag store.Tag, loc *time.Location) tagForm {
 
 // tag reads the live tag in the path, answering 404 when the account has none.
 func (h handler) tag(w http.ResponseWriter, r *http.Request) (store.Tag, bool) {
-	tag, err := h.db.Tag(r.Context(), sessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	tag, err := h.db.Tag(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Tag{}, false
 	}
 
 	if err != nil {
-		internalError(w, "reading tag", err)
+		shared.InternalError(w, "reading tag", err)
 		return store.Tag{}, false
 	}
 

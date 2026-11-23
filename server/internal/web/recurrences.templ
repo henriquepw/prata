@@ -5,6 +5,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -53,7 +54,7 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 									{ i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
 								}
 								@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", kindClass(recurrence.Kind))}) {
-									{ money(ctx, signed(recurrence.Kind, recurrence.Amount)) }
+									{ shared.Money(ctx, signed(recurrence.Kind, recurrence.Amount)) }
 								}
 							}
 						}

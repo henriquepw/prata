@@ -6,6 +6,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // setupForm shows the configurações iniciais, with the Idioma of the browser and the default formats and Moeda, only
@@ -16,11 +17,11 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := settingsForm{
-		Preferences: store.Preferences{Language: i18n.Language(r.Context()), DateFormat: visitorSession.DateFormat, NumberFormat: visitorSession.NumberFormat},
-		Currency:    visitorSession.Currency,
+		Preferences: store.Preferences{Language: i18n.Language(r.Context()), DateFormat: shared.VisitorSession.DateFormat, NumberFormat: shared.VisitorSession.NumberFormat},
+		Currency:    shared.VisitorSession.Currency,
 		Errors:      map[string]string{},
 	}
-	render(w, r, http.StatusOK, setupPage(form))
+	shared.Render(w, r, http.StatusOK, setupPage(form))
 }
 
 // setup validates the configurações iniciais like the Configurações and, writing nothing, carries them to the
@@ -33,7 +34,7 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 	form := choicesFrom(r)
 	form.validateChoices(r.Context())
 	if len(form.Errors) > 0 {
-		render(w, r, http.StatusUnprocessableEntity, setupPage(form))
+		shared.Render(w, r, http.StatusUnprocessableEntity, setupPage(form))
 		return
 	}
 
@@ -42,14 +43,14 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 		query.Set(name, value)
 	}
 
-	redirect(w, r, "/signup?"+query.Encode())
+	shared.Redirect(w, r, "/signup?"+query.Encode())
 }
 
 // requireEmpty reports whether the Servidor has no user, sending everyone else to /login.
 func (h handler) requireEmpty(w http.ResponseWriter, r *http.Request) bool {
 	empty, ok := h.isEmpty(w, r)
 	if ok && !empty {
-		redirect(w, r, "/login")
+		shared.Redirect(w, r, "/login")
 	}
 
 	return ok && empty

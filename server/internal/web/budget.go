@@ -9,6 +9,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -91,16 +92,16 @@ func abs(n int64) int64 { return max(n, -n) }
 // and stores nothing when a value is not an amount, the Receita mensal is not above zero or the division does not
 // close it.
 func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
 
 	form, budget := parseBudget(r, categories)
 	if len(form.Errors) == 0 {
-		err := h.db.SaveBudget(r.Context(), sessionFrom(r.Context()), budget)
+		err := h.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), budget)
 		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
-			internalError(w, "saving budget", err)
+			shared.InternalError(w, "saving budget", err)
 			return
 		}
 
@@ -114,7 +115,7 @@ func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
 		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
 	}
 
-	render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
+	shared.Render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
 }
 
 // parseBudget reads the division form: the typed form, with an error message per invalid field, and the Budget it
@@ -129,14 +130,14 @@ func parseBudget(r *http.Request, categories []store.Category) (budgetForm, stor
 	budget := store.Budget{Percent: form.percent(), Limits: map[string]int64{}}
 
 	var incomeOK bool
-	if form.income, incomeOK = parseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
+	if form.income, incomeOK = shared.ParseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
 		form.Errors["income"] = i18n.T(r.Context(), "budget.error.income")
 	}
 
 	budget.Income = form.income
 	for _, category := range categories {
 		typed := r.PostFormValue("limit_" + category.ID)
-		limit, ok := parseAmount(r.Context(), typed)
+		limit, ok := shared.ParseAmount(r.Context(), typed)
 		if !ok || limit < 0 {
 			form.Errors["limit_"+category.ID] = i18n.T(r.Context(), "budget.error.limit")
 		}
@@ -144,10 +145,10 @@ func parseBudget(r *http.Request, categories []store.Category) (budgetForm, stor
 		budget.Limits[category.ID] = limit
 		if form.percent() {
 			form.Cents[category.ID], form.Points[category.ID] = form.income*limit/store.HundredPercent, limit
-			form.Values[category.ID], form.Percents[category.ID] = amount(r.Context(), form.Cents[category.ID]), typed
+			form.Values[category.ID], form.Percents[category.ID] = shared.Amount(r.Context(), form.Cents[category.ID]), typed
 		} else {
 			form.Cents[category.ID], form.Points[category.ID] = limit, store.BasisPoints(limit, form.income)
-			form.Values[category.ID], form.Percents[category.ID] = typed, amount(r.Context(), form.Points[category.ID])
+			form.Values[category.ID], form.Percents[category.ID] = typed, shared.Amount(r.Context(), form.Points[category.ID])
 		}
 	}
 
@@ -157,14 +158,14 @@ func parseBudget(r *http.Request, categories []store.Category) (budgetForm, stor
 // storedBudgetForm fills the screen with the stored Receita mensal and division, typed in percent.
 func storedBudgetForm(r *http.Request, categories []store.Category) budgetForm {
 	form := newBudgetForm(categories, budgetInPercent)
-	if form.income = sessionFrom(r.Context()).MonthlyIncome; form.income > 0 {
-		form.Income = amount(r.Context(), form.income)
+	if form.income = shared.SessionFrom(r.Context()).MonthlyIncome; form.income > 0 {
+		form.Income = shared.Amount(r.Context(), form.income)
 	}
 
 	division := store.Division(categories)
 	for _, category := range categories {
 		form.Cents[category.ID], form.Points[category.ID] = category.MonthlyLimit, division[category.ID]
-		form.Values[category.ID], form.Percents[category.ID] = amount(r.Context(), category.MonthlyLimit), amount(r.Context(), division[category.ID])
+		form.Values[category.ID], form.Percents[category.ID] = shared.Amount(r.Context(), category.MonthlyLimit), shared.Amount(r.Context(), division[category.ID])
 	}
 
 	return form

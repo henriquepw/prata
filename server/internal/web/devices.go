@@ -8,18 +8,19 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 func (h handler) devices(w http.ResponseWriter, r *http.Request) {
-	devices, err := h.db.Devices(r.Context(), sessionFrom(r.Context()).AccountID)
+	devices, err := h.db.Devices(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
-		internalError(w, "listing devices", err)
+		shared.InternalError(w, "listing devices", err)
 		return
 	}
 
-	activity, err := h.db.Activity(r.Context(), sessionFrom(r.Context()).AccountID)
+	activity, err := h.db.Activity(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
-		internalError(w, "reading activity", err)
+		shared.InternalError(w, "reading activity", err)
 		return
 	}
 
@@ -28,18 +29,18 @@ func (h handler) devices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, devicesPage(s, devices, activity))
+	shared.Render(w, r, http.StatusOK, devicesPage(s, devices, activity))
 }
 
 func (h handler) revokeDevice(w http.ResponseWriter, r *http.Request) {
-	err := h.db.RevokeDevice(r.Context(), sessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	err := h.db.RevokeDevice(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return
 	}
 
 	if err != nil {
-		internalError(w, "revoking device", err)
+		shared.InternalError(w, "revoking device", err)
 		return
 	}
 
@@ -54,5 +55,5 @@ func localTime(ctx context.Context, value string, loc *time.Location) string {
 		return i18n.T(ctx, "devices.never")
 	}
 
-	return formatDate(value, loc, dateLayout(ctx)+" 15:04")
+	return shared.FormatDate(value, loc, shared.DateLayout(ctx)+" 15:04")
 }

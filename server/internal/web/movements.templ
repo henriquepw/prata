@@ -9,6 +9,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -116,7 +117,7 @@ templ movementsPanel(view movementsView) {
 								@description(&m.Description)
 							}
 							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
-								{ money(ctx, signed(m.Kind, m.Amount)) }
+								{ shared.Money(ctx, signed(m.Kind, m.Amount)) }
 							}
 							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 								{ i18n.T(ctx, "kind."+m.Kind) }
@@ -188,7 +189,7 @@ templ occurrenceConfirm(m store.Movement, occurrences []occurrence) {
 			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "movements.occurrence")}}) {
 				for _, o := range occurrences {
 					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
-						{ movementDate(ctx, o.Date) } { cmp.Or(orEmpty(o.Recurrence.Description), i18n.T(ctx, "field.no_description")) } { money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
+						{ movementDate(ctx, o.Date) } { cmp.Or(shared.OrEmpty(o.Recurrence.Description), i18n.T(ctx, "field.no_description")) } { shared.Money(ctx, signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
 					}
 				}
 			}

@@ -4,6 +4,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -43,9 +44,9 @@ templ tagsPage(s shell, tags []store.Tag) {
 								}
 								@table.Cell(table.CellProps{Class: "text-right tabular-nums text-muted-foreground"}) {
 									if tag.EndAt == nil {
-										{ i18n.T(ctx, "tags.since", formatDate(tag.StartAt, loc, dateLayout(ctx))) }
+										{ i18n.T(ctx, "tags.since", shared.FormatDate(tag.StartAt, loc, shared.DateLayout(ctx))) }
 									} else {
-										{ i18n.T(ctx, "tags.between", formatDate(tag.StartAt, loc, dateLayout(ctx)), formatDate(*tag.EndAt, loc, dateLayout(ctx))) }
+										{ i18n.T(ctx, "tags.between", shared.FormatDate(tag.StartAt, loc, shared.DateLayout(ctx)), shared.FormatDate(*tag.EndAt, loc, shared.DateLayout(ctx))) }
 									}
 								}
 							}

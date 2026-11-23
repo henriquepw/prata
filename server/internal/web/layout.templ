@@ -9,6 +9,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
@@ -166,7 +167,7 @@ const cycleTheme = "cycleTheme()"
 
 templ document(title string) {
 	<!DOCTYPE html>
-	{{ format, _ := find(numberFormats, sessionFrom(ctx).NumberFormat) }}
+	{{ format, _ := shared.Find(shared.NumberFormats, shared.SessionFrom(ctx).NumberFormat) }}
 	<html lang={ i18n.Language(ctx) } data-decimal={ format.Decimal } data-thousands={ format.Thousands }>
 		<head>
 			<meta charset="utf-8"/>
@@ -248,7 +249,7 @@ templ layout(s shell) {
 						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
 						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
 					</div>
-					<time class="ml-auto tabular-nums" data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
+					<time class="ml-auto tabular-nums" data-clock={ shared.SessionFrom(ctx).DateFormat }>{ shared.Clock(ctx, s.Now) }</time>
 				</footer>
 			</div>
 		</div>
@@ -281,8 +282,8 @@ templ balanceLine(b balance, oob bool) {
 		aria-label={ i18n.T(ctx, "layout.balance") }
 		class="hidden justify-between gap-2 border-b border-line-soft px-3 py-2 text-2xs tabular-nums @max-2xl/console:flex [&_dd]:flex [&_dd]:items-center [&_dd]:gap-2 [&_dt]:text-2xs [&_dt]:uppercase [&_dt]:tracking-widest [&_dt]:text-muted-foreground"
 	>
-		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, b.Realized) }</dd></div>
-		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, b.Projected) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ shared.Money(ctx, b.Realized) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ shared.Money(ctx, b.Projected) }</dd></div>
 		<div>
 			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 			<dd>
@@ -356,7 +357,7 @@ templ optionLabel(n int, text string) {
 // currencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
 templ currencyPrefix() {
 	<div class="flex items-center gap-2">
-		<span class="text-xs text-muted-foreground">{ currencySymbol(ctx) }</span>
+		<span class="text-xs text-muted-foreground">{ shared.CurrencySymbol(ctx) }</span>
 		{ children... }
 	</div>
 }

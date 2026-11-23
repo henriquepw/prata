@@ -7,6 +7,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -73,8 +74,8 @@ const budgetSlice = "block bg-current transition-all duration-(--move)"
 // asks for it first: no bar, slider nor limit field, and the stored division goes along hidden, in percent, until a
 // typed one above zero comes back in a 422. flash is the category a sheet just saved.
 templ budgetScreen(form budgetForm, flash string) {
-	{{ hasIncome := form.Welcome || form.income > 0 || sessionFrom(ctx).MonthlyIncome > 0 }}
-	{{ format, _ := find(numberFormats, sessionFrom(ctx).NumberFormat) }}
+	{{ hasIncome := form.Welcome || form.income > 0 || shared.SessionFrom(ctx).MonthlyIncome > 0 }}
+	{{ format, _ := shared.Find(shared.NumberFormats, shared.SessionFrom(ctx).NumberFormat) }}
 	@input.MoneyScript()
 	<form
 		id="budget"
@@ -84,7 +85,7 @@ templ budgetScreen(form budgetForm, flash string) {
 		data-mode={ form.Mode }
 		data-decimal={ format.Decimal }
 		data-thousands={ format.Thousands }
-		data-symbol={ currencySymbol(ctx) }
+		data-symbol={ shared.CurrencySymbol(ctx) }
 		data-missing={ i18n.T(ctx, "budget.missing") }
 		data-over={ i18n.T(ctx, "budget.over") }
 		data-closed={ i18n.T(ctx, "budget.closed") }
@@ -94,13 +95,13 @@ templ budgetScreen(form budgetForm, flash string) {
 		@panel(i18n.T(ctx, "budget.title"), "", nil) {
 			<label class="flex items-center gap-2 border-b border-line pb-1 text-base transition-colors focus-within:border-primary">
 				<span class="text-primary" aria-hidden="true">&gt;</span>
-				<span class="text-xs text-muted-foreground">{ currencySymbol(ctx) }</span>
+				<span class="text-xs text-muted-foreground">{ shared.CurrencySymbol(ctx) }</span>
 				<input
 					id="income"
 					class={ budgetInput, "flex-1" }
 					name="income"
 					value={ form.Income }
-					placeholder={ amount(ctx, 0) }
+					placeholder={ shared.Amount(ctx, 0) }
 					aria-label={ i18n.T(ctx, "budget.title") }
 					inputmode="numeric"
 					data-mask="money"
@@ -186,7 +187,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 				<input
 					name={ "limit_" + id }
 					value={ form.Percents[id] }
-					placeholder={ amount(ctx, 0) }
+					placeholder={ shared.Amount(ctx, 0) }
 					aria-label={ i18n.T(ctx, "budget.in_percent", name) }
 					inputmode="decimal"
 					autocomplete="off"
@@ -201,7 +202,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 				<input
 					name={ "limit_" + id }
 					value={ form.Values[id] }
-					placeholder={ amount(ctx, 0) }
+					placeholder={ shared.Amount(ctx, 0) }
 					aria-label={ i18n.T(ctx, "budget.in_value", name) }
 					inputmode="numeric"
 					data-mask="money"
@@ -215,9 +216,9 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 		</span>
 		<span class="text-right text-muted-foreground tabular-nums" data-derived>
 			if form.percent() {
-				{ money(ctx, form.Cents[id]) }
+				{ shared.Money(ctx, form.Cents[id]) }
 			} else {
-				{ amount(ctx, form.Points[id]) }%
+				{ shared.Amount(ctx, form.Points[id]) }%
 			}
 		</span>
 		if message := form.Errors["limit_"+id]; message != "" {
@@ -263,7 +264,7 @@ templ budgetStatus(form budgetForm) {
 				{ i18n.T(ctx, "budget.closed") }
 			case form.income <= 0:
 			default:
-				{ i18n.T(ctx, utils.IfElse(form.gapSign() > 0, "budget.missing", "budget.over")) } { money(ctx, abs(cents)) } · { amount(ctx, abs(points)) }%
+				{ i18n.T(ctx, utils.IfElse(form.gapSign() > 0, "budget.missing", "budget.over")) } { shared.Money(ctx, abs(cents)) } · { shared.Amount(ctx, abs(points)) }%
 		}
 	</span>
 }

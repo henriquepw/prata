@@ -10,6 +10,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -26,9 +27,9 @@ func ruleDay(rule string) string {
 }
 
 func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
-	recurrences, err := h.db.Recurrences(r.Context(), sessionFrom(r.Context()).AccountID)
+	recurrences, err := h.db.Recurrences(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
-		internalError(w, "listing recurrences", err)
+		shared.InternalError(w, "listing recurrences", err)
 		return
 	}
 
@@ -37,17 +38,17 @@ func (h handler) recurrences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
+	shared.Render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
 }
 
 func (h handler) newRecurrence(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
 
-	form := recurrenceForm{Kind: "OUTCOME", StartAt: time.Now().In(location(r)).Format(time.DateOnly), Categories: categories}
-	render(w, r, http.StatusOK, recurrenceSheet(form))
+	form := recurrenceForm{Kind: "OUTCOME", StartAt: time.Now().In(shared.Location(r)).Format(time.DateOnly), Categories: categories}
+	shared.Render(w, r, http.StatusOK, recurrenceSheet(form))
 }
 
 func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
@@ -56,19 +57,19 @@ func (h handler) editRecurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
 
-	render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
+	shared.Render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
 }
 
 // saveRecurrence creates the recurrence, or updates the one in the path, from the sheet's form. A category left
 // as displayed is not written, so a stored reference to a deleted one, displayed as empty, survives editing
 // other fields.
 func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
@@ -85,8 +86,8 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	amount := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
-	if form.CategoryID != "" && !hasCategory(categories, form.CategoryID) {
+	amount := shared.ParseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
+	if form.CategoryID != "" && !shared.HasCategory(categories, form.CategoryID) {
 		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
 	}
 
@@ -95,17 +96,17 @@ func (h handler) saveRecurrence(w http.ResponseWriter, r *http.Request) {
 		form.Errors["day"] = i18n.T(r.Context(), "recurrences.error.day")
 	}
 
-	if !isDate(form.StartAt) {
+	if !shared.IsDate(form.StartAt) {
 		form.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
 	}
 
-	if form.EndAt != "" && (!isDate(form.EndAt) || form.EndAt < form.StartAt) {
+	if form.EndAt != "" && (!shared.IsDate(form.EndAt) || form.EndAt < form.StartAt) {
 		form.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
 	}
 
 	change := store.Change{Entity: "RECURRENCE", EntityID: form.ID, Kind: store.KindUpdate, Fields: map[string]any{
-		"description": orNil(form.Description), "kind": form.Kind, "amount": amount, "category_id": orNil(form.CategoryID),
-		"rule": monthlyRule(day), "start_at": form.StartAt, "end_at": orNil(form.EndAt),
+		"description": shared.OrNil(form.Description), "kind": form.Kind, "amount": amount, "category_id": shared.OrNil(form.CategoryID),
+		"rule": monthlyRule(day), "start_at": form.StartAt, "end_at": shared.OrNil(form.EndAt),
 	}}
 	if form.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
@@ -130,7 +131,7 @@ func (h handler) deleteRecurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
@@ -144,16 +145,16 @@ func (h handler) deleteRecurrence(w http.ResponseWriter, r *http.Request) {
 func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, categories []store.Category) recurrenceForm {
 	form := recurrenceForm{
 		ID:          recurrence.ID,
-		Description: orEmpty(recurrence.Description),
+		Description: shared.OrEmpty(recurrence.Description),
 		Kind:        recurrence.Kind,
-		Amount:      amount(ctx, recurrence.Amount),
+		Amount:      shared.Amount(ctx, recurrence.Amount),
 		Day:         ruleDay(recurrence.Rule),
 		StartAt:     recurrence.StartAt,
-		EndAt:       orEmpty(recurrence.EndAt),
+		EndAt:       shared.OrEmpty(recurrence.EndAt),
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	if id := orEmpty(recurrence.CategoryID); hasCategory(categories, id) {
+	if id := shared.OrEmpty(recurrence.CategoryID); shared.HasCategory(categories, id) {
 		form.CategoryID = id
 	}
 
@@ -162,14 +163,14 @@ func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, cate
 
 // recurrence reads the live recurrence in the path, answering 404 when the account has none.
 func (h handler) recurrence(w http.ResponseWriter, r *http.Request) (store.Recurrence, bool) {
-	recurrence, err := h.db.Recurrence(r.Context(), sessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	recurrence, err := h.db.Recurrence(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Recurrence{}, false
 	}
 
 	if err != nil {
-		internalError(w, "reading recurrence", err)
+		shared.InternalError(w, "reading recurrence", err)
 		return store.Recurrence{}, false
 	}
 

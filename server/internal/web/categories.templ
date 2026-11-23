@@ -4,22 +4,23 @@ import (
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // categoryColor is a schema color, whose label is the i18n key "color." + Value, and its text color class, spelled
 // out here for Tailwind.
 type categoryColor struct {
-	option
+	shared.Option
 	Class string
 }
 
 var categoryColors = []categoryColor{
-	{option{"GRAY"}, "text-cat-gray"},
-	{option{"RED"}, "text-cat-red"},
-	{option{"YELLOW"}, "text-cat-yellow"},
-	{option{"BLUE"}, "text-cat-blue"},
-	{option{"GREEN"}, "text-cat-green"},
+	{shared.Option{Value: "GRAY"}, "text-cat-gray"},
+	{shared.Option{Value: "RED"}, "text-cat-red"},
+	{shared.Option{Value: "YELLOW"}, "text-cat-yellow"},
+	{shared.Option{Value: "BLUE"}, "text-cat-blue"},
+	{shared.Option{Value: "GREEN"}, "text-cat-green"},
 }
 
 // categoryForm is the category sheet: what the user typed and an error message per field name,

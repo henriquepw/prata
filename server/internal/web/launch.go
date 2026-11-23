@@ -10,6 +10,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -40,7 +41,7 @@ func parseLaunch(ctx context.Context, line string, categories []store.Category, 
 	categoryNames, tagNames := names(categories, func(c store.Category) string { return c.Name }), names(tags, func(t store.Tag) string { return t.Name })
 	l, words := launchLine{Kind: "OUTCOME", Date: today.Format(time.DateOnly)}, []string{}
 	for _, word := range strings.Fields(line) {
-		cents, isAmount := parseAmount(ctx, strings.TrimLeft(word, "+-−"))
+		cents, isAmount := shared.ParseAmount(ctx, strings.TrimLeft(word, "+-−"))
 		date, err := time.Parse("2/1/2006", word+"/"+strconv.Itoa(year))
 		category, tag := prefixed(categoryNames, word), prefixed(tagNames, word)
 		switch {
@@ -70,7 +71,7 @@ func parseLaunch(ctx context.Context, line string, categories []store.Category, 
 	if l.Kind == "INCOME" {
 		l.Category = store.Category{}
 	} else if l.Category.ID == "" {
-		l.Category = defaultCategory(categories)
+		l.Category = shared.DefaultCategory(categories)
 	}
 
 	switch last := line[strings.LastIndexAny(line, " \t")+1:]; {
@@ -122,17 +123,17 @@ func (l launchLine) isValid() bool { return l.Amount > 0 && len(l.Unknown) == 0 
 // readLaunch parses the request's prompt line against the live categories and tags, today in the user's time zone
 // and the year of the month on screen, answering 500 when it cannot read them.
 func (h handler) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine, bool) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return launchLine{}, false
 	}
 
-	tags, ok := h.liveTags(w, r)
+	tags, ok := shared.LiveTags(w, r, h.db)
 	if !ok {
 		return launchLine{}, false
 	}
 
-	now := time.Now().In(location(r))
+	now := time.Now().In(shared.Location(r))
 
 	return parseLaunch(r.Context(), r.FormValue("line"), categories, tags, now, shownMonth(r, now).Year()), true
 }
@@ -144,7 +145,7 @@ func (h handler) launchPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
+	shared.Render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
 }
 
 // launch creates the transaction the prompt line reads as, at local midnight of its date in UTC, and answers the
@@ -156,14 +157,14 @@ func (h handler) launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !l.isValid() {
-		render(w, r, http.StatusUnprocessableEntity, launchPreview(r.FormValue("line"), l))
+		shared.Render(w, r, http.StatusUnprocessableEntity, launchPreview(r.FormValue("line"), l))
 		return
 	}
 
-	occurredAt, _ := parseDate(l.Date, location(r))
+	occurredAt, _ := shared.ParseDate(l.Date, shared.Location(r))
 	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
-		"kind": l.Kind, "amount": l.Amount, "description": orNil(l.Description), "occurred_at": occurredAt,
-		"category_id": orNil(l.Category.ID), "tag_id": orNil(l.Tag.ID),
+		"kind": l.Kind, "amount": l.Amount, "description": shared.OrNil(l.Description), "occurred_at": occurredAt,
+		"category_id": shared.OrNil(l.Category.ID), "tag_id": shared.OrNil(l.Tag.ID),
 	}}
 	h.createInMonth(w, r, change, nil)
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -75,7 +76,7 @@ templ panel(title, class string, action templ.Component) {
 templ kpi(label string, cents int64) {
 	<div class="kpi min-w-38 flex-1 border border-line-soft px-2 pt-5 pb-4 text-center">
 		<div class="text-2xl font-semibold text-nowrap tabular-nums">
-			@decoded(money(ctx, cents))
+			@decoded(shared.Money(ctx, cents))
 		</div>
 		<div class="mt-1.5 text-2xs tracking-widest text-muted-foreground uppercase">{ label }</div>
 	</div>
@@ -225,7 +226,7 @@ templ fieldNote(hint, message string) {
 templ amountField(value, hint, message string) {
 	@hintField("amount", i18n.T(ctx, "field.amount"), hint, message) {
 		@currencyPrefix() {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: shared.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
 		}
 	}
 }
@@ -321,7 +322,7 @@ templ choiceOption(name, value string, checked bool) {
 // kindChoice is the [despesa] [receita] choice of a transaction or recurrence.
 templ kindChoice(value, message string) {
 	@choiceField("kind", i18n.T(ctx, "kind.label"), "", message) {
-		for _, kind := range kinds {
+		for _, kind := range shared.Kinds {
 			@choiceOption("kind", kind, kind == value) {
 				{ strings.ToLower(i18n.T(ctx, "kind."+kind)) }
 			}
@@ -331,7 +332,7 @@ templ kindChoice(value, message string) {
 
 // description is an entry's description, or "sem descrição" in muted italics when it has none.
 templ description(text *string) {
-	if orEmpty(text) == "" {
+	if shared.OrEmpty(text) == "" {
 		<span class="italic text-muted-foreground">{ i18n.T(ctx, "field.no_description") }</span>
 	} else {
 		{ *text }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // suggestedDivision is the Divisão sugerida: the hundredths of a percent of the Receita mensal that go to each
@@ -15,7 +16,7 @@ var suggestedDivision = map[string]int64{"Gastos fixos": 5000, "Investimento": 2
 // welcome is the tela inicial after a signup: the division form in percent, filled with the Divisão sugerida, and the
 // Modo do limite diário, dynamic.
 func (h handler) welcome(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
@@ -24,17 +25,17 @@ func (h handler) welcome(w http.ResponseWriter, r *http.Request) {
 	form.Welcome = true
 	for _, category := range categories {
 		form.Points[category.ID] = suggestedDivision[category.Name]
-		form.Percents[category.ID] = amount(r.Context(), form.Points[category.ID])
+		form.Percents[category.ID] = shared.Amount(r.Context(), form.Points[category.ID])
 	}
 
-	render(w, r, http.StatusOK, welcomePage(form, dailyLimitDynamic))
+	shared.Render(w, r, http.StatusOK, welcomePage(form, shared.DailyLimitDynamic))
 }
 
 // saveWelcome stores the Receita mensal, the division and the Modo do limite diário and goes home, or answers 422 with
 // the form and stores nothing when the Receita mensal is not above zero, a value is invalid or the division does not
 // close it.
 func (h handler) saveWelcome(w http.ResponseWriter, r *http.Request) {
-	categories, ok := h.liveCategories(w, r)
+	categories, ok := shared.LiveCategories(w, r, h.db)
 	if !ok {
 		return
 	}
@@ -42,25 +43,25 @@ func (h handler) saveWelcome(w http.ResponseWriter, r *http.Request) {
 	form, budget := parseBudget(r, categories)
 	form.Welcome = true
 	mode := r.PostFormValue("daily_limit_mode")
-	if _, ok := find(dailyLimitModes, mode); !ok {
+	if _, ok := shared.Find(shared.DailyLimitModes, mode); !ok {
 		form.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
 	}
 
 	if len(form.Errors) == 0 {
 		budget.DailyLimitMode = mode
-		err := h.db.SaveBudget(r.Context(), sessionFrom(r.Context()), budget)
+		err := h.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), budget)
 		if err == nil {
-			redirect(w, r, "/")
+			shared.Redirect(w, r, "/")
 			return
 		}
 
 		if !errors.Is(err, store.ErrDivisionNotClosed) {
-			internalError(w, "saving budget", err)
+			shared.InternalError(w, "saving budget", err)
 			return
 		}
 
 		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
 	}
 
-	render(w, r, http.StatusUnprocessableEntity, welcomePage(form, mode))
+	shared.Render(w, r, http.StatusUnprocessableEntity, welcomePage(form, mode))
 }

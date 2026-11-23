@@ -1,4 +1,4 @@
-package web
+package shared
 
 import (
 	"net/http"
@@ -21,7 +21,7 @@ func TestLocation(t *testing.T) {
 				req.AddCookie(&http.Cookie{Name: "tz", Value: tt.cookie})
 			}
 
-			if got := location(req).String(); got != tt.want {
+			if got := Location(req).String(); got != tt.want {
 				t.Errorf("location = %q, want %q", got, tt.want)
 			}
 		})

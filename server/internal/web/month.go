@@ -12,6 +12,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/henriquepw/prata/shared/recurrence"
 	"github.com/oklog/ulid/v2"
@@ -176,8 +177,8 @@ func readDaily(session store.Session, first time.Time, today string, usages []st
 
 	spent := map[string]int64{}
 	for _, t := range transactions {
-		if t.Kind == "OUTCOME" && isDaily[orEmpty(t.CategoryID)] {
-			spent[formatDate(t.OccurredAt, first.Location(), time.DateOnly)] += t.Amount
+		if t.Kind == "OUTCOME" && isDaily[shared.OrEmpty(t.CategoryID)] {
+			spent[shared.FormatDate(t.OccurredAt, first.Location(), time.DateOnly)] += t.Amount
 		}
 	}
 
@@ -187,7 +188,7 @@ func readDaily(session store.Session, first time.Time, today string, usages []st
 
 	for i := range days {
 		date := first.AddDate(0, 0, i).Format(time.DateOnly)
-		if session.DailyLimitMode == dailyLimitDynamic && (i == 0 || date <= today) {
+		if session.DailyLimitMode == shared.DailyLimitDynamic && (i == 0 || date <= today) {
 			limit = max(0, dailyBudget-spentBefore) / int64(days-i)
 		}
 
@@ -227,7 +228,7 @@ func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
 
 // shows reports whether the statement lists an entry of categoryID under the month's filter.
 func (m month) shows(categoryID *string) bool {
-	return m.Filter.ID == "" || orEmpty(categoryID) == m.Filter.ID
+	return m.Filter.ID == "" || shared.OrEmpty(categoryID) == m.Filter.ID
 }
 
 // readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
@@ -262,7 +263,7 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 	}
 
 	page.Previous = previous
-	page.Daily = readDaily(sessionFrom(ctx), first, page.Today, page.Usages, transactions)
+	page.Daily = readDaily(shared.SessionFrom(ctx), first, page.Today, page.Usages, transactions)
 	page.Income, page.Outcome = totals(transactions)
 	days := map[string]*day{}
 	at := func(date string) *day {
@@ -295,7 +296,7 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 			continue
 		}
 
-		d := at(formatDate(t.OccurredAt, now.Location(), time.DateOnly))
+		d := at(shared.FormatDate(t.OccurredAt, now.Location(), time.DateOnly))
 		d.Transactions = append(d.Transactions, t)
 		d.Total += signed(t.Kind, t.Amount)
 	}
@@ -372,14 +373,14 @@ func (h handler) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
+	page, err := h.readMonth(r.Context(), shared.SessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
-		internalError(w, "reading month", err)
+		shared.InternalError(w, "reading month", err)
 		return
 	}
 
 	page.Flash = s.Flash
-	render(w, r, http.StatusOK, monthPage(s, page))
+	shared.Render(w, r, http.StatusOK, monthPage(s, page))
 }
 
 // transactions sends the old transactions list to the Mês, keeping its month.
@@ -389,7 +390,7 @@ func (h handler) transactions(w http.ResponseWriter, r *http.Request) {
 		url += "?month=" + month
 	}
 
-	redirect(w, r, url)
+	shared.Redirect(w, r, url)
 }
 
 // occurrenceForm is the "confirmar ocorrência" sheet: the transaction sheet filled from the recurrence and the
@@ -420,8 +421,8 @@ func (h handler) occurrence(w http.ResponseWriter, r *http.Request) (occurrenceF
 		return occurrenceForm{}, false
 	}
 
-	form.Kind, form.Amount, form.Description, form.OccurredAt = rec.Kind, amount(r.Context(), rec.Amount), orEmpty(rec.Description), date
-	if id := orEmpty(rec.CategoryID); hasCategory(form.Categories, id) {
+	form.Kind, form.Amount, form.Description, form.OccurredAt = rec.Kind, shared.Amount(r.Context(), rec.Amount), shared.OrEmpty(rec.Description), date
+	if id := shared.OrEmpty(rec.CategoryID); shared.HasCategory(form.Categories, id) {
 		form.CategoryID = id
 	}
 
@@ -434,7 +435,7 @@ func (h handler) occurrenceSheet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, occurrenceSheet(form))
+	shared.Render(w, r, http.StatusOK, occurrenceSheet(form))
 }
 
 // confirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC. The
@@ -462,18 +463,18 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		form.CategoryID = r.PostFormValue("category_id")
 	}
 
-	cents := parseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
-	occurredAt, ok := parseDate(form.OccurredAt, location(r))
+	cents := shared.ParseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
+	occurredAt, ok := shared.ParseDate(form.OccurredAt, shared.Location(r))
 	if !ok {
 		form.Errors["occurred_at"] = i18n.T(r.Context(), "form.error.date")
 	}
 
-	if form.CategoryID != "" && !hasCategory(form.Categories, form.CategoryID) {
+	if form.CategoryID != "" && !shared.HasCategory(form.Categories, form.CategoryID) {
 		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
 	}
 
 	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
-		"kind": form.Kind, "amount": cents, "category_id": orNil(form.CategoryID), "description": orNil(form.Description),
+		"kind": form.Kind, "amount": cents, "category_id": shared.OrNil(form.CategoryID), "description": shared.OrNil(form.Description),
 		"recurrence_id": form.Recurrence.ID, "occurrence_date": form.Date, "occurred_at": occurredAt,
 	}}
 	if isSheet {
@@ -482,7 +483,7 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.createInMonth(w, r, change, func() (string, error) {
-		confirmed, err := h.db.ConfirmedOccurrences(r.Context(), sessionFrom(r.Context()).AccountID)
+		confirmed, err := h.db.ConfirmedOccurrences(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 		if err != nil || !slices.Contains(confirmed[form.Recurrence.ID], form.Date) {
 			return "", err
 		}
@@ -494,7 +495,7 @@ func (h handler) confirmOccurrence(w http.ResponseWriter, r *http.Request) {
 // createInMonth commits change, a new transaction, and answers the month on screen with its row flashing. A rejection
 // answers 409 with the message conflict reads, or 500 when conflict is nil or reads none.
 func (h handler) createInMonth(w http.ResponseWriter, r *http.Request, change store.Change, conflict func() (string, error)) {
-	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), change)
+	reason, err := h.db.CommitChanges(r.Context(), shared.SessionFrom(r.Context()), change)
 	message := ""
 	if err == nil && reason != "" && conflict != nil {
 		message, err = conflict()
@@ -505,7 +506,7 @@ func (h handler) createInMonth(w http.ResponseWriter, r *http.Request, change st
 	}
 
 	if err != nil {
-		internalError(w, "creating transaction", err)
+		shared.InternalError(w, "creating transaction", err)
 		return
 	}
 
@@ -515,21 +516,21 @@ func (h handler) createInMonth(w http.ResponseWriter, r *http.Request, change st
 // renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
 // its error, along with the ticker it changed.
 func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
-	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
+	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
 	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
-		internalError(w, "reading month", err)
+		shared.InternalError(w, "reading month", err)
 		return
 	}
 
 	balance, err := h.balance(r.Context(), session.AccountID, now)
 	if err != nil {
-		internalError(w, "reading balance", err)
+		shared.InternalError(w, "reading balance", err)
 		return
 	}
 
 	page.Flash, page.Error, page.Focus = flash, message, r.URL.Path == "/launch"
-	render(w, r, status, monthSwap(shell{Email: session.Email, Balance: balance}, page))
+	shared.Render(w, r, status, monthSwap(shell{Email: session.Email, Balance: balance}, page))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

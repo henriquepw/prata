@@ -7,6 +7,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // settingsForm is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
@@ -30,7 +31,7 @@ templ settingsSheet(form settingsForm) {
 		@numberFormatField(form)
 		@formField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: ariaInvalid(form.Errors["daily_limit_mode"])}) {
-				for _, m := range dailyLimitModes {
+				for _, m := range shared.DailyLimitModes {
 					@nativeselect.Option(nativeselect.OptionProps{Value: m.Value, Selected: m.Value == form.DailyLimitMode}) {
 						{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
 					}
@@ -47,7 +48,7 @@ templ settingsSheet(form settingsForm) {
 templ languageField(form settingsForm) {
 	@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
-			for _, l := range languages {
+			for _, l := range shared.Languages {
 				@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
 					{ l.Label }
 				}
@@ -59,7 +60,7 @@ templ languageField(form settingsForm) {
 templ dateFormatField(form settingsForm) {
 	@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
-			for _, f := range dateFormats {
+			for _, f := range shared.DateFormats {
 				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
 					{ i18n.T(ctx, "date_format."+f.Value) }
 				}
@@ -71,7 +72,7 @@ templ dateFormatField(form settingsForm) {
 templ numberFormatField(form settingsForm) {
 	@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
-			for _, f := range numberFormats {
+			for _, f := range shared.NumberFormats {
 				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
 					{ f.Value }
 				}
@@ -83,7 +84,7 @@ templ numberFormatField(form settingsForm) {
 templ currencyField(form settingsForm) {
 	@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
 		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
-			for _, c := range currencies {
+			for _, c := range shared.Currencies {
 				@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
 					{ c.Value + " (" + c.Symbol + ")" }
 				}

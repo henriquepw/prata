@@ -2,10 +2,8 @@
 package web
 
 import (
-	"context"
 	"embed"
 	"errors"
-	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -26,12 +25,6 @@ import (
 var static embed.FS
 
 const sessionCookie = "session"
-
-// flashCookie holds the id of the row a sheet just saved, scoped to the path of the list that shows it for that page
-// to flash once.
-const flashCookie = "flash"
-
-type sessionKey struct{}
 
 type handler struct {
 	db              *store.Store
@@ -65,7 +58,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.HandleFunc("POST /setup", visitor(h.setup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
+		shared.Render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
 	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home))
 	mux.Handle("GET /welcome", h.requireSession(h.welcome))
@@ -80,7 +73,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("DELETE /transactions/{id}", h.requireSession(h.deleteTransaction))
 	mux.Handle("GET /categories", h.requireSession(h.categories))
 	mux.Handle("GET /categories/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
+		shared.Render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
 	}))
 	mux.Handle("GET /categories/{id}", h.requireSession(h.editCategory))
 	mux.Handle("POST /categories", h.requireSession(h.saveCategory))
@@ -97,7 +90,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /recurrences/{id}/occurrences/{date}", h.requireSession(h.confirmOccurrence))
 	mux.Handle("GET /tags", h.requireSession(h.tags))
 	mux.Handle("GET /tags/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		render(w, r, http.StatusOK, tagSheet(tagForm{}))
+		shared.Render(w, r, http.StatusOK, tagSheet(tagForm{}))
 	}))
 	mux.Handle("GET /tags/{id}", h.requireSession(h.editTag))
 	mux.Handle("POST /tags", h.requireSession(h.saveTag))
@@ -131,7 +124,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if empty {
-		redirect(w, r, "/setup")
+		shared.Redirect(w, r, "/setup")
 		return
 	}
 
@@ -142,7 +135,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 func (h handler) isEmpty(w http.ResponseWriter, r *http.Request) (empty, ok bool) {
 	empty, err := h.db.IsEmpty(r.Context())
 	if err != nil {
-		internalError(w, "checking users", err)
+		shared.InternalError(w, "checking users", err)
 		return false, false
 	}
 
@@ -159,12 +152,12 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 
 	choices, r := chosen(r)
 	if empty && choices.Language == "" {
-		redirect(w, r, "/setup")
+		shared.Redirect(w, r, "/setup")
 		return
 	}
 
 	if !empty && !h.isSignupAllowed {
-		redirect(w, r, "/login")
+		shared.Redirect(w, r, "/login")
 		return
 	}
 
@@ -176,7 +169,7 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, form authForm, page func(authForm) templ.Component) {
 	form.CanSignUp = empty || h.isSignupAllowed
 	form.HasUsers = !empty
-	render(w, r, status, page(form))
+	shared.Render(w, r, status, page(form))
 }
 
 func (h handler) login(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +186,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		internalError(w, "authenticating", err)
+		shared.InternalError(w, "authenticating", err)
 		return
 	}
 
@@ -222,7 +215,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, store.ErrDuplicateID):
 			form.EmailError = i18n.T(r.Context(), "auth.error.taken")
 		case err != nil:
-			internalError(w, "creating account", err)
+			shared.InternalError(w, "creating account", err)
 			return
 		default:
 			h.startSession(w, r, signup.OwnerID, "/welcome")
@@ -241,13 +234,13 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(sessionCookie); err == nil {
 		if err := h.db.DeleteSession(r.Context(), cookie.Value); err != nil {
-			internalError(w, "deleting session", err)
+			shared.InternalError(w, "deleting session", err)
 			return
 		}
 	}
 
 	setSessionCookie(w, r, "", time.Time{})
-	redirect(w, r, "/login")
+	shared.Redirect(w, r, "/login")
 }
 
 // startSession opens the user's session and redirects to the page they land on.
@@ -255,12 +248,12 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, la
 	now := time.Now()
 	token, err := h.db.CreateSession(r.Context(), userID, now)
 	if err != nil {
-		internalError(w, "creating session", err)
+		shared.InternalError(w, "creating session", err)
 		return
 	}
 
 	setSessionCookie(w, r, token, now.Add(store.SessionTTL))
-	redirect(w, r, landing)
+	shared.Redirect(w, r, landing)
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
@@ -280,12 +273,12 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 		}
 
 		if err != nil {
-			internalError(w, "finding session", err)
+			shared.InternalError(w, "finding session", err)
 			return
 		}
 
 		setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
-		ctx := context.WithValue(r.Context(), sessionKey{}, session)
+		ctx := shared.WithSession(r.Context(), session)
 		ctx = i18n.WithLanguage(ctx, session.Language)
 		next(w, r.WithContext(ctx))
 	})
@@ -299,11 +292,11 @@ func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if empty {
-		redirect(w, r, "/setup")
+		shared.Redirect(w, r, "/setup")
 		return
 	}
 
-	redirect(w, r, "/login")
+	shared.Redirect(w, r, "/login")
 }
 
 // visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and
@@ -337,16 +330,6 @@ func preferredLanguage(header string) string {
 	return preferred
 }
 
-// sessionFrom is the request's session, or visitorSession on a page without one. It never fails, so a route
-// that needs a logged-in user relies on requireSession to turn visitors away.
-func sessionFrom(ctx context.Context) store.Session {
-	if session, ok := ctx.Value(sessionKey{}).(store.Session); ok {
-		return session
-	}
-
-	return visitorSession
-}
-
 // setSessionCookie writes the session cookie, or clears it when token is empty.
 func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expires time.Time) {
 	cookie := &http.Cookie{
@@ -365,62 +348,22 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 	http.SetCookie(w, cookie)
 }
 
-// redirect sends htmx requests a full-page HX-Redirect, since fetch would follow a 303 and swap the
-// target page under the old URL, and everyone else a 303.
-func redirect(w http.ResponseWriter, r *http.Request, url string) {
-	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Redirect", url)
-		w.WriteHeader(http.StatusNoContent)
-		return
-	}
-
-	http.Redirect(w, r, url, http.StatusSeeOther)
-}
-
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
 // now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
 // name, as "nav.devices".
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
-	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
+	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
 	balance, err := h.balance(r.Context(), session.AccountID, now)
 	if err != nil {
-		internalError(w, "reading balance", err)
+		shared.InternalError(w, "reading balance", err)
 		return shell{}, false
 	}
 
 	s := shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
-	if cookie, err := r.Cookie(flashCookie); err == nil {
+	if cookie, err := r.Cookie(shared.FlashCookie); err == nil {
 		s.Flash = cookie.Value
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Path: r.URL.Path, MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: shared.FlashCookie, Path: r.URL.Path, MaxAge: -1})
 	}
 
 	return s, true
-}
-
-// location is the browser time zone from the tz cookie, or UTC when it is missing or unknown.
-func location(r *http.Request) *time.Location {
-	cookie, err := r.Cookie("tz")
-	if err != nil {
-		return time.UTC
-	}
-
-	loc, err := time.LoadLocation(cookie.Value)
-	if err != nil {
-		return time.UTC
-	}
-
-	return loc
-}
-
-func render(w http.ResponseWriter, r *http.Request, status int, page templ.Component) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(status)
-	if err := page.Render(r.Context(), w); err != nil {
-		slog.Error("rendering page", "error", err)
-	}
-}
-
-func internalError(w http.ResponseWriter, msg string, err error) {
-	slog.Error(msg, "error", err)
-	http.Error(w, "internal error", http.StatusInternalServerError)
 }

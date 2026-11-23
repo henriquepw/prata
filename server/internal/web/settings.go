@@ -10,6 +10,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 func (h handler) settings(w http.ResponseWriter, r *http.Request) {
@@ -23,14 +24,14 @@ func (h handler) settings(w http.ResponseWriter, r *http.Request) {
 
 // renderSettings answers the Configurações sheet with the saved values.
 func (h handler) renderSettings(w http.ResponseWriter, r *http.Request) {
-	session := sessionFrom(r.Context())
+	session := shared.SessionFrom(r.Context())
 	form := settingsForm{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}
 	if _, err := h.showSavedPluggy(r.Context(), &form); err != nil {
-		internalError(w, "reading pluggy credentials", err)
+		shared.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
-	render(w, r, http.StatusOK, settingsSheet(form))
+	shared.Render(w, r, http.StatusOK, settingsSheet(form))
 }
 
 // showSavedPluggy turns the form's Pluggy fields on when Open Finance is, marking whether the user has credentials
@@ -41,7 +42,7 @@ func (h handler) showSavedPluggy(ctx context.Context, form *settingsForm) (strin
 	}
 
 	form.OpenFinance = true
-	credentials, err := h.db.PluggyCredentials(ctx, h.openFinance.Key, sessionFrom(ctx).UserID)
+	credentials, err := h.db.PluggyCredentials(ctx, h.openFinance.Key, shared.SessionFrom(ctx).UserID)
 	if errors.Is(err, store.ErrNotFound) {
 		return "", nil
 	}
@@ -63,7 +64,7 @@ func (h handler) showSavedPluggy(ctx context.Context, form *settingsForm) (strin
 // form and stores nothing when a value is not one of the options, a new client id comes without its secret, or
 // Pluggy refuses the credentials or is unavailable.
 func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
-	session := sessionFrom(r.Context())
+	session := shared.SessionFrom(r.Context())
 	form := settingsForm{
 		Preferences: store.Preferences{
 			Language:       r.PostFormValue("language"),
@@ -77,13 +78,13 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	savedClientID, err := h.showSavedPluggy(r.Context(), &form)
 	if err != nil {
-		internalError(w, "reading pluggy credentials", err)
+		shared.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
 	form.validateChoices(r.Context())
 
-	if _, ok := find(dailyLimitModes, form.DailyLimitMode); !ok {
+	if _, ok := shared.Find(shared.DailyLimitModes, form.DailyLimitMode); !ok {
 		form.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
 	}
 
@@ -108,7 +109,7 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(form.Errors) > 0 {
-		render(w, r, http.StatusUnprocessableEntity, settingsSheet(form))
+		shared.Render(w, r, http.StatusUnprocessableEntity, settingsSheet(form))
 		return
 	}
 
@@ -116,13 +117,13 @@ func (h handler) saveSettings(w http.ResponseWriter, r *http.Request) {
 	if isSavingPluggy {
 		sealed, err = store.SealPluggyCredentials(h.openFinance.Key, session.UserID, credentials)
 		if err != nil {
-			internalError(w, "sealing pluggy credentials", err)
+			shared.InternalError(w, "sealing pluggy credentials", err)
 			return
 		}
 	}
 
 	if err := h.db.SaveSettings(r.Context(), session.UserID, session.AccountID, form.Preferences, form.Currency, sealed); err != nil {
-		internalError(w, "saving settings", err)
+		shared.InternalError(w, "saving settings", err)
 		return
 	}
 
@@ -137,8 +138,8 @@ func (h handler) deletePluggyCredentials(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.db.DeletePluggyCredentials(r.Context(), sessionFrom(r.Context()).UserID); err != nil {
-		internalError(w, "deleting pluggy credentials", err)
+	if err := h.db.DeletePluggyCredentials(r.Context(), shared.SessionFrom(r.Context()).UserID); err != nil {
+		shared.InternalError(w, "deleting pluggy credentials", err)
 		return
 	}
 
@@ -156,19 +157,19 @@ func secretHint(ctx context.Context, hasPluggy bool) string {
 
 // validateChoices flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
 func (f settingsForm) validateChoices(ctx context.Context) {
-	if _, ok := find(languages, f.Language); !ok {
+	if _, ok := shared.Find(shared.Languages, f.Language); !ok {
 		f.Errors["language"] = i18n.T(ctx, "settings.error.language")
 	}
 
-	if _, ok := find(dateFormats, f.DateFormat); !ok {
+	if _, ok := shared.Find(shared.DateFormats, f.DateFormat); !ok {
 		f.Errors["date_format"] = i18n.T(ctx, "settings.error.date_format")
 	}
 
-	if _, ok := find(numberFormats, f.NumberFormat); !ok {
+	if _, ok := shared.Find(shared.NumberFormats, f.NumberFormat); !ok {
 		f.Errors["number_format"] = i18n.T(ctx, "settings.error.number_format")
 	}
 
-	if _, ok := find(currencies, f.Currency); !ok {
+	if _, ok := shared.Find(shared.Currencies, f.Currency); !ok {
 		f.Errors["currency"] = i18n.T(ctx, "settings.error.currency")
 	}
 }

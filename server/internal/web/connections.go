@@ -11,6 +11,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
 // connectionsView is the Conexões screen: the user's Conexões, the accounts to feed, whether the user has Pluggy
@@ -35,22 +36,22 @@ func (h handler) renderConnections(w http.ResponseWriter, r *http.Request, statu
 		return
 	}
 
-	session := sessionFrom(r.Context())
+	session := shared.SessionFrom(r.Context())
 
 	var err error
 	if view.Connections, err = h.db.Connections(r.Context(), session.UserID); err != nil {
-		internalError(w, "listing connections", err)
+		shared.InternalError(w, "listing connections", err)
 		return
 	}
 
 	if view.Accounts, err = h.db.UserAccounts(r.Context(), session.UserID); err != nil {
-		internalError(w, "listing accounts", err)
+		shared.InternalError(w, "listing accounts", err)
 		return
 	}
 
 	_, err = h.db.PluggyCredentials(r.Context(), h.openFinance.Key, session.UserID)
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
-		internalError(w, "reading pluggy credentials", err)
+		shared.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
@@ -61,7 +62,7 @@ func (h handler) renderConnections(w http.ResponseWriter, r *http.Request, statu
 		return
 	}
 
-	render(w, r, status, connectionsPage(s, view))
+	shared.Render(w, r, status, connectionsPage(s, view))
 }
 
 // saveConnection registers the Pluggy Item on the account after Pluggy confirms the Item exists for the user's
@@ -73,7 +74,7 @@ func (h handler) saveConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session := sessionFrom(r.Context())
+	session := shared.SessionFrom(r.Context())
 	view := connectionsView{ItemID: strings.TrimSpace(r.PostFormValue("item_id")), AccountID: r.PostFormValue("account_id"), Errors: map[string]string{}}
 
 	item, err := h.fetchItem(r, session.UserID, view.ItemID)
@@ -96,7 +97,7 @@ func (h handler) saveConnection(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, store.ErrCurrency):
 			view.Errors["account_id"] = i18n.T(r.Context(), "connections.error.currency")
 		case err != nil:
-			internalError(w, "adding connection", err)
+			shared.InternalError(w, "adding connection", err)
 			return
 		}
 	}
@@ -132,14 +133,14 @@ func (h handler) deleteConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.db.DeleteConnection(r.Context(), sessionFrom(r.Context()).UserID, r.PathValue("id"))
+	err := h.db.DeleteConnection(r.Context(), shared.SessionFrom(r.Context()).UserID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return
 	}
 
 	if err != nil {
-		internalError(w, "deleting connection", err)
+		shared.InternalError(w, "deleting connection", err)
 		return
 	}
 
@@ -157,7 +158,7 @@ func (h handler) fetchConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fetcher := openfinance.Fetcher{DB: h.db, Key: h.openFinance.Key, Pluggy: h.openFinance.Pluggy}
-	if err := fetcher.Fetch(r.Context(), sessionFrom(r.Context()).UserID, time.Now().In(location(r))); err != nil {
+	if err := fetcher.Fetch(r.Context(), shared.SessionFrom(r.Context()).UserID, time.Now().In(shared.Location(r))); err != nil {
 		slog.Warn("fetching connections", "error", err)
 		h.renderConnections(w, r, http.StatusBadGateway, connectionsView{Errors: map[string]string{}, FetchError: i18n.T(r.Context(), "connections.error.fetch")})
 		return

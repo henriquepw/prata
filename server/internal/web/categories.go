@@ -9,14 +9,15 @@ import (
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/oklog/ulid/v2"
 )
 
 func (h handler) categories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.db.Categories(r.Context(), sessionFrom(r.Context()).AccountID)
+	categories, err := h.db.Categories(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
-		internalError(w, "listing categories", err)
+		shared.InternalError(w, "listing categories", err)
 		return
 	}
 
@@ -25,7 +26,7 @@ func (h handler) categories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categoriesPage(s, storedBudgetForm(r, categories)))
+	shared.Render(w, r, http.StatusOK, categoriesPage(s, storedBudgetForm(r, categories)))
 }
 
 func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
+	shared.Render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
 }
 
 // saveCategory creates the category, or updates the one in the path, from the sheet's form.
@@ -51,7 +52,7 @@ func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
-	if _, ok := find(categoryColors, form.Color); !ok {
+	if _, ok := shared.Find(categoryColors, form.Color); !ok {
 		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
@@ -94,14 +95,14 @@ func storedCategoryForm(category store.Category) categoryForm {
 
 // category reads the live category in the path, answering 404 when the account has none.
 func (h handler) category(w http.ResponseWriter, r *http.Request) (store.Category, bool) {
-	category, err := h.db.Category(r.Context(), sessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	category, err := h.db.Category(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Category{}, false
 	}
 
 	if err != nil {
-		internalError(w, "reading category", err)
+		shared.InternalError(w, "reading category", err)
 		return store.Category{}, false
 	}
 
@@ -115,25 +116,25 @@ func (h handler) category(w http.ResponseWriter, r *http.Request) (store.Categor
 // from fieldErrors, so the rejection shows up in it.
 func (h handler) commit(w http.ResponseWriter, r *http.Request, fieldErrors map[string]string, sheet templ.Component, changes ...store.Change) {
 	if len(fieldErrors) > 0 {
-		render(w, r, http.StatusUnprocessableEntity, sheet)
+		shared.Render(w, r, http.StatusUnprocessableEntity, sheet)
 		return
 	}
 
-	reason, err := h.db.CommitChanges(r.Context(), sessionFrom(r.Context()), changes...)
+	reason, err := h.db.CommitChanges(r.Context(), shared.SessionFrom(r.Context()), changes...)
 	if err != nil {
-		internalError(w, "committing web changes", err)
+		shared.InternalError(w, "committing web changes", err)
 		return
 	}
 
 	if reason != "" {
 		slog.Warn("web changes rejected", "reason", reason)
 		fieldErrors["form"] = i18n.T(r.Context(), "form.error.rejected")
-		render(w, r, http.StatusUnprocessableEntity, sheet)
+		shared.Render(w, r, http.StatusUnprocessableEntity, sheet)
 		return
 	}
 
 	if changes[0].Kind != store.KindDelete {
-		http.SetCookie(w, &http.Cookie{Name: flashCookie, Value: changes[0].EntityID, Path: returnPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: shared.FlashCookie, Value: changes[0].EntityID, Path: returnPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	w.Header().Set("HX-Refresh", "true")
@@ -151,7 +152,7 @@ func returnPath(entity string, r *http.Request) string {
 }
 
 func colorClass(value string) string {
-	color, _ := find(categoryColors, value)
+	color, _ := shared.Find(categoryColors, value)
 
 	return color.Class
 }
