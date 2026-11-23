@@ -22,6 +22,8 @@
   --text-2xs--line-height: 16px;
   --font-sans: "Geist Mono", ui-monospace, monospace;
   --font-mono: "Geist Mono", ui-monospace, monospace;
+  /* The system mono, so the ANSI Shadow blocks of the figlet line up. */
+  --font-figlet: "DejaVu Sans Mono", Menlo, Consolas, ui-monospace, monospace;
 }
 
 @theme inline {
@@ -1503,77 +1505,6 @@
     .hide-m {
       display: none;
     }
-  }
-
-  /* Login and signup: the particle field behind the figlet, the panel and a footer pinned to the bottom. */
-  .login {
-    position: relative;
-    display: grid;
-    place-items: center;
-    min-height: 100dvh;
-    padding-bottom: 2lh;
-    overflow: hidden;
-  }
-
-  .login-particles {
-    position: absolute;
-    inset: 0;
-    margin: 0;
-    overflow: hidden;
-    font-size: 12px;
-    line-height: 1.2;
-    white-space: pre;
-    color: var(--muted-foreground);
-    opacity: 0.55;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .login-center {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1lh;
-    width: min(100%, 48ch);
-    padding: 2ch;
-  }
-
-  /* The system mono, so the ANSI Shadow blocks line up. */
-  .login-figlet {
-    margin: 0;
-    padding: 0.5ch 1ch;
-    font-family: "DejaVu Sans Mono", Menlo, Consolas, ui-monospace, monospace;
-    font-size: 11px;
-    line-height: 1;
-    background: var(--background);
-  }
-
-  .login-tagline,
-  .login-foot {
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .login-tagline {
-    color: var(--muted-foreground);
-  }
-
-  .login-panel {
-    width: 100%;
-    background: var(--background);
-  }
-
-  .login-foot {
-    position: absolute;
-    inset: auto 0 0;
-    display: flex;
-    justify-content: space-between;
-    gap: 2ch;
-    padding: 0.5lh 2ch;
-    border-top: 1px solid var(--line-soft);
-    background: var(--background);
   }
 }
 
