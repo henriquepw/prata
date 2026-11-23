@@ -2,6 +2,8 @@ package web
 
 import (
 	"cmp"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
@@ -14,8 +16,8 @@ import (
 )
 
 // movementsPage is the review screen: the "Importar arquivo" form over the list of pending movements.
-templ movementsPage(s shell, view movementsView) {
-	@layout(s) {
+templ movementsPage(s shell.Shell, view movementsView) {
+	@shell.Layout(s) {
 		<div class="flex flex-col gap-5">
 			@importPanel(view)
 			@movementsPanel(view)
@@ -27,13 +29,13 @@ templ movementsPage(s shell, view movementsView) {
 // and the submit button, at the right, once there is a file. The summary or the error of the last import goes under
 // it. A response, a 422 included, swaps the screen's main.
 templ importPanel(view movementsView) {
-	@panel(i18n.T(ctx, "movements.import"), "", nil) {
+	@console.Panel(i18n.T(ctx, "movements.import"), "", nil) {
 		<form id="import-form" hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="group/import flex flex-col gap-5">
 			<input type="hidden" name="confirm_currency"/>
 			<label class="group/drop relative flex cursor-pointer flex-col items-center gap-2.5 border border-dashed border-line px-4 py-10 text-center transition-colors focus-within:border-primary hover:border-primary aria-[invalid]:border-destructive" aria-invalid?={ view.Error != "" }>
 				<input type="file" name="file" class="absolute inset-0 cursor-pointer opacity-0" required aria-label={ i18n.T(ctx, "movements.file") } onchange={ templ.JSUnsafeFuncCall(showFileName) }/>
 				<span class="text-xs group-has-invalid/drop:tracking-wider group-has-invalid/drop:uppercase">{ i18n.T(ctx, "movements.drop") }</span>
-				@fieldNote(i18n.T(ctx, "movements.file_hint"), view.Error)
+				@console.FieldNote(i18n.T(ctx, "movements.file_hint"), view.Error)
 			</label>
 			<div class="flex justify-end group-has-invalid/import:hidden">
 				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": i18n.T(ctx, "movements.importing")}}) {
@@ -52,14 +54,14 @@ const showFileName = "this.nextElementSibling.textContent = this.files[0]?.name 
 // currencyDialog asks, in #sheet, to import a file whose Moeda is not the Conta's: confirming resubmits the import
 // form, whose file input still holds the file, with confirm_currency set.
 templ currencyDialog(v currencyView) {
-	<div id="currency-dialog" class={ sheetPanel }>
-		<header class={ utils.CN(panelHead, "mb-0") }>
-			<h2 class={ panelTitle }>{ i18n.T(ctx, "movements.currency.title") }</h2>
-			<button type="button" class={ textAction } aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
+	<div id="currency-dialog" class={ console.SheetPanel }>
+		<header class={ utils.CN(console.PanelHead, "mb-0") }>
+			<h2 class={ console.PanelTitle }>{ i18n.T(ctx, "movements.currency.title") }</h2>
+			<button type="button" class={ console.TextAction } aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(console.CloseSheet) }>[esc ✕]</button>
 		</header>
 		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.FileCurrency, v.AccountCurrency) }</p>
 		<footer class="mt-auto flex flex-wrap justify-end gap-2">
-			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}) {
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.CloseSheet)}}) {
 				{ i18n.T(ctx, "sheet.cancel") }
 			}
 			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"data-focus": true, "onclick": templ.JSUnsafeFuncCall(confirmCurrency)}}) {
@@ -73,9 +75,9 @@ const confirmCurrency = "const f = document.getElementById('import-form'); f.ele
 
 // movementsPanel lists the pending movements.
 templ movementsPanel(view movementsView) {
-	@panel(i18n.T(ctx, "nav.movements"), "", nil) {
+	@console.Panel(i18n.T(ctx, "nav.movements"), "", nil) {
 		if len(view.Movements) == 0 {
-		@empty(i18n.T(ctx, "movements.empty"))
+			@console.Empty(i18n.T(ctx, "movements.empty"))
 		} else {
 			@batchForm(view.Categories)
 			@table.Table() {
@@ -114,7 +116,7 @@ templ movementsPanel(view movementsView) {
 								{ movementDate(ctx, m.OccurredAt) }
 							}
 							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-								@description(&m.Description)
+								@console.Description(&m.Description)
 							}
 							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + kindClass(m.Kind)}) {
 								{ shared.Money(ctx, signed(m.Kind, m.Amount)) }
@@ -183,7 +185,7 @@ templ batchForm(categories []store.Category) {
 
 // occurrenceConfirm confirms a movement as one of the pending occurrences of its kind, equal amounts and closest dates
 // first. A response swaps the screen's main.
-templ occurrenceConfirm(m store.Movement, occurrences []occurrence) {
+templ occurrenceConfirm(m store.Movement, occurrences []shell.Occurrence) {
 	if len(occurrences) > 0 {
 		<form hx-post={ "/movements/" + m.ID + "/occurrence" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mt-1 flex flex-wrap items-center gap-2">
 			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": i18n.T(ctx, "movements.occurrence")}}) {

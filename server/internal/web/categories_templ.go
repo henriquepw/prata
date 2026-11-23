@@ -10,6 +10,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -45,7 +47,7 @@ type categoryForm struct {
 }
 
 // categoriesPage is the Categorias screen, which is the division of the Receita mensal (budgetScreen).
-func categoriesPage(s shell, form budgetForm) templ.Component {
+func categoriesPage(s shell.Shell, form budgetForm) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -80,7 +82,7 @@ func categoriesPage(s shell, form budgetForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -153,7 +155,7 @@ func categoryName(name, color string) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 47, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 49, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -196,7 +198,7 @@ func categorySheet(form categoryForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = nameField(form.Name, form.Errors["name"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.NameField(form.Name, form.Errors["name"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -268,7 +270,7 @@ func categorySheet(form categoryForm) templ.Component {
 						var templ_7745c5c3_Var13 string
 						templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToLower(i18n.T(ctx, "color."+color.Value)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 62, Col: 115}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 64, Col: 115}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 						if templ_7745c5c3_Err != nil {
@@ -276,14 +278,14 @@ func categorySheet(form categoryForm) templ.Component {
 						}
 						return nil
 					})
-					templ_7745c5c3_Err = choiceOption("color", color.Value, color.Value == form.Color).Render(templ.WithChildren(ctx, templ_7745c5c3_Var10), templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = console.ChoiceOption("color", color.Value, color.Value == form.Color).Render(templ.WithChildren(ctx, templ_7745c5c3_Var10), templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = choiceField("color", i18n.T(ctx, "categories.color"), "", form.Errors["color"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.ChoiceField("color", i18n.T(ctx, "categories.color"), "", form.Errors["color"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -314,7 +316,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var16 string
 					templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.yes"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 68, Col: 35}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 70, Col: 35}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 					if templ_7745c5c3_Err != nil {
@@ -322,7 +324,7 @@ func categorySheet(form categoryForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("is_daily", "1", form.IsDaily).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.ChoiceOption("is_daily", "1", form.IsDaily).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -341,7 +343,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var18 string
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.no"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 71, Col: 34}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 73, Col: 34}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
@@ -349,13 +351,13 @@ func categorySheet(form categoryForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("is_daily", "0", !form.IsDaily).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.ChoiceOption("is_daily", "0", !form.IsDaily).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = choiceField("is_daily", i18n.T(ctx, "categories.daily"), i18n.T(ctx, "categories.daily_help"), "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.ChoiceField("is_daily", i18n.T(ctx, "categories.daily"), i18n.T(ctx, "categories.daily_help"), "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -400,7 +402,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var21 string
 					templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.yes"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 77, Col: 36}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 79, Col: 36}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 					if templ_7745c5c3_Err != nil {
@@ -408,7 +410,7 @@ func categorySheet(form categoryForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("is_default", "1", form.IsDefault || form.MarkDefault).Render(templ.WithChildren(ctx, templ_7745c5c3_Var20), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.ChoiceOption("is_default", "1", form.IsDefault || form.MarkDefault).Render(templ.WithChildren(ctx, templ_7745c5c3_Var20), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -427,7 +429,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var23 string
 					templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "categories.no"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 80, Col: 35}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/categories.templ`, Line: 82, Col: 35}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 					if templ_7745c5c3_Err != nil {
@@ -435,13 +437,13 @@ func categorySheet(form categoryForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("is_default", "0", !form.IsDefault && !form.MarkDefault).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.ChoiceOption("is_default", "0", !form.IsDefault && !form.MarkDefault).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = choiceField("is_default", i18n.T(ctx, "categories.default"), i18n.T(ctx, "categories.default_help"), "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.ChoiceField("is_default", i18n.T(ctx, "categories.default"), i18n.T(ctx, "categories.default_help"), "").Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -451,7 +453,7 @@ func categorySheet(form categoryForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{
+		templ_7745c5c3_Err = console.Sheet(console.SheetProps{
 			Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "categories.new", "categories.edit")),
 			Action:    utils.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
 			DeleteURL: utils.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID),

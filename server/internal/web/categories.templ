@@ -1,6 +1,8 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -36,8 +38,8 @@ type categoryForm struct {
 }
 
 // categoriesPage is the Categorias screen, which is the division of the Receita mensal (budgetScreen).
-templ categoriesPage(s shell, form budgetForm) {
-	@layout(s) {
+templ categoriesPage(s shell.Shell, form budgetForm) {
+	@shell.Layout(s) {
 		@budgetScreen(form, s.Flash)
 	}
 }
@@ -48,35 +50,35 @@ templ categoryName(name, color string) {
 }
 
 templ categorySheet(form categoryForm) {
-	@sheet(sheetProps{
+	@console.Sheet(console.SheetProps{
 		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "categories.new", "categories.edit")),
 		Action:    utils.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID),
 		Confirm:   i18n.T(ctx, "categories.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@nameField(form.Name, form.Errors["name"])
-		@choiceField("color", i18n.T(ctx, "categories.color"), "", form.Errors["color"]) {
+		@console.NameField(form.Name, form.Errors["name"])
+		@console.ChoiceField("color", i18n.T(ctx, "categories.color"), "", form.Errors["color"]) {
 			for _, color := range categoryColors {
-				@choiceOption("color", color.Value, color.Value == form.Color) {
+				@console.ChoiceOption("color", color.Value, color.Value == form.Color) {
 					<span class={ color.Class } aria-hidden="true">■</span> { strings.ToLower(i18n.T(ctx, "color."+color.Value)) }
 				}
 			}
 		}
-		@choiceField("is_daily", i18n.T(ctx, "categories.daily"), i18n.T(ctx, "categories.daily_help"), "") {
-			@choiceOption("is_daily", "1", form.IsDaily) {
+		@console.ChoiceField("is_daily", i18n.T(ctx, "categories.daily"), i18n.T(ctx, "categories.daily_help"), "") {
+			@console.ChoiceOption("is_daily", "1", form.IsDaily) {
 				{ i18n.T(ctx, "categories.yes") }
 			}
-			@choiceOption("is_daily", "0", !form.IsDaily) {
+			@console.ChoiceOption("is_daily", "0", !form.IsDaily) {
 				{ i18n.T(ctx, "categories.no") }
 			}
 		}
 		<fieldset class="contents" disabled?={ form.IsDefault }>
-			@choiceField("is_default", i18n.T(ctx, "categories.default"), i18n.T(ctx, "categories.default_help"), "") {
-				@choiceOption("is_default", "1", form.IsDefault || form.MarkDefault) {
+			@console.ChoiceField("is_default", i18n.T(ctx, "categories.default"), i18n.T(ctx, "categories.default_help"), "") {
+				@console.ChoiceOption("is_default", "1", form.IsDefault || form.MarkDefault) {
 					{ i18n.T(ctx, "categories.yes") }
 				}
-				@choiceOption("is_default", "0", !form.IsDefault && !form.MarkDefault) {
+				@console.ChoiceOption("is_default", "0", !form.IsDefault && !form.MarkDefault) {
 					{ i18n.T(ctx, "categories.no") }
 				}
 			}

@@ -4,6 +4,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -25,12 +26,12 @@ type settingsForm struct {
 // settingsSheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
 // Open Finance is on. A 422 swaps the whole sheet.
 templ settingsSheet(form settingsForm) {
-	@sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
+	@console.Sheet(console.SheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}) {
 		@languageField(form)
 		@dateFormatField(form)
 		@numberFormatField(form)
-		@formField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: ariaInvalid(form.Errors["daily_limit_mode"])}) {
+		@console.FormField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["daily_limit_mode"])}) {
 				for _, m := range shared.DailyLimitModes {
 					@nativeselect.Option(nativeselect.OptionProps{Value: m.Value, Selected: m.Value == form.DailyLimitMode}) {
 						{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
@@ -46,8 +47,8 @@ templ settingsSheet(form settingsForm) {
 }
 
 templ languageField(form settingsForm) {
-	@formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
-		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}) {
+	@console.FormField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["language"])}) {
 			for _, l := range shared.Languages {
 				@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
 					{ l.Label }
@@ -58,8 +59,8 @@ templ languageField(form settingsForm) {
 }
 
 templ dateFormatField(form settingsForm) {
-	@formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
-		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}) {
+	@console.FormField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["date_format"])}) {
 			for _, f := range shared.DateFormats {
 				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
 					{ i18n.T(ctx, "date_format."+f.Value) }
@@ -70,8 +71,8 @@ templ dateFormatField(form settingsForm) {
 }
 
 templ numberFormatField(form settingsForm) {
-	@formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
-		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}) {
+	@console.FormField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["number_format"])}) {
 			for _, f := range shared.NumberFormats {
 				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
 					{ f.Value }
@@ -82,8 +83,8 @@ templ numberFormatField(form settingsForm) {
 }
 
 templ currencyField(form settingsForm) {
-	@formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
-		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}) {
+	@console.FormField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["currency"])}) {
 			for _, c := range shared.Currencies {
 				@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
 					{ c.Value + " (" + c.Symbol + ")" }
@@ -99,18 +100,18 @@ templ currencyField(form settingsForm) {
 // pluggyFields are the user's Pluggy client id and secret, with "apagar credenciais" and its inline confirmation
 // when they are saved.
 templ pluggyFields(form settingsForm) {
-	@hintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]) {
-		@input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: ariaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})})
+	@console.HintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]) {
+		@input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: console.AriaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})})
 	}
-	@hintField("pluggy_client_secret", i18n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]) {
-		@input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: ariaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})})
+	@console.HintField("pluggy_client_secret", i18n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]) {
+		@input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: console.AriaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})})
 	}
 	if form.HasPluggy {
 		<div class="flex flex-wrap gap-2" data-confirm>
-			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.ToggleConfirm), "data-focus": true}}) {
 				{ i18n.T(ctx, "settings.pluggy_delete") }
 			}
-			@confirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
+			@console.ConfirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
 		</div>
 	}
 }

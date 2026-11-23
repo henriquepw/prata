@@ -12,6 +12,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/henriquepw/prata/shared/recurrence"
@@ -27,45 +28,20 @@ func monthWindow(t time.Time) (month time.Time, from, to string) {
 	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 }
 
-// balance is what the ticker shows: the account's realized balance, the occurrences still pending up to the end of
-// this month and the projected balance, which is the realized one plus every pending occurrence.
-type balance struct {
-	Realized, Projected int64
-	Pending             []occurrence
-}
-
-// occurrence is a pending occurrence of a recurrence, Overdue when its date is before today.
-type occurrence struct {
-	Recurrence store.Recurrence
-	Date       string
-	Overdue    bool
-}
-
-func (b balance) overdue() int {
-	count := 0
-	for _, pending := range b.Pending {
-		if pending.Overdue {
-			count++
-		}
-	}
-
-	return count
-}
-
 // balance reads the realized balance and the occurrences pending up to the end of now's month, in now's location.
-func (h handler) balance(ctx context.Context, accountID string, now time.Time) (balance, error) {
+func (h handler) balance(ctx context.Context, accountID string, now time.Time) (shell.Balance, error) {
 	realized, err := h.db.RealizedBalance(ctx, accountID)
 	if err != nil {
-		return balance{}, fmt.Errorf("reading realized balance: %w", err)
+		return shell.Balance{}, fmt.Errorf("reading realized balance: %w", err)
 	}
 
 	month, _, _ := monthWindow(now)
 	pending, err := h.pending(ctx, accountID, now, month.AddDate(0, 1, -1))
 	if err != nil {
-		return balance{}, err
+		return shell.Balance{}, err
 	}
 
-	b := balance{Realized: realized, Projected: realized, Pending: pending}
+	b := shell.Balance{Realized: realized, Projected: realized, Pending: pending}
 	for _, p := range pending {
 		b.Projected += signed(p.Recurrence.Kind, p.Recurrence.Amount)
 	}
@@ -75,7 +51,7 @@ func (h handler) balance(ctx context.Context, accountID string, now time.Time) (
 
 // pending lists by date the occurrences from each live recurrence's start_at through the day of end, minus the
 // confirmed ones, overdue before the day of now.
-func (h handler) pending(ctx context.Context, accountID string, now, end time.Time) ([]occurrence, error) {
+func (h handler) pending(ctx context.Context, accountID string, now, end time.Time) ([]shell.Occurrence, error) {
 	recurrences, err := h.db.Recurrences(ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("listing recurrences: %w", err)
@@ -86,7 +62,7 @@ func (h handler) pending(ctx context.Context, accountID string, now, end time.Ti
 		return nil, fmt.Errorf("listing confirmed occurrences: %w", err)
 	}
 
-	today, pending := now.Format(time.DateOnly), []occurrence{}
+	today, pending := now.Format(time.DateOnly), []shell.Occurrence{}
 	for _, rec := range recurrences {
 		dates, err := recurrence.ExpandRule(rec.Rule, rec.StartAt, rec.EndAt, rec.StartAt, end.Format(time.DateOnly))
 		if err != nil {
@@ -95,12 +71,12 @@ func (h handler) pending(ctx context.Context, accountID string, now, end time.Ti
 
 		for _, date := range dates {
 			if !slices.Contains(confirmed[rec.ID], date) {
-				pending = append(pending, occurrence{Recurrence: rec, Date: date, Overdue: date < today})
+				pending = append(pending, shell.Occurrence{Recurrence: rec, Date: date, Overdue: date < today})
 			}
 		}
 	}
 
-	slices.SortStableFunc(pending, func(a, b occurrence) int { return cmp.Compare(a.Date, b.Date) })
+	slices.SortStableFunc(pending, func(a, b shell.Occurrence) int { return cmp.Compare(a.Date, b.Date) })
 
 	return pending, nil
 }
@@ -115,7 +91,7 @@ type month struct {
 	Today                              string
 	Previous, Income, Outcome, Pending int64
 	Days                               []day
-	Overdue                            []occurrence
+	Overdue                            []shell.Occurrence
 	TodayAt                            int
 	Usages                             []store.CategoryUsage
 	Daily                              daily
@@ -133,7 +109,7 @@ const statementPage = 20
 type day struct {
 	Date         string
 	Total        int64
-	Pending      []occurrence
+	Pending      []shell.Occurrence
 	Transactions []store.Transaction
 }
 
@@ -530,7 +506,7 @@ func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int,
 	}
 
 	page.Flash, page.Error, page.Focus = flash, message, r.URL.Path == "/launch"
-	shared.Render(w, r, status, monthSwap(shell{Email: session.Email, Balance: balance}, page))
+	shared.Render(w, r, status, monthSwap(shell.Shell{Email: session.Email, Balance: balance}, page))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

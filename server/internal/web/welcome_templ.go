@@ -11,6 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
@@ -71,7 +73,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var4 = []any{panelBox}
+					var templ_7745c5c3_Var4 = []any{console.PanelBox}
 					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var4...)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -111,7 +113,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var6 = []any{panelHead}
+					var templ_7745c5c3_Var6 = []any{console.PanelHead}
 					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var6...)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -151,7 +153,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
-					var templ_7745c5c3_Var8 = []any{panelTitle}
+					var templ_7745c5c3_Var8 = []any{console.PanelTitle}
 					templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var8...)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -186,7 +188,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "welcome.title"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 18, Col: 61}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 20, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -199,7 +201,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "welcome.income"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 21, Col: 40}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 23, Col: 40}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -212,7 +214,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 				var templ_7745c5c3_Var12 string
 				templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "welcome.division"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 22, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 24, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 				if templ_7745c5c3_Err != nil {
@@ -225,7 +227,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 				var templ_7745c5c3_Var13 string
 				templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "welcome.daily_limit"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 23, Col: 45}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 25, Col: 45}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 				if templ_7745c5c3_Err != nil {
@@ -287,7 +289,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 									var templ_7745c5c3_Var18 string
 									templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "daily_limit_mode."+m.Value))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 31, Col: 51}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 33, Col: 51}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 									if templ_7745c5c3_Err != nil {
@@ -295,20 +297,20 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 									}
 									return nil
 								})
-								templ_7745c5c3_Err = choiceOption("daily_limit_mode", m.Value, m.Value == mode).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
+								templ_7745c5c3_Err = console.ChoiceOption("daily_limit_mode", m.Value, m.Value == mode).Render(templ.WithChildren(ctx, templ_7745c5c3_Var17), templ_7745c5c3_Buffer)
 								if templ_7745c5c3_Err != nil {
 									return templ_7745c5c3_Err
 								}
 							}
 							return nil
 						})
-						templ_7745c5c3_Err = choiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
+						templ_7745c5c3_Err = console.ChoiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var16), templ_7745c5c3_Buffer)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
 						return nil
 					})
-					templ_7745c5c3_Err = panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var15), templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -325,7 +327,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 				var templ_7745c5c3_Var19 string
 				templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "welcome.later"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 38, Col: 100}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/welcome.templ`, Line: 40, Col: 100}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 				if templ_7745c5c3_Err != nil {
@@ -343,7 +345,7 @@ func welcomePage(form budgetForm, mode string) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = document(i18n.T(ctx, "welcome.title")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Document(i18n.T(ctx, "welcome.title")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

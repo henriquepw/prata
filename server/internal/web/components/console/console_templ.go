@@ -2,7 +2,7 @@
 
 // templ: version: v0.3.1100
 
-package web
+package console
 
 //lint:file-ignore SA4006 This context is only used if a nested component is present.
 
@@ -12,6 +12,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -26,10 +27,10 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
+// DecodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
 // 300ms, on load and after each htmx swap; digits stay digits and letters stay letters. Reduced motion leaves the
 // value as rendered.
-func decodeScript() templ.Component {
+func DecodeScript() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -54,25 +55,25 @@ func decodeScript() templ.Component {
 	})
 }
 
-// panelBox is a panel's frame: .panel draws the corners and the entry, the rest is its border and padding.
-const panelBox = "panel border border-line-faint px-4 py-5"
+// PanelBox is a panel's frame: .panel draws the corners and the entry, the rest is its border and padding.
+const PanelBox = "panel border border-line-faint px-4 py-5"
 
-// panelHead is a panel's header row: the title on the left and the action slot on the right.
-const panelHead = "mb-5 flex items-center justify-between gap-4"
+// PanelHead is a panel's header row: the title on the left and the action slot on the right.
+const PanelHead = "mb-5 flex items-center justify-between gap-4"
 
-// panelTitle is a panel's title: caps with a 3px primary bar on its left.
-const panelTitle = "border-l-3 border-primary pl-2 text-xs leading-tight tracking-widest uppercase"
+// PanelTitle is a panel's title: caps with a 3px primary bar on its left.
+const PanelTitle = "border-l-3 border-primary pl-2 text-xs leading-tight tracking-widest uppercase"
 
-// prompt is the "> " line of the launcher and the Mês prompt, over a --line bottom border; promptInput is its
+// Prompt is the "> " line of the launcher and the Mês prompt, over a --line bottom border; PromptInput is its
 // borderless input with the block caret.
 const (
-	prompt      = "mb-2.5 flex items-center gap-2 border-b border-line pb-2.5"
-	promptInput = "flex-1 bg-transparent caret-primary [caret-shape:block] outline-none"
+	Prompt      = "mb-2.5 flex items-center gap-2 border-b border-line pb-2.5"
+	PromptInput = "flex-1 bg-transparent caret-primary [caret-shape:block] outline-none"
 )
 
-// panel is the unit of every screen: the decoded title, the action on the right of it when not nil, and the content
+// Panel is the unit of every screen: the decoded title, the action on the right of it when not nil, and the content
 // as children. class adds to the panel.
-func panel(title, class string, action templ.Component) templ.Component {
+func Panel(title, class string, action templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -98,7 +99,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var3 = []any{panelBox, class}
+			var templ_7745c5c3_Var3 = []any{PanelBox, class}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var3...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -106,7 +107,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var3).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var4)
 			if templ_7745c5c3_Err != nil {
@@ -138,7 +139,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var5 = []any{panelHead}
+			var templ_7745c5c3_Var5 = []any{PanelHead}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var5...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -146,7 +147,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var5).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 			if templ_7745c5c3_Err != nil {
@@ -178,7 +179,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var7 = []any{panelTitle}
+			var templ_7745c5c3_Var7 = []any{PanelTitle}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var7...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -186,7 +187,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var7).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {
@@ -210,7 +211,7 @@ func panel(title, class string, action templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = decoded(title).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Decoded(title).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -240,8 +241,8 @@ func panel(title, class string, action templ.Component) templ.Component {
 	})
 }
 
-// kpi is a loose KPI box: the decoded amount over its label.
-func kpi(label string, cents int64) templ.Component {
+// Kpi is a loose KPI box: the decoded amount over its label.
+func Kpi(label string, cents int64) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -262,7 +263,7 @@ func kpi(label string, cents int64) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = decoded(shared.Money(ctx, cents)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = Decoded(shared.Money(ctx, cents)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -273,7 +274,7 @@ func kpi(label string, cents int64) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 81, Col: 86}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 82, Col: 86}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -287,8 +288,8 @@ func kpi(label string, cents int64) templ.Component {
 	})
 }
 
-// decoded is text that decodes on screen: screen readers read it from the sr-only copy and skip the scramble.
-func decoded(text string) templ.Component {
+// Decoded is text that decodes on screen: screen readers read it from the sr-only copy and skip the scramble.
+func Decoded(text string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -312,7 +313,7 @@ func decoded(text string) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 87, Col: 29}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 88, Col: 29}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -325,7 +326,7 @@ func decoded(text string) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 87, Col: 81}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 88, Col: 81}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
@@ -339,8 +340,8 @@ func decoded(text string) templ.Component {
 	})
 }
 
-// newAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.
-func newAction(url string) templ.Component {
+// NewAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.
+func NewAction(url string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -372,7 +373,7 @@ func newAction(url string) templ.Component {
 			var templ_7745c5c3_Var16 string
 			templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "list.new"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 93, Col: 27}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 94, Col: 27}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 			if templ_7745c5c3_Err != nil {
@@ -388,8 +389,8 @@ func newAction(url string) templ.Component {
 	})
 }
 
-// empty is a list's one-line empty state.
-func empty(text string, classes ...string) templ.Component {
+// Empty is a list's one-line empty state.
+func Empty(text string, classes ...string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -422,7 +423,7 @@ func empty(text string, classes ...string) templ.Component {
 			var templ_7745c5c3_Var19 string
 			templ_7745c5c3_Var19, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var18).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var19)
 			if templ_7745c5c3_Err != nil {
@@ -447,9 +448,9 @@ func empty(text string, classes ...string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var20 string
-		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(randomASCIIEmoticon())
+		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(RandomASCIIEmoticon())
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 100, Col: 50}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 101, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -462,7 +463,7 @@ func empty(text string, classes ...string) templ.Component {
 		var templ_7745c5c3_Var21 string
 		templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(text)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 101, Col: 8}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 102, Col: 8}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 		if templ_7745c5c3_Err != nil {
@@ -476,14 +477,14 @@ func empty(text string, classes ...string) templ.Component {
 	})
 }
 
-// sheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
-func sheetRow(url string, flash bool) table.RowProps {
+// SheetRow is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
+func SheetRow(url string, flash bool) table.RowProps {
 	return table.RowProps{Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet", "tabindex": "0", "data-flash": flash}}
 }
 
-// online is the server status of the ticker and the login footer, "● [online]"; the dot turns into the braille
+// Online is the server status of the ticker and the login footer, "● [online]"; the dot turns into the braille
 // spinner, in CSS, while any htmx request is in flight.
-func online() templ.Component {
+func Online() templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -534,20 +535,20 @@ func online() templ.Component {
 	})
 }
 
-const closeSheet = "this.closest('dialog').close()"
+const CloseSheet = "this.closest('dialog').close()"
 
-// textAction is a text action ([tema], [sair], [esc ✕]): muted caps that invert on hover, widened to a 44px touch
+// TextAction is a text action ([tema], [sair], [esc ✕]): muted caps that invert on hover, widened to a 44px touch
 // target below @2xl in the console and below sm in the sheet, which sits outside the console container.
-const textAction = "cursor-pointer px-0.5 tracking-wider whitespace-nowrap text-muted-foreground uppercase transition-colors hover:bg-foreground hover:text-background @max-2xl/console:inline-flex @max-2xl/console:min-h-11 @max-2xl/console:min-w-11 @max-2xl/console:items-center @max-2xl/console:justify-center in-[.sheet]:max-sm:inline-flex in-[.sheet]:max-sm:min-h-11 in-[.sheet]:max-sm:items-center"
+const TextAction = "cursor-pointer px-0.5 tracking-wider whitespace-nowrap text-muted-foreground uppercase transition-colors hover:bg-foreground hover:text-background @max-2xl/console:inline-flex @max-2xl/console:min-h-11 @max-2xl/console:min-w-11 @max-2xl/console:items-center @max-2xl/console:justify-center in-[.sheet]:max-sm:inline-flex in-[.sheet]:max-sm:min-h-11 in-[.sheet]:max-sm:items-center"
 
-// sheetPanel is the panel inside #sheet: borderless but for a --line-soft left border, its fields a line apart, and
+// SheetPanel is the panel inside #sheet: borderless but for a --line-soft left border, its fields a line apart, and
 // its corners inside the dialog, which would scroll on any overflow. group/sheet lets a field react to the choices.
-const sheetPanel = "panel group/sheet flex min-h-full flex-col gap-5 border-l border-line-soft px-4 py-5 after:inset-0"
+const SheetPanel = "panel group/sheet flex min-h-full flex-col gap-5 border-l border-line-soft px-4 py-5 after:inset-0"
 
-// sheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir", which asks Confirm inline
+// SheetProps configures the form inside #sheet. DeleteURL, when set, adds "Excluir", which asks Confirm inline
 // first, as in "excluir esta tag? <consequência>"; Error is a form-level message, such as a rejected commit. Submit
 // and Busy name the submit and its spinner, "salvar" and "salvando" when empty.
-type sheetProps struct {
+type SheetProps struct {
 	Title     string
 	Action    string
 	DeleteURL string
@@ -557,11 +558,11 @@ type sheetProps struct {
 	Busy      string
 }
 
-// sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
+// Sheet is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
 // fields as children, then "excluir" on the left and "cancelar" and "> salvar" on the right; while saving, the
 // submit reads "⠋ salvando", and "excluir" swaps the footer for its confirmInline. Every response, a 422 included,
 // swaps into #sheet.
-func sheet(p sheetProps) templ.Component {
+func Sheet(p SheetProps) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -590,7 +591,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templruntime.NewAttributeExpression(p.Action).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 149, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 150, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var25)
 			if templ_7745c5c3_Err != nil {
@@ -600,7 +601,7 @@ func sheet(p sheetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var26 = []any{sheetPanel}
+			var templ_7745c5c3_Var26 = []any{SheetPanel}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var26...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -608,7 +609,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var27 string
 			templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var26).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 			if templ_7745c5c3_Err != nil {
@@ -640,7 +641,7 @@ func sheet(p sheetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var28 = []any{utils.CN(panelHead, "mb-0")}
+			var templ_7745c5c3_Var28 = []any{utils.CN(PanelHead, "mb-0")}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var28...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -648,7 +649,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var29 string
 			templ_7745c5c3_Var29, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var28).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 			if templ_7745c5c3_Err != nil {
@@ -680,7 +681,7 @@ func sheet(p sheetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var30 = []any{panelTitle}
+			var templ_7745c5c3_Var30 = []any{PanelTitle}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var30...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -688,7 +689,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var31 string
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var30).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var31)
 			if templ_7745c5c3_Err != nil {
@@ -715,7 +716,7 @@ func sheet(p sheetProps) templ.Component {
 		var templ_7745c5c3_Var32 string
 		templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(p.Title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 151, Col: 37}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 152, Col: 37}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 		if templ_7745c5c3_Err != nil {
@@ -733,7 +734,7 @@ func sheet(p sheetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var33 = []any{textAction}
+			var templ_7745c5c3_Var33 = []any{TextAction}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var33...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -741,7 +742,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var33).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 			if templ_7745c5c3_Err != nil {
@@ -754,7 +755,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "sheet.close")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 152, Col: 85}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 153, Col: 85}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var35)
 			if templ_7745c5c3_Err != nil {
@@ -764,7 +765,7 @@ func sheet(p sheetProps) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var36 templ.ComponentScript = templ.JSUnsafeFuncCall(closeSheet)
+			var templ_7745c5c3_Var36 templ.ComponentScript = templ.JSUnsafeFuncCall(CloseSheet)
 			templ_7745c5c3_ElementScripts = append(templ_7745c5c3_ElementScripts, templ_7745c5c3_Var36)
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var36.Call)
 			if templ_7745c5c3_Err != nil {
@@ -808,7 +809,7 @@ func sheet(p sheetProps) templ.Component {
 				var templ_7745c5c3_Var38 string
 				templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(p.Error)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 157, Col: 13}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 158, Col: 13}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 				if templ_7745c5c3_Err != nil {
@@ -841,7 +842,7 @@ func sheet(p sheetProps) templ.Component {
 				var templ_7745c5c3_Var40 string
 				templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "sheet.delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 164, Col: 35}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 165, Col: 35}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 				if templ_7745c5c3_Err != nil {
@@ -849,7 +850,7 @@ func sheet(p sheetProps) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var39), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(ToggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var39), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -873,7 +874,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var42 string
 			templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "sheet.cancel"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 170, Col: 34}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 171, Col: 34}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 			if templ_7745c5c3_Err != nil {
@@ -881,7 +882,7 @@ func sheet(p sheetProps) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(closeSheet)}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(CloseSheet)}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var41), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -904,7 +905,7 @@ func sheet(p sheetProps) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(cmp.Or(p.Submit, i18n.T(ctx, "form.save")))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 173, Col: 60}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 174, Col: 60}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -925,7 +926,7 @@ func sheet(p sheetProps) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if p.DeleteURL != "" {
-			templ_7745c5c3_Err = confirmInline(p.Confirm, i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet"}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = ConfirmInline(p.Confirm, i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -938,13 +939,13 @@ func sheet(p sheetProps) templ.Component {
 	})
 }
 
-// toggleConfirm swaps the children of the closest [data-confirm] between the actions and the inline confirmation,
+// ToggleConfirm swaps the children of the closest [data-confirm] between the actions and the inline confirmation,
 // focusing the [data-focus] left visible: "não" while asking, the button that asked after it.
-const toggleConfirm = "const c = this.closest('[data-confirm]'); for (const e of c.children) e.hidden = !e.hidden; [...c.querySelectorAll('[data-focus]')].find(e => e.checkVisibility()).focus()"
+const ToggleConfirm = "const c = this.closest('[data-confirm]'); for (const e of c.children) e.hidden = !e.hidden; [...c.querySelectorAll('[data-focus]')].find(e => e.checkVisibility()).focus()"
 
-// confirmInline is the hidden "! <question> [sim, …] [não]" that toggleConfirm swaps in for the actions of the
+// ConfirmInline is the hidden "! <question> [sim, …] [não]" that ToggleConfirm swaps in for the actions of the
 // closest [data-confirm], without a round-trip: yes carries the request in attrs, "não" swaps back.
-func confirmInline(question, yes string, attrs templ.Attributes) templ.Component {
+func ConfirmInline(question, yes string, attrs templ.Attributes) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -968,7 +969,7 @@ func confirmInline(question, yes string, attrs templ.Attributes) templ.Component
 		var templ_7745c5c3_Var46 string
 		templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(question)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 191, Col: 53}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 192, Col: 53}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 		if templ_7745c5c3_Err != nil {
@@ -993,7 +994,7 @@ func confirmInline(question, yes string, attrs templ.Attributes) templ.Component
 			var templ_7745c5c3_Var48 string
 			templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(yes)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 193, Col: 8}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 194, Col: 8}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 			if templ_7745c5c3_Err != nil {
@@ -1020,7 +1021,7 @@ func confirmInline(question, yes string, attrs templ.Attributes) templ.Component
 			var templ_7745c5c3_Var50 string
 			templ_7745c5c3_Var50, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "confirm.no"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 196, Col: 30}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 197, Col: 30}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var50))
 			if templ_7745c5c3_Err != nil {
@@ -1028,7 +1029,7 @@ func confirmInline(question, yes string, attrs templ.Attributes) templ.Component
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var49), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(ToggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var49), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1040,9 +1041,9 @@ func confirmInline(question, yes string, attrs templ.Attributes) templ.Component
 	})
 }
 
-// hintField is one sheet field: label, the control as children, then the hint as a muted line under it or, in its
+// HintField is one sheet field: label, the control as children, then the hint as a muted line under it or, in its
 // place, the error message.
-func hintField(id, label, hint, message string) templ.Component {
+func HintField(id, label, hint, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1087,7 +1088,7 @@ func hintField(id, label, hint, message string) templ.Component {
 				var templ_7745c5c3_Var54 string
 				templ_7745c5c3_Var54, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 206, Col: 10}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 207, Col: 10}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var54))
 				if templ_7745c5c3_Err != nil {
@@ -1107,7 +1108,7 @@ func hintField(id, label, hint, message string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fieldNote(hint, message).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = FieldNote(hint, message).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1121,8 +1122,8 @@ func hintField(id, label, hint, message string) templ.Component {
 	})
 }
 
-// fieldNote is the line under a field: the error message when there is one, else the hint.
-func fieldNote(hint, message string) templ.Component {
+// FieldNote is the line under a field: the error message when there is one, else the hint.
+func FieldNote(hint, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1155,7 +1156,7 @@ func fieldNote(hint, message string) templ.Component {
 				var templ_7745c5c3_Var57 string
 				templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(message)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 217, Col: 12}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 218, Col: 12}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 				if templ_7745c5c3_Err != nil {
@@ -1175,7 +1176,7 @@ func fieldNote(hint, message string) templ.Component {
 			var templ_7745c5c3_Var58 string
 			templ_7745c5c3_Var58, templ_7745c5c3_Err = templ.JoinStringErrs(hint)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 220, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 221, Col: 50}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var58))
 			if templ_7745c5c3_Err != nil {
@@ -1190,9 +1191,9 @@ func fieldNote(hint, message string) templ.Component {
 	})
 }
 
-// amountField is the required amount of an entry, after the currency symbol, focused when the sheet opens, with the
+// AmountField is the required amount of an entry, after the currency symbol, focused when the sheet opens, with the
 // hint under it when not empty.
-func amountField(value, hint, message string) templ.Component {
+func AmountField(value, hint, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1233,19 +1234,19 @@ func amountField(value, hint, message string) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: shared.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: ariaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: shared.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: AriaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = currencyPrefix().Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = CurrencyPrefix().Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = hintField("amount", i18n.T(ctx, "field.amount"), hint, message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var60), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = HintField("amount", i18n.T(ctx, "field.amount"), hint, message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var60), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1253,8 +1254,8 @@ func amountField(value, hint, message string) templ.Component {
 	})
 }
 
-// nameField is the required name of a category or tag, focused when the sheet opens.
-func nameField(value, message string) templ.Component {
+// NameField is the required name of a category or tag, focused when the sheet opens.
+func NameField(value, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1283,13 +1284,13 @@ func nameField(value, message string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: ariaInvalid(message, templ.Attributes{"autofocus": true})}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: AriaInvalid(message, templ.Attributes{"autofocus": true})}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("name", i18n.T(ctx, "field.name"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var63), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FormField("name", i18n.T(ctx, "field.name"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var63), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1297,9 +1298,9 @@ func nameField(value, message string) templ.Component {
 	})
 }
 
-// categoryField is the category of an entry, picked from categories with selected picked; the sheet hides it while
+// CategoryField is the category of an entry, picked from categories with selected picked; the sheet hides it while
 // [receita] is checked, since an income has none.
-func categoryField(categories []store.Category, selected, message string) templ.Component {
+func CategoryField(categories []store.Category, selected, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1360,7 +1361,7 @@ func categoryField(categories []store.Category, selected, message string) templ.
 						var templ_7745c5c3_Var68 string
 						templ_7745c5c3_Var68, templ_7745c5c3_Err = templ.JoinStringErrs(category.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 249, Col: 21}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 250, Col: 21}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var68))
 						if templ_7745c5c3_Err != nil {
@@ -1375,13 +1376,13 @@ func categoryField(categories []store.Category, selected, message string) templ.
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: ariaInvalid(message)}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var66), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: AriaInvalid(message)}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var66), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("category_id", i18n.T(ctx, "field.category"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var65), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = FormField("category_id", i18n.T(ctx, "field.category"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var65), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1393,8 +1394,8 @@ func categoryField(categories []store.Category, selected, message string) templ.
 	})
 }
 
-// endField is the optional end date of a tag or recurrence, "vazio = sem fim".
-func endField(value, message string) templ.Component {
+// EndField is the optional end date of a tag or recurrence, "vazio = sem fim".
+func EndField(value, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1423,13 +1424,13 @@ func endField(value, message string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: value, Attributes: ariaInvalid(message)}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: value, Attributes: AriaInvalid(message)}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = hintField("end_at", i18n.T(ctx, "field.end"), i18n.T(ctx, "field.end_hint"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var70), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = HintField("end_at", i18n.T(ctx, "field.end"), i18n.T(ctx, "field.end_hint"), message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var70), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1442,9 +1443,9 @@ func fillDate(id string, days int) string {
 	return fmt.Sprintf("const d = new Date(); d.setDate(d.getDate() - %d); document.getElementById('%s').value = d.toLocaleDateString('sv')", days, id)
 }
 
-// dateField is the required date of an entry, with [hoje] [ontem] beside its label filling it without opening the
+// DateField is the required date of an entry, with [hoje] [ontem] beside its label filling it without opening the
 // date picker.
-func dateField(id, label, value, message string) templ.Component {
+func DateField(id, label, value, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1492,7 +1493,7 @@ func dateField(id, label, value, message string) templ.Component {
 				var templ_7745c5c3_Var74 string
 				templ_7745c5c3_Var74, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 275, Col: 11}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 276, Col: 11}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var74))
 				if templ_7745c5c3_Err != nil {
@@ -1516,7 +1517,7 @@ func dateField(id, label, value, message string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var75 = []any{textAction}
+				var templ_7745c5c3_Var75 = []any{TextAction}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var75...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1524,7 +1525,7 @@ func dateField(id, label, value, message string) templ.Component {
 				var templ_7745c5c3_Var76 string
 				templ_7745c5c3_Var76, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var75).String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var76)
 				if templ_7745c5c3_Err != nil {
@@ -1561,7 +1562,7 @@ func dateField(id, label, value, message string) templ.Component {
 			var templ_7745c5c3_Var78 string
 			templ_7745c5c3_Var78, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "date.today"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 278, Col: 127}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 279, Col: 127}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var78))
 			if templ_7745c5c3_Err != nil {
@@ -1579,7 +1580,7 @@ func dateField(id, label, value, message string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var79 = []any{textAction}
+				var templ_7745c5c3_Var79 = []any{TextAction}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var79...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1587,7 +1588,7 @@ func dateField(id, label, value, message string) templ.Component {
 				var templ_7745c5c3_Var80 string
 				templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var79).String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 				if templ_7745c5c3_Err != nil {
@@ -1624,7 +1625,7 @@ func dateField(id, label, value, message string) templ.Component {
 			var templ_7745c5c3_Var82 string
 			templ_7745c5c3_Var82, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "date.yesterday"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 279, Col: 131}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 280, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var82))
 			if templ_7745c5c3_Err != nil {
@@ -1634,11 +1635,11 @@ func dateField(id, label, value, message string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = input.Input(input.Props{ID: id, Name: id, Type: "date", Value: value, Required: true, Attributes: ariaInvalid(message)}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = input.Input(input.Props{ID: id, Name: id, Type: "date", Value: value, Required: true, Attributes: AriaInvalid(message)}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fieldNote("", message).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = FieldNote("", message).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1652,9 +1653,9 @@ func dateField(id, label, value, message string) templ.Component {
 	})
 }
 
-// choiceField is a short choice, as in [despesa] [receita]: the choiceOption radios as children, drawn as buttons
-// with the checked one inverted.
-func choiceField(name, label, help, message string) templ.Component {
+// ChoiceField is a short choice, as in [despesa] [receita]: the choiceOption radios as children, drawn as buttons
+// with the checked one Inverted.
+func ChoiceField(name, label, help, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1691,7 +1692,7 @@ func choiceField(name, label, help, message string) templ.Component {
 			var templ_7745c5c3_Var85 string
 			templ_7745c5c3_Var85, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name + "-label").Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 291, Col: 28}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 292, Col: 28}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var85)
 			if templ_7745c5c3_Err != nil {
@@ -1704,7 +1705,7 @@ func choiceField(name, label, help, message string) templ.Component {
 			var templ_7745c5c3_Var86 string
 			templ_7745c5c3_Var86, templ_7745c5c3_Err = templ.JoinStringErrs(label)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 292, Col: 10}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 293, Col: 10}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var86))
 			if templ_7745c5c3_Err != nil {
@@ -1715,7 +1716,7 @@ func choiceField(name, label, help, message string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			if help != "" {
-				templ_7745c5c3_Err = helpMark(help).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = HelpMark(help).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1735,7 +1736,7 @@ func choiceField(name, label, help, message string) templ.Component {
 				var templ_7745c5c3_Var87 string
 				templ_7745c5c3_Var87, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name + "-label").Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 297, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 298, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var87)
 				if templ_7745c5c3_Err != nil {
@@ -1745,7 +1746,7 @@ func choiceField(name, label, help, message string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var88 = []any{choiceGroup}
+				var templ_7745c5c3_Var88 = []any{ChoiceGroup}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var88...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1753,7 +1754,7 @@ func choiceField(name, label, help, message string) templ.Component {
 				var templ_7745c5c3_Var89 string
 				templ_7745c5c3_Var89, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var88).String()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var89)
 				if templ_7745c5c3_Err != nil {
@@ -1763,7 +1764,7 @@ func choiceField(name, label, help, message string) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "div", ariaInvalid(message))
+				templ_7745c5c3_Err = templruntime.RenderAttributes(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_ElementWriter, "div", AriaInvalid(message))
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1789,7 +1790,7 @@ func choiceField(name, label, help, message string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = fieldNote("", message).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = FieldNote("", message).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -1803,8 +1804,8 @@ func choiceField(name, label, help, message string) templ.Component {
 	})
 }
 
-// helpMark is the primary "?" after a field label: help, which it reads as, shows inverted under it on hover or focus.
-func helpMark(help string) templ.Component {
+// HelpMark is the primary "?" after a field label: help, which it reads as, shows Inverted under it on hover or focus.
+func HelpMark(help string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1828,7 +1829,7 @@ func helpMark(help string) templ.Component {
 		var templ_7745c5c3_Var91 string
 		templ_7745c5c3_Var91, templ_7745c5c3_Err = templruntime.NewAttributeExpression(help).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 306, Col: 446}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 307, Col: 446}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var91)
 		if templ_7745c5c3_Err != nil {
@@ -1841,7 +1842,7 @@ func helpMark(help string) templ.Component {
 		var templ_7745c5c3_Var92 string
 		templ_7745c5c3_Var92, templ_7745c5c3_Err = templruntime.NewAttributeExpression(help).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 306, Col: 464}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 307, Col: 464}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var92)
 		if templ_7745c5c3_Err != nil {
@@ -1855,11 +1856,11 @@ func helpMark(help string) templ.Component {
 	})
 }
 
-// choiceGroup lays out the choiceOption buttons of a short choice, wrapping; aria-invalid turns their borders red.
-const choiceGroup = "group/choice flex flex-wrap gap-2"
+// ChoiceGroup lays out the choiceOption buttons of a short choice, wrapping; aria-invalid turns their borders red.
+const ChoiceGroup = "group/choice flex flex-wrap gap-2"
 
-// choiceOption is one radio of a choiceField, with its label as children: a button whose checked state is inverted.
-func choiceOption(name, value string, checked bool) templ.Component {
+// ChoiceOption is one radio of a choiceField, with its label as children: a button whose checked state is Inverted.
+func ChoiceOption(name, value string, checked bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1884,7 +1885,7 @@ func choiceOption(name, value string, checked bool) templ.Component {
 		var templ_7745c5c3_Var94 string
 		templ_7745c5c3_Var94, templ_7745c5c3_Err = templruntime.NewAttributeExpression(name).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 315, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 316, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var94)
 		if templ_7745c5c3_Err != nil {
@@ -1897,7 +1898,7 @@ func choiceOption(name, value string, checked bool) templ.Component {
 		var templ_7745c5c3_Var95 string
 		templ_7745c5c3_Var95, templ_7745c5c3_Err = templruntime.NewAttributeExpression(value).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 315, Col: 49}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 316, Col: 49}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var95)
 		if templ_7745c5c3_Err != nil {
@@ -1925,7 +1926,7 @@ func choiceOption(name, value string, checked bool) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var96 = []any{"flex cursor-pointer items-center gap-2 border border-line px-3 py-1 text-xs tracking-wider uppercase group-aria-invalid/choice:border-destructive peer-checked:border-foreground peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:border-foreground", inverted}
+			var templ_7745c5c3_Var96 = []any{"flex cursor-pointer items-center gap-2 border border-line px-3 py-1 text-xs tracking-wider uppercase group-aria-invalid/choice:border-destructive peer-checked:border-foreground peer-checked:bg-foreground peer-checked:text-background peer-focus-visible:outline-1 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary hover:border-foreground", Inverted}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var96...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -1933,7 +1934,7 @@ func choiceOption(name, value string, checked bool) templ.Component {
 			var templ_7745c5c3_Var97 string
 			templ_7745c5c3_Var97, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var96).String()).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 1, Col: 0}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 1, Col: 0}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var97)
 			if templ_7745c5c3_Err != nil {
@@ -1969,8 +1970,8 @@ func choiceOption(name, value string, checked bool) templ.Component {
 	})
 }
 
-// kindChoice is the [despesa] [receita] choice of a transaction or recurrence.
-func kindChoice(value, message string) templ.Component {
+// KindChoice is the [despesa] [receita] choice of a transaction or recurrence.
+func KindChoice(value, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2015,7 +2016,7 @@ func kindChoice(value, message string) templ.Component {
 					var templ_7745c5c3_Var101 string
 					templ_7745c5c3_Var101, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToLower(i18n.T(ctx, "kind."+kind)))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 327, Col: 48}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 328, Col: 48}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var101))
 					if templ_7745c5c3_Err != nil {
@@ -2023,14 +2024,14 @@ func kindChoice(value, message string) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = choiceOption("kind", kind, kind == value).Render(templ.WithChildren(ctx, templ_7745c5c3_Var100), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = ChoiceOption("kind", kind, kind == value).Render(templ.WithChildren(ctx, templ_7745c5c3_Var100), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = choiceField("kind", i18n.T(ctx, "kind.label"), "", message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var99), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = ChoiceField("kind", i18n.T(ctx, "kind.label"), "", message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var99), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2038,8 +2039,8 @@ func kindChoice(value, message string) templ.Component {
 	})
 }
 
-// description is an entry's description, or "sem descrição" in muted italics when it has none.
-func description(text *string) templ.Component {
+// Description is an entry's description, or "sem descrição" in muted italics when it has none.
+func Description(text *string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -2064,7 +2065,7 @@ func description(text *string) templ.Component {
 			var templ_7745c5c3_Var103 string
 			templ_7745c5c3_Var103, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.no_description"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 336, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 337, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var103))
 			if templ_7745c5c3_Err != nil {
@@ -2078,7 +2079,7 @@ func description(text *string) templ.Component {
 			var templ_7745c5c3_Var104 string
 			templ_7745c5c3_Var104, templ_7745c5c3_Err = templ.JoinStringErrs(*text)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/console.templ`, Line: 338, Col: 9}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 339, Col: 9}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var104))
 			if templ_7745c5c3_Err != nil {
@@ -2087,6 +2088,116 @@ func description(text *string) templ.Component {
 		}
 		return nil
 	})
+}
+
+// Inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
+const Inverted = "transition-colors hover:bg-foreground hover:text-background"
+
+// CurrencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
+func CurrencyPrefix() templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var105 := templ.GetChildren(ctx)
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 93, "<div class=\"flex items-center gap-2\"><span class=\"text-xs text-muted-foreground\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var106 string
+		templ_7745c5c3_Var106, templ_7745c5c3_Err = templ.JoinStringErrs(shared.CurrencySymbol(ctx))
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/console.templ`, Line: 349, Col: 74}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var106))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 94, "</span>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templ_7745c5c3_Var105.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 95, "</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// FormField is one sheet field: label, the control as children and its error message.
+func FormField(id, label, message string) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var107 := templ.GetChildren(ctx)
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Var108 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+			if !templ_7745c5c3_IsBuffer {
+				defer func() {
+					templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+					if templ_7745c5c3_Err == nil {
+						templ_7745c5c3_Err = templ_7745c5c3_BufErr
+					}
+				}()
+			}
+			ctx = templ.InitializeContext(ctx)
+			templ_7745c5c3_Err = templ_7745c5c3_Var107.Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			return nil
+		})
+		templ_7745c5c3_Err = HintField(id, label, "", message).Render(templ.WithChildren(ctx, templ_7745c5c3_Var108), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+// AriaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
+func AriaInvalid(message string, attributes ...templ.Attributes) templ.Attributes {
+	all := templ.Attributes{}
+	for _, a := range attributes {
+		maps.Copy(all, a)
+	}
+
+	if message != "" {
+		all["aria-invalid"] = "true"
+	}
+
+	return all
 }
 
 var _ = templruntime.GeneratedTemplate

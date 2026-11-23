@@ -2,6 +2,8 @@ package web
 
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
@@ -10,12 +12,12 @@ import (
 // the division and the limite diário, then the division form filled with the Divisão sugerida and the Modo do limite
 // diário with mode checked, as sibling panels, and "configurar depois" going home.
 templ welcomePage(form budgetForm, mode string) {
-	@document(i18n.T(ctx, "welcome.title")) {
+	@shell.Document(i18n.T(ctx, "welcome.title")) {
 		@entranceShell(figlet, "Prata", "max-w-2xl") {
 			<div class="flex w-full flex-col gap-5 [&_.panel]:bg-background">
-				<section class={ panelBox }>
-					<header class={ panelHead }>
-						<h1 class={ panelTitle }>{ i18n.T(ctx, "welcome.title") }</h1>
+				<section class={ console.PanelBox }>
+					<header class={ console.PanelHead }>
+						<h1 class={ console.PanelTitle }>{ i18n.T(ctx, "welcome.title") }</h1>
 					</header>
 					<div class="flex flex-col gap-2 text-xs text-muted-foreground">
 						<p>{ i18n.T(ctx, "welcome.income") }</p>
@@ -24,10 +26,10 @@ templ welcomePage(form budgetForm, mode string) {
 					</div>
 				</section>
 				@budgetScreen(form, "") {
-					@panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
-						@choiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
+					@console.Panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
+						@console.ChoiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
 							for _, m := range shared.DailyLimitModes {
-								@choiceOption("daily_limit_mode", m.Value, m.Value == mode) {
+								@console.ChoiceOption("daily_limit_mode", m.Value, m.Value == mode) {
 									{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
 								}
 							}

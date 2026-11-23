@@ -14,6 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
@@ -26,7 +27,7 @@ const maxImport = 1 << 20
 type movementsView struct {
 	Categories  []store.Category
 	Movements   []store.Movement
-	Occurrences []occurrence
+	Occurrences []shell.Occurrence
 	Summary     string
 	Error       string
 }
@@ -239,7 +240,7 @@ func (h handler) ignoreMovements(w http.ResponseWriter, r *http.Request) {
 }
 
 // pendingThisMonth are the account's pending occurrences up to the end of the current month, the ones the ticker counts.
-func (h handler) pendingThisMonth(r *http.Request) ([]occurrence, error) {
+func (h handler) pendingThisMonth(r *http.Request) ([]shell.Occurrence, error) {
 	now := time.Now().In(shared.Location(r))
 	month, _, _ := monthWindow(now)
 
@@ -248,17 +249,17 @@ func (h handler) pendingThisMonth(r *http.Request) ([]occurrence, error) {
 
 // occurrencesFor are the pending occurrences of the movement's kind, the ones of an equal amount first and then the
 // closest in date to the movement's.
-func occurrencesFor(m store.Movement, pending []occurrence) []occurrence {
+func occurrencesFor(m store.Movement, pending []shell.Occurrence) []shell.Occurrence {
 	day, _ := time.Parse(time.DateOnly, m.OccurredAt)
-	distance := func(o occurrence) time.Duration {
+	distance := func(o shell.Occurrence) time.Duration {
 		date, _ := time.Parse(time.DateOnly, o.Date)
 
 		return max(date.Sub(day), day.Sub(date))
 	}
-	isEqual := func(o occurrence) bool { return o.Recurrence.Amount == m.Amount }
+	isEqual := func(o shell.Occurrence) bool { return o.Recurrence.Amount == m.Amount }
 
-	matches := slices.DeleteFunc(slices.Clone(pending), func(o occurrence) bool { return o.Recurrence.Kind != m.Kind })
-	slices.SortStableFunc(matches, func(a, b occurrence) int {
+	matches := slices.DeleteFunc(slices.Clone(pending), func(o shell.Occurrence) bool { return o.Recurrence.Kind != m.Kind })
+	slices.SortStableFunc(matches, func(a, b shell.Occurrence) int {
 		return cmp.Or(
 			cmp.Compare(utils.IfElse(isEqual(a), 0, 1), utils.IfElse(isEqual(b), 0, 1)),
 			cmp.Compare(distance(a), distance(b)),
@@ -284,7 +285,7 @@ func (h handler) confirmMovementAsOccurrence(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	i := slices.IndexFunc(pending, func(o occurrence) bool { return o.Recurrence.ID == recurrenceID && o.Date == date })
+	i := slices.IndexFunc(pending, func(o shell.Occurrence) bool { return o.Recurrence.ID == recurrenceID && o.Date == date })
 	if i < 0 {
 		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return

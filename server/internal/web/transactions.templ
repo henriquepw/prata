@@ -3,6 +3,7 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -24,24 +25,24 @@ type transactionForm struct {
 }
 
 templ transactionSheet(form transactionForm) {
-	@sheet(sheetProps{
+	@console.Sheet(console.SheetProps{
 		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
 		Action:    utils.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/transactions/"+form.ID),
 		Confirm:   i18n.T(ctx, "transactions.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@kindChoice(form.Kind, form.Errors["kind"])
-		@amountField(form.Amount, "", form.Errors["amount"])
-		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
+		@console.KindChoice(form.Kind, form.Errors["kind"])
+		@console.AmountField(form.Amount, "", form.Errors["amount"])
+		@console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		<div class="grid grid-cols-2 gap-4">
-			@dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
-			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
+			@console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
+			@console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>
-		@formField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]) {
-			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}) {
+		@console.FormField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["tag_id"])}) {
 				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {
 					{ i18n.T(ctx, "field.no_tag") }
 				}

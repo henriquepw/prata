@@ -12,7 +12,9 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -33,7 +35,7 @@ type recurrenceForm struct {
 	Errors      map[string]string
 }
 
-func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
+func recurrencesPage(s shell.Shell, recurrences []store.Recurrence) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -75,7 +77,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 				}
 				ctx = templ.InitializeContext(ctx)
 				if len(recurrences) == 0 {
-					templ_7745c5c3_Err = empty(i18n.T(ctx, "recurrences.empty")).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = console.Empty(i18n.T(ctx, "recurrences.empty")).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -131,7 +133,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var8 string
 									templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.description"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 37, Col: 42}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 39, Col: 42}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 									if templ_7745c5c3_Err != nil {
@@ -158,7 +160,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var10 string
 									templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.day"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 40, Col: 40}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 42, Col: 40}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 									if templ_7745c5c3_Err != nil {
@@ -185,7 +187,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var12 string
 									templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.amount"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 43, Col: 37}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 45, Col: 37}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 									if templ_7745c5c3_Err != nil {
@@ -246,7 +248,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 											}()
 										}
 										ctx = templ.InitializeContext(ctx)
-										templ_7745c5c3_Err = description(recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
+										templ_7745c5c3_Err = console.Description(recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
 										if templ_7745c5c3_Err != nil {
 											return templ_7745c5c3_Err
 										}
@@ -271,7 +273,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 										var templ_7745c5c3_Var17 string
 										templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 54, Col: 75}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 56, Col: 75}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 										if templ_7745c5c3_Err != nil {
@@ -298,7 +300,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 										var templ_7745c5c3_Var19 string
 										templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, signed(recurrence.Kind, recurrence.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 57, Col: 72}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 59, Col: 72}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 										if templ_7745c5c3_Err != nil {
@@ -312,7 +314,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									}
 									return nil
 								})
-								templ_7745c5c3_Err = table.Row(sheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
+								templ_7745c5c3_Err = table.Row(console.SheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 								if templ_7745c5c3_Err != nil {
 									return templ_7745c5c3_Err
 								}
@@ -332,13 +334,13 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = panel(i18n.T(ctx, "nav.recurrences"), "", newAction("/recurrences/new")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "nav.recurrences"), "", console.NewAction("/recurrences/new")).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -375,11 +377,11 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = kindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.KindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = amountField(form.Amount, "", form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.AmountField(form.Amount, "", form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -401,7 +403,7 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var22), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -421,17 +423,17 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: console.AriaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.HintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = categoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -451,17 +453,17 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				templ_7745c5c3_Err = input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])}).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: console.AriaInvalid(form.Errors["start_at"])}).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = endField(form.EndAt, form.Errors["end_at"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.EndField(form.EndAt, form.Errors["end_at"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -471,7 +473,7 @@ func recurrenceSheet(form recurrenceForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{
+		templ_7745c5c3_Err = console.Sheet(console.SheetProps{
 			Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "recurrences.new", "recurrences.edit")),
 			Action:    utils.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
 			DeleteURL: utils.IfElse(form.ID == "", "", "/recurrences/"+form.ID),

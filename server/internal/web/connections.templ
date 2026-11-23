@@ -1,6 +1,8 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -15,8 +17,8 @@ import (
 )
 
 // connectionsPage is the Conexões screen: the form that registers an Item over the list of Conexões.
-templ connectionsPage(s shell, view connectionsView) {
-	@layout(s) {
+templ connectionsPage(s shell.Shell, view connectionsView) {
+	@shell.Layout(s) {
 		@connectionFormPanel(view)
 		@connectionsPanel(view, s.Now.Location())
 	}
@@ -25,18 +27,18 @@ templ connectionsPage(s shell, view connectionsView) {
 // connectionFormPanel registers a Conexão by the Item id, onto a BRL account; without Pluggy credentials it sends
 // the user to Configurações. A response, a 422 included, swaps the screen's main.
 templ connectionFormPanel(view connectionsView) {
-	@panel(i18n.T(ctx, "connections.add"), "", nil) {
+	@console.Panel(i18n.T(ctx, "connections.add"), "", nil) {
 		if !view.HasCredentials {
 			<p class="text-muted-foreground">
 				{ i18n.T(ctx, "connections.no_credentials") }
-				<button type="button" class={ textAction } hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
+				<button type="button" class={ console.TextAction } hx-get="/settings" hx-target="#sheet">{ "[" + i18n.T(ctx, "nav.settings") + "]" }</button>
 			</p>
 		} else {
 			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-4">
-				@hintField("item_id", i18n.T(ctx, "connections.item_id"), i18n.T(ctx, "connections.item_id_hint"), view.Errors["item_id"]) {
-					@input.Input(input.Props{ID: "item_id", Name: "item_id", Value: view.ItemID, Required: true, Attributes: ariaInvalid(view.Errors["item_id"], templ.Attributes{"autocomplete": "off", "spellcheck": "false"})})
+				@console.HintField("item_id", i18n.T(ctx, "connections.item_id"), i18n.T(ctx, "connections.item_id_hint"), view.Errors["item_id"]) {
+					@input.Input(input.Props{ID: "item_id", Name: "item_id", Value: view.ItemID, Required: true, Attributes: console.AriaInvalid(view.Errors["item_id"], templ.Attributes{"autocomplete": "off", "spellcheck": "false"})})
 				}
-				@formField("account_id", i18n.T(ctx, "movements.account"), view.Errors["account_id"]) {
+				@console.FormField("account_id", i18n.T(ctx, "movements.account"), view.Errors["account_id"]) {
 					@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
 						for _, account := range view.Accounts {
 							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}) {
@@ -85,12 +87,12 @@ templ connectionState(c store.Connection) {
 // connectionsPanel lists the Conexões, each with its state and its remove button, under the error of the last
 // "buscar agora".
 templ connectionsPanel(view connectionsView, loc *time.Location) {
-	@panel(i18n.T(ctx, "nav.connections"), "", fetchAction(len(view.Connections) > 0)) {
+	@console.Panel(i18n.T(ctx, "nav.connections"), "", fetchAction(len(view.Connections) > 0)) {
 		if view.FetchError != "" {
 			<p role="alert" class="text-destructive">! { view.FetchError }</p>
 		}
 		if len(view.Connections) == 0 {
-			@empty(i18n.T(ctx, "connections.empty"))
+			@console.Empty(i18n.T(ctx, "connections.empty"))
 		} else {
 			@table.Table() {
 				@table.Header() {
@@ -126,10 +128,10 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 								@connectionState(c)
 							}
 							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
-								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}) {
+								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.ToggleConfirm), "data-focus": true}}) {
 									{ i18n.T(ctx, "connections.remove") }
 								}
-								@confirmInline(i18n.T(ctx, "connections.confirm_remove", c.Institution), i18n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID})
+								@console.ConfirmInline(i18n.T(ctx, "connections.confirm_remove", c.Institution), i18n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID})
 							}
 						}
 					}

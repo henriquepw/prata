@@ -1,4 +1,4 @@
-package web
+package shell
 
 import (
 	"fmt"
@@ -8,19 +8,47 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
-// shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
+// Balance is what the ticker shows: the account's realized balance, the occurrences still pending up to the end of
+// this month and the projected balance, which is the realized one plus every pending occurrence.
+type Balance struct {
+	Realized, Projected int64
+	Pending             []Occurrence
+}
+
+// Occurrence is a pending occurrence of a recurrence, Overdue when its date is before today.
+type Occurrence struct {
+	Recurrence store.Recurrence
+	Date       string
+	Overdue    bool
+}
+
+// Overdue counts the pending occurrences that are overdue.
+func (b Balance) Overdue() int {
+	count := 0
+	for _, pending := range b.Pending {
+		if pending.Overdue {
+			count++
+		}
+	}
+
+	return count
+}
+
+// Shell is what the console chrome shows on every authenticated page: the screen title, the current path, the
 // user's email, the clock's first tick and the ticker's balance. Flash is the id of the row a sheet just saved,
 // which the page marks with data-flash.
-type shell struct {
+type Shell struct {
 	Title   string
 	Path    string
 	Email   string
 	Now     time.Time
-	Balance balance
+	Balance Balance
 	Flash   string
 	// Connections turns the Conexões screen on, with Open Finance.
 	Connections bool
@@ -40,7 +68,7 @@ var nav = []navItem{
 type navItem struct{ Href, Label, NewURL, NewLabel string }
 
 // nav is the rail of this page: the screens, with Conexões after Movimentos when the instance has Open Finance on.
-func (s shell) nav() []navItem {
+func (s Shell) Nav() []navItem {
 	if !s.Connections {
 		return nav
 	}
@@ -51,7 +79,7 @@ func (s shell) nav() []navItem {
 }
 
 // newURL is the URL of the current screen's "novo" sheet, empty where there is none.
-func (s shell) newURL() string {
+func (s Shell) newURL() string {
 	for _, item := range nav {
 		if item.Href == s.Path {
 			return item.NewURL
@@ -61,14 +89,14 @@ func (s shell) newURL() string {
 	return ""
 }
 
-// headScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
+// HeadScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
 // [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
 // outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Mês prompt and enter opens
 // the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
-templ headScript() {
+templ HeadScript() {
 	<script>
 		(() => {
 		  const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
@@ -153,19 +181,16 @@ templ headScript() {
 	</script>
 }
 
-// inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
-const inverted = "transition-colors hover:bg-foreground hover:text-background"
-
 // tickerCell is one cell of the ticker: its label and value, or the text actions.
 const tickerCell = "flex items-center gap-2 px-3"
 
-// launcherOption is a ctrl+k command, inverted while selected or hovered.
-const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left " + inverted + " aria-selected:bg-foreground aria-selected:text-background"
+// launcherOption is a ctrl+k command, console.Inverted while selected or hovered.
+const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left " + console.Inverted + " aria-selected:bg-foreground aria-selected:text-background"
 
 // cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
 const cycleTheme = "cycleTheme()"
 
-templ document(title string) {
+templ Document(title string) {
 	<!DOCTYPE html>
 	{{ format, _ := shared.Find(shared.NumberFormats, shared.SessionFrom(ctx).NumberFormat) }}
 	<html lang={ i18n.Language(ctx) } data-decimal={ format.Decimal } data-thousands={ format.Thousands }>
@@ -173,9 +198,9 @@ templ document(title string) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<title>{ title } · Prata</title>
-			@headScript()
-			@decodeScript()
-			@budgetScript()
+			@HeadScript()
+			@console.DecodeScript()
+			@BudgetScript()
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="/static/htmx.min.js"></script>
 		</head>
@@ -185,46 +210,46 @@ templ document(title string) {
 	</html>
 }
 
-// layout is the console chrome around an authenticated page: header (title and ticker), rail (or the mobile nav row),
+// Layout is the console chrome around an authenticated page: header (title and ticker), rail (or the mobile nav row),
 // main and keybar, which ends with the clock. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
 // dialog's: ctrl enter salvar for the sheet and esc fechar.
-templ layout(s shell) {
-	@document(s.Title) {
+templ Layout(s Shell) {
+	@Document(s.Title) {
 		<div class="console-frame relative mx-auto h-dvh w-full max-w-(--breakpoint-3xl) bg-background 3xl:border-x 3xl:border-line">
 			<div class="@container/console flex h-full flex-col text-xs">
 				<header class="sbar relative flex items-center justify-between gap-4 border-b border-line-soft px-4 py-3 whitespace-nowrap">
 					<div class="truncate uppercase tracking-wider"><span class="font-bold before:text-primary before:content-['▌']">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
 					<div class="flex overflow-hidden whitespace-nowrap @max-2xl/console:hidden">
-						@ticker(s, false)
+						@Ticker(s, false)
 						<div class={ tickerCell }>
-							<button type="button" class={ textAction } hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
-							<button type="button" class={ textAction } onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
-							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class={ textAction }>{ i18n.T(ctx, "layout.sign_out") }</button></form>
+							<button type="button" class={ console.TextAction } hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
+							<button type="button" class={ console.TextAction } onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
+							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class={ console.TextAction }>{ i18n.T(ctx, "layout.sign_out") }</button></form>
 						</div>
 					</div>
 				</header>
-				@balanceLine(s.Balance, false)
+				@BalanceLine(s.Balance, false)
 				<nav class="hidden gap-2 overflow-x-auto border-b border-line px-4 text-xs whitespace-nowrap [scrollbar-width:none] @max-2xl/console:flex" aria-label={ i18n.T(ctx, "nav.label") }>
-					for i, item := range s.nav() {
+					for i, item := range s.Nav() {
 						<a
 							href={ templ.SafeURL(item.Href) }
 							if item.Href == s.Path {
 								aria-current="page"
 							}
-							class={ "inline-flex min-h-11 items-center gap-1 px-3 uppercase tracking-wider aria-[current=page]:bg-foreground aria-[current=page]:text-background", inverted }
+							class={ "inline-flex min-h-11 items-center gap-1 px-3 uppercase tracking-wider aria-[current=page]:bg-foreground aria-[current=page]:text-background", console.Inverted }
 						><span class="text-primary">{ strconv.Itoa(i + 1) }</span>{ i18n.T(ctx, item.Label) }</a>
 					}
 				</nav>
 				<div class="flex min-h-0 flex-1">
 					<nav class="flex w-46 flex-none flex-col border-r border-line-soft py-5 @max-2xl/console:hidden" aria-label={ i18n.T(ctx, "nav.label") }>
-						for i, item := range s.nav() {
+						for i, item := range s.Nav() {
 							<a
 								href={ templ.SafeURL(item.Href) }
 								data-key={ strconv.Itoa(i + 1) }
 								if item.Href == s.Path {
 									aria-current="page"
 								}
-								class={ "group flex border-l-3 border-transparent px-4 py-2.5 text-xs uppercase tracking-widest aria-[current=page]:border-primary aria-[current=page]:bg-line-soft", inverted }
+								class={ "group flex border-l-3 border-transparent px-4 py-2.5 text-xs uppercase tracking-widest aria-[current=page]:border-primary aria-[current=page]:bg-line-soft", console.Inverted }
 							><span class="w-8 flex-none text-muted-foreground group-hover:text-inherit">{ fmt.Sprintf("%02d", i+1) }</span>{ i18n.T(ctx, item.Label) }</a>
 						}
 					</nav>
@@ -234,7 +259,7 @@ templ layout(s shell) {
 				</div>
 				<footer class="flex items-center overflow-hidden border-t border-line-soft px-4 py-2 text-2xs whitespace-nowrap text-muted-foreground uppercase tracking-wider @max-2xl/console:hidden [&_kbd]:text-primary">
 					<div class="keys">
-						<span><kbd>{ fmt.Sprintf("1-%d", len(s.nav())) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
+						<span><kbd>{ fmt.Sprintf("1-%d", len(s.Nav())) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 						if url := s.newURL(); url != "" {
 							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { i18n.T(ctx, "keybar.new") }</button></span>
 						}
@@ -253,14 +278,14 @@ templ layout(s shell) {
 				</footer>
 			</div>
 		</div>
-		@launcher(s.nav())
+		@launcher(s.Nav())
 		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full max-w-110 border-0 bg-background p-0 text-xs text-foreground backdrop:bg-(--scrim)"></dialog>
 	}
 }
 
-// ticker is the account in the status line: realized, projected, pending, sync and user. With oob it swaps the one on
+// Ticker is the account in the status line: realized, projected, pending, sync and user. With oob it swaps the one on
 // screen, as a write in place does.
-templ ticker(s shell, oob bool) {
+templ Ticker(s Shell, oob bool) {
 	<dl
 		id="ticker"
 		if oob {
@@ -272,8 +297,8 @@ templ ticker(s shell, oob bool) {
 	</dl>
 }
 
-// balanceLine is the ticker's balance on mobile. With oob it swaps the one on screen, as a write in place does.
-templ balanceLine(b balance, oob bool) {
+// BalanceLine is the ticker's balance on mobile. With oob it swaps the one on screen, as a write in place does.
+templ BalanceLine(b Balance, oob bool) {
 	<dl
 		id="mbal"
 		if oob {
@@ -288,7 +313,7 @@ templ balanceLine(b balance, oob bool) {
 			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 			<dd>
 				{ strconv.Itoa(len(b.Pending)) }
-				if overdue := b.overdue(); overdue > 0 {
+				if overdue := b.Overdue(); overdue > 0 {
 					@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
 						{ fmt.Sprintf("[%d]", overdue) }
 					}
@@ -303,14 +328,14 @@ templ balanceLine(b balance, oob bool) {
 templ launcher(items []navItem) {
 	{{ n := len(items) }}
 	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher max-w-none overflow-visible bg-transparent p-0 text-foreground backdrop:bg-(--scrim) backdrop:backdrop-blur-xs">
-		<div class={ panelBox, "bg-background" }>
-			<div class={ panelHead }>
-				<h2 class={ panelTitle }>{ i18n.T(ctx, "launcher.title") }</h2>
+		<div class={ console.PanelBox, "bg-background" }>
+			<div class={ console.PanelHead }>
+				<h2 class={ console.PanelTitle }>{ i18n.T(ctx, "launcher.title") }</h2>
 				<kbd class="text-2xs uppercase text-muted-foreground">esc</kbd>
 			</div>
-			<label class={ prompt }>
+			<label class={ console.Prompt }>
 				<span class="text-primary">&gt;</span>
-				<input class={ promptInput } type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
+				<input class={ console.PromptInput } type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
 			</label>
 			<div id="launcher-options" role="listbox" class="peer">
 				for i, item := range items {
@@ -344,7 +369,7 @@ templ launcher(items []navItem) {
 					@optionLabel(n+3, i18n.T(ctx, "launcher.sign_out"))
 				</button>
 			</div>
-			@empty(i18n.T(ctx, "launcher.empty"), "hidden px-2 py-1 peer-[:not(:has([role=option]:not([hidden])))]:block")
+			@console.Empty(i18n.T(ctx, "launcher.empty"), "hidden px-2 py-1 peer-[:not(:has([role=option]:not([hidden])))]:block")
 		</div>
 	</dialog>
 }
@@ -354,17 +379,47 @@ templ optionLabel(n int, text string) {
 	<span><span class="text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ fmt.Sprintf("%02d", n) }</span> { text }</span>
 }
 
-// currencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
-templ currencyPrefix() {
-	<div class="flex items-center gap-2">
-		<span class="text-xs text-muted-foreground">{ shared.CurrencySymbol(ctx) }</span>
-		{ children... }
-	</div>
-}
-
-// formField is one sheet field: label, the control as children and its error message.
-templ formField(id, label, message string) {
-	@hintField(id, label, "", message) {
-		{ children... }
-	}
+// BudgetScript recalculates the division on the Categorias screen at each input, as the server would: the active
+// mode's fields are the division, the other mode, the sliders, the bar, the status line and "> salvar divisão" follow
+// from them. Changing the mode copies the division into the other fields; changing the Receita mensal keeps the
+// percentages in percent and the values in value. The server checks everything again on POST /budget.
+templ BudgetScript() {
+	<script>
+		(() => {
+		  const cents = (d, s) => { const n = Number(s.trim().split(d.thousands).join('').replace(d.decimal, '.')); return isNaN(n) || n < 0 ? 0 : Math.round(n * 100) }
+		  const amount = (d, n) => { const w = String(Math.trunc(n / 100)).replace(/\B(?=(\d{3})+$)/g, d.thousands); return w + d.decimal + String(n % 100).padStart(2, '0') }
+		  const money = (d, n) => (n < 0 ? '−' : '') + d.symbol + ' ' + amount(d, Math.abs(n))
+		  const points = (n, total) => total ? Math.floor((n * 20000 + total) / (2 * total)) : 0
+		  addEventListener('input', e => {
+		    const f = e.target.closest('form[data-budget]')
+		    if (!f) return
+		    const d = f.dataset, percent = !f.querySelector('[name=mode][value=value]')?.checked, income = cents(d, f.elements.income.value)
+		    const rows = [...f.querySelectorAll('[data-row]')]
+		    let gapCents = income, gapPoints = 10000
+		    f.dataset.mode = percent ? 'percent' : 'value'
+		    f.querySelector('[data-hint]').textContent = percent ? d.hintPercent : d.hintValue
+		    for (const row of rows) {
+		      const p = row.querySelector('[data-percent]'), v = row.querySelector('[data-value]'), range = row.querySelector('[type=range]')
+		      if (e.target === range) (percent ? p : v).value = amount(d, percent ? Math.round(range.value * 100) : Math.round(income * range.value / 100))
+		      const typed = e.target.name === 'mode' ? !percent : percent
+		      const c = typed ? Math.trunc(income * cents(d, p.value) / 10000) : cents(d, v.value), pt = typed ? cents(d, p.value) : points(c, income)
+		      if (e.target.name === 'mode') (percent ? p : v).value = amount(d, percent ? pt : c)
+		      p.disabled = !percent; v.disabled = percent
+		      if (e.target !== range) range.value = pt / 100
+		      range.style.setProperty('--p', Math.min(100, Math.max(0, pt / 100)) + '%')
+		      row.querySelector('[data-derived]').textContent = percent ? money(d, c) : amount(d, pt) + '%'
+		      f.querySelector('[data-slice="' + row.dataset.row + '"]').style.width = Math.max(0, pt / 100) + '%'
+		      gapCents -= c; gapPoints -= pt
+		    }
+		    if (percent) gapCents = Math.trunc(income * gapPoints / 10000)
+		    else gapPoints = Math.sign(gapCents) * points(Math.abs(gapCents), income)
+		    const gap = percent ? gapPoints : gapCents, closed = income > 0 && (!rows.length || gap === 0), status = f.querySelector('[data-status]')
+		    f.querySelector('[data-slice=free]')?.style.setProperty('width', Math.max(0, gapPoints / 100) + '%')
+		    f.classList.toggle('over', rows.length > 0 && gap < 0)
+		    f.classList.toggle('closed', rows.length > 0 && closed)
+		    if (status) status.textContent = !income || !rows.length ? '' : closed ? d.closed : (gap > 0 ? d.missing : d.over) + ' ' + money(d, Math.abs(gapCents)) + ' · ' + amount(d, Math.abs(gapPoints)) + '%'
+		    f.querySelector('[type=submit]').disabled = !closed
+		  })
+		})()
+	</script>
 }

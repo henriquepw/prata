@@ -12,6 +12,7 @@ import templruntime "github.com/a-h/templ/runtime"
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -61,11 +62,11 @@ func transactionSheet(form transactionForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = kindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.KindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = amountField(form.Amount, "", form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.AmountField(form.Amount, "", form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -87,7 +88,7 @@ func transactionSheet(form transactionForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -95,11 +96,11 @@ func transactionSheet(form transactionForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = categoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -146,7 +147,7 @@ func transactionSheet(form transactionForm) templ.Component {
 						var templ_7745c5c3_Var7 string
 						templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.no_tag"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 46, Col: 34}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 47, Col: 34}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 						if templ_7745c5c3_Err != nil {
@@ -174,7 +175,7 @@ func transactionSheet(form transactionForm) templ.Component {
 							var templ_7745c5c3_Var9 string
 							templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(tag.Name)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 50, Col: 16}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 51, Col: 16}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 							if templ_7745c5c3_Err != nil {
@@ -189,19 +190,19 @@ func transactionSheet(form transactionForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: ariaInvalid(form.Errors["tag_id"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["tag_id"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var5), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("tag_id", i18n.T(ctx, "field.tag"), form.Errors["tag_id"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{
+		templ_7745c5c3_Err = console.Sheet(console.SheetProps{
 			Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
 			Action:    utils.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
 			DeleteURL: utils.IfElse(form.ID == "", "", "/transactions/"+form.ID),

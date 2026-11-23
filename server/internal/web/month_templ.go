@@ -11,6 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strconv"
 	"strings"
 	"time"
@@ -77,7 +79,7 @@ const statementDay = "border-b border-line-soft px-2 pt-5 pb-1.5 text-2xs tracki
 // today and lifted with a --foreground border on hover or focus, which shows its tooltip.
 const dailyDay = "group relative flex min-w-0 flex-col gap-0.5 border border-line-faint px-2 pt-2.5 pb-4 text-2xs outline-none hover:z-5 hover:border-foreground focus-visible:z-5 focus-visible:border-foreground data-today:outline data-today:outline-solid data-today:outline-offset-1 data-today:outline-primary data-[tone=red]:border-destructive data-[tone=gray]:*:not-[[role=tooltip]]:opacity-55"
 
-// dailyTipBox is a day's tooltip: inverted above the cell, centered or held inside the grid on the edge columns.
+// dailyTipBox is a day's tooltip: console.Inverted above the cell, centered or held inside the grid on the edge columns.
 const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
 
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
@@ -105,7 +107,7 @@ func monthOffset(month time.Time, offset int) string {
 }
 
 // monthPage is the Mês: the month bar over the boxes and the statement, which a confirmation on a row swaps.
-func monthPage(s shell, page month) templ.Component {
+func monthPage(s shell.Shell, page month) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -144,7 +146,7 @@ func monthPage(s shell, page month) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -153,7 +155,7 @@ func monthPage(s shell, page month) templ.Component {
 }
 
 // monthSwap is the answer of a write in place: the month, with the ticker and the balance line out of band.
-func monthSwap(s shell, page month) templ.Component {
+func monthSwap(s shell.Shell, page month) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -174,11 +176,11 @@ func monthSwap(s shell, page month) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = ticker(s, true).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Ticker(s, true).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = balanceLine(s.Balance, true).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.BalanceLine(s.Balance, true).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -219,7 +221,7 @@ func monthBar(page month) templ.Component {
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(monthOffset(page.Month, -1), page.Filter.ID))).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 117, Col: 81}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 119, Col: 81}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var5)
 			if templ_7745c5c3_Err != nil {
@@ -229,7 +231,7 @@ func monthBar(page month) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var6 = []any{textAction}
+			var templ_7745c5c3_Var6 = []any{console.TextAction}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var6...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -250,7 +252,7 @@ func monthBar(page month) templ.Component {
 			var templ_7745c5c3_Var8 string
 			templ_7745c5c3_Var8, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "month.previous")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 117, Col: 160}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 119, Col: 168}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var8)
 			if templ_7745c5c3_Err != nil {
@@ -277,7 +279,7 @@ func monthBar(page month) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.year", i18n.T(ctx, "month."+page.Month.Month().String()), page.Month.Year()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 118, Col: 161}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 120, Col: 161}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -298,7 +300,7 @@ func monthBar(page month) templ.Component {
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(monthOffset(page.Month, 1), page.Filter.ID))).ResolveURL(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 119, Col: 80}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 121, Col: 80}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var10)
 			if templ_7745c5c3_Err != nil {
@@ -308,7 +310,7 @@ func monthBar(page month) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var11 = []any{textAction}
+			var templ_7745c5c3_Var11 = []any{console.TextAction}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var11...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -329,7 +331,7 @@ func monthBar(page month) templ.Component {
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templruntime.NewAttributeExpression(i18n.T(ctx, "month.next")).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 119, Col: 155}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 121, Col: 163}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var13)
 			if templ_7745c5c3_Err != nil {
@@ -365,7 +367,7 @@ func monthBar(page month) templ.Component {
 				var templ_7745c5c3_Var14 string
 				templ_7745c5c3_Var14, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID))).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 121, Col: 84}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 123, Col: 84}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var14)
 				if templ_7745c5c3_Err != nil {
@@ -375,7 +377,7 @@ func monthBar(page month) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var15 = []any{textAction}
+				var templ_7745c5c3_Var15 = []any{console.TextAction}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var15...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -410,7 +412,7 @@ func monthBar(page month) templ.Component {
 			var templ_7745c5c3_Var17 string
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.current"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 121, Col: 138}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 123, Col: 146}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -493,7 +495,7 @@ func dailyBudget(d daily) templ.Component {
 			var templ_7745c5c3_Var21 string
 			templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_budget", shared.Money(ctx, d.Budget)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 132, Col: 92}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 134, Col: 92}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 			if templ_7745c5c3_Err != nil {
@@ -540,7 +542,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var23 string
 			templ_7745c5c3_Var23, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "weekday."+weekday))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 142, Col: 131}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 144, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var23))
 			if templ_7745c5c3_Err != nil {
@@ -588,7 +590,7 @@ func dailyCalendar(page month) templ.Component {
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templruntime.NewAttributeExpression(cell.Date).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 151, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 153, Col: 25}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var26)
 				if templ_7745c5c3_Err != nil {
@@ -601,7 +603,7 @@ func dailyCalendar(page month) templ.Component {
 				var templ_7745c5c3_Var27 string
 				templ_7745c5c3_Var27, templ_7745c5c3_Err = templruntime.NewAttributeExpression(cell.Tone).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 152, Col: 25}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 154, Col: 25}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var27)
 				if templ_7745c5c3_Err != nil {
@@ -624,7 +626,7 @@ func dailyCalendar(page month) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templruntime.NewAttributeExpression(utils.IfElse(column < 3, "start", utils.IfElse(column > 4, "end", ""))).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 154, Col: 86}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 156, Col: 86}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var28)
 				if templ_7745c5c3_Err != nil {
@@ -637,7 +639,7 @@ func dailyCalendar(page month) templ.Component {
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templruntime.NewAttributeExpression("daily-tip-" + cell.Date).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 156, Col: 47}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 158, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var29)
 				if templ_7745c5c3_Err != nil {
@@ -664,7 +666,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var30 string
 			templ_7745c5c3_Var30, templ_7745c5c3_Err = templ.JoinStringErrs(strconv.Itoa(cell.Day))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 158, Col: 143}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 160, Col: 143}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var30))
 			if templ_7745c5c3_Err != nil {
@@ -677,7 +679,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var31 string
 			templ_7745c5c3_Var31, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, cell.Spent))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 159, Col: 128}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 161, Col: 128}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var31))
 			if templ_7745c5c3_Err != nil {
@@ -690,7 +692,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var32 string
 			templ_7745c5c3_Var32, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, cell.Limit))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 160, Col: 115}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 162, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var32))
 			if templ_7745c5c3_Err != nil {
@@ -703,7 +705,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var33 string
 			templ_7745c5c3_Var33, templ_7745c5c3_Err = templruntime.SanitizeStyleAttributeValues("--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 161, Col: 135}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 163, Col: 135}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 			if templ_7745c5c3_Err != nil {
@@ -734,7 +736,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var34 string
 			templ_7745c5c3_Var34, templ_7745c5c3_Err = templruntime.NewAttributeExpression(tone).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 168, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 170, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var34)
 			if templ_7745c5c3_Err != nil {
@@ -747,7 +749,7 @@ func dailyCalendar(page month) templ.Component {
 			var templ_7745c5c3_Var35 string
 			templ_7745c5c3_Var35, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_"+tone))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 168, Col: 62}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 170, Col: 62}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var35))
 			if templ_7745c5c3_Err != nil {
@@ -796,7 +798,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 			var templ_7745c5c3_Var37 string
 			templ_7745c5c3_Var37, templ_7745c5c3_Err = templruntime.NewAttributeExpression("daily-tip-" + cell.Date).Resolve(ctx)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 176, Col: 36}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 178, Col: 36}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var37)
 			if templ_7745c5c3_Err != nil {
@@ -841,7 +843,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 		var templ_7745c5c3_Var40 string
 		templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "weekday."+dayOf(cell.Date).Weekday().String()))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 177, Col: 71}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 179, Col: 71}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 		if templ_7745c5c3_Err != nil {
@@ -854,7 +856,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 		var templ_7745c5c3_Var41 string
 		templ_7745c5c3_Var41, templ_7745c5c3_Err = templ.JoinStringErrs(shortDay(ctx, cell.Date))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 177, Col: 100}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 179, Col: 100}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var41))
 		if templ_7745c5c3_Err != nil {
@@ -867,7 +869,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 		var templ_7745c5c3_Var42 string
 		templ_7745c5c3_Var42, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_spent", shared.Money(ctx, cell.Spent)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 178, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 180, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var42))
 		if templ_7745c5c3_Err != nil {
@@ -880,7 +882,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 		var templ_7745c5c3_Var43 string
 		templ_7745c5c3_Var43, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_limit", shared.Money(ctx, cell.Limit)))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 179, Col: 73}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 181, Col: 73}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var43))
 		if templ_7745c5c3_Err != nil {
@@ -899,7 +901,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 			var templ_7745c5c3_Var44 string
 			templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_future"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 182, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 184, Col: 45}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 			if templ_7745c5c3_Err != nil {
@@ -917,7 +919,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 			var templ_7745c5c3_Var45 string
 			templ_7745c5c3_Var45, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_left", shared.Money(ctx, cell.Limit-cell.Spent), cell.percent()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 184, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 186, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var45))
 			if templ_7745c5c3_Err != nil {
@@ -935,7 +937,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 			var templ_7745c5c3_Var46 string
 			templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_over", shared.Money(ctx, cell.Spent-cell.Limit), cell.percent()))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 186, Col: 101}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 188, Col: 101}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 			if templ_7745c5c3_Err != nil {
@@ -953,7 +955,7 @@ func dailyTip(page month, cell dailyCell) templ.Component {
 		var templ_7745c5c3_Var47 string
 		templ_7745c5c3_Var47, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.daily_how_"+page.Daily.Mode))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 188, Col: 57}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 190, Col: 57}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var47))
 		if templ_7745c5c3_Err != nil {
@@ -997,7 +999,7 @@ func monthContent(page month) templ.Component {
 			var templ_7745c5c3_Var49 string
 			templ_7745c5c3_Var49, templ_7745c5c3_Err = templ.JoinStringErrs(page.Error)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 196, Col: 58}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 198, Col: 58}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var49))
 			if templ_7745c5c3_Err != nil {
@@ -1012,27 +1014,27 @@ func monthContent(page month) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.previous_balance"), page.Previous).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.previous_balance"), page.Previous).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.income"), page.Income).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.income"), page.Income).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.outcome"), -page.Outcome).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.outcome"), -page.Outcome).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.realized"), page.realized()).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.realized"), page.realized()).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.pending"), page.Pending).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.pending"), page.Pending).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = kpi(i18n.T(ctx, "month.projected"), page.realized()+page.Pending).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Kpi(i18n.T(ctx, "month.projected"), page.realized()+page.Pending).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1057,7 +1059,7 @@ func monthContent(page month) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if !page.Daily.Defined {
-				templ_7745c5c3_Err = empty(i18n.T(ctx, "month.daily_empty")).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Empty(i18n.T(ctx, "month.daily_empty")).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1069,7 +1071,7 @@ func monthContent(page month) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = panel(i18n.T(ctx, "month.daily"), "", dailyBudget(page.Daily)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var50), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "month.daily"), "", dailyBudget(page.Daily)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var50), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1090,7 +1092,7 @@ func monthContent(page month) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if len(page.Days) == 0 && len(page.Overdue) == 0 {
-				templ_7745c5c3_Err = empty(i18n.T(ctx, utils.IfElse(page.Filter.ID == "", "month.empty", "month.empty_category"))).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Empty(i18n.T(ctx, utils.IfElse(page.Filter.ID == "", "month.empty", "month.empty_category"))).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1173,7 +1175,7 @@ func monthContent(page month) templ.Component {
 							var templ_7745c5c3_Var56 string
 							templ_7745c5c3_Var56, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "weekday."+dayOf(d.Date).Weekday().String()))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 226, Col: 106}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 228, Col: 106}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var56))
 							if templ_7745c5c3_Err != nil {
@@ -1186,7 +1188,7 @@ func monthContent(page month) templ.Component {
 							var templ_7745c5c3_Var57 string
 							templ_7745c5c3_Var57, templ_7745c5c3_Err = templ.JoinStringErrs(shortDay(ctx, d.Date))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 226, Col: 132}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 228, Col: 132}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var57))
 							if templ_7745c5c3_Err != nil {
@@ -1240,7 +1242,7 @@ func monthContent(page month) templ.Component {
 								var templ_7745c5c3_Var60 string
 								templ_7745c5c3_Var60, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, d.Total))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 229, Col: 39}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 231, Col: 39}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var60))
 								if templ_7745c5c3_Err != nil {
@@ -1282,7 +1284,7 @@ func monthContent(page month) templ.Component {
 											}()
 										}
 										ctx = templ.InitializeContext(ctx)
-										templ_7745c5c3_Err = description(t.Description).Render(ctx, templ_7745c5c3_Buffer)
+										templ_7745c5c3_Err = console.Description(t.Description).Render(ctx, templ_7745c5c3_Buffer)
 										if templ_7745c5c3_Err != nil {
 											return templ_7745c5c3_Err
 										}
@@ -1332,7 +1334,7 @@ func monthContent(page month) templ.Component {
 											var templ_7745c5c3_Var65 string
 											templ_7745c5c3_Var65, templ_7745c5c3_Err = templ.JoinStringErrs("#" + t.TagName)
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 248, Col: 29}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 250, Col: 29}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var65))
 											if templ_7745c5c3_Err != nil {
@@ -1360,7 +1362,7 @@ func monthContent(page month) templ.Component {
 										var templ_7745c5c3_Var67 string
 										templ_7745c5c3_Var67, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, signed(t.Kind, t.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 252, Col: 56}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 254, Col: 56}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var67))
 										if templ_7745c5c3_Err != nil {
@@ -1374,7 +1376,7 @@ func monthContent(page month) templ.Component {
 									}
 									return nil
 								})
-								templ_7745c5c3_Err = table.Row(sheetRow("/transactions/"+t.ID, t.ID == page.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
+								templ_7745c5c3_Err = table.Row(console.SheetRow("/transactions/"+t.ID, t.ID == page.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var61), templ_7745c5c3_Buffer)
 								if templ_7745c5c3_Err != nil {
 									return templ_7745c5c3_Err
 								}
@@ -1414,7 +1416,7 @@ func monthContent(page month) templ.Component {
 						var templ_7745c5c3_Var68 string
 						templ_7745c5c3_Var68, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(page.yearMonth(), page.Filter.ID) + "&limit=" + strconv.Itoa(page.Limit+statementPage))).ResolveURL(ctx)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 263, Col: 126}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 265, Col: 126}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var68)
 						if templ_7745c5c3_Err != nil {
@@ -1424,7 +1426,7 @@ func monthContent(page month) templ.Component {
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
 						}
-						var templ_7745c5c3_Var69 = []any{textAction, "mt-2 block text-center"}
+						var templ_7745c5c3_Var69 = []any{console.TextAction, "mt-2 block text-center"}
 						templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var69...)
 						if templ_7745c5c3_Err != nil {
 							return templ_7745c5c3_Err
@@ -1459,7 +1461,7 @@ func monthContent(page month) templ.Component {
 					var templ_7745c5c3_Var71 string
 					templ_7745c5c3_Var71, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.more"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 263, Col: 203}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 265, Col: 211}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var71))
 					if templ_7745c5c3_Err != nil {
@@ -1473,7 +1475,7 @@ func monthContent(page month) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = panel(i18n.T(ctx, "month.statement"), "min-w-0 grow-3 basis-101", statementActions(page)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var51), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "month.statement"), "min-w-0 grow-3 basis-101", statementActions(page)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var51), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1490,7 +1492,7 @@ func monthContent(page month) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if len(page.Usages) == 0 {
-				templ_7745c5c3_Err = empty(i18n.T(ctx, "categories.empty")).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Empty(i18n.T(ctx, "categories.empty")).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1508,7 +1510,7 @@ func monthContent(page month) templ.Component {
 					var templ_7745c5c3_Var73 string
 					templ_7745c5c3_Var73, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(page.yearMonth(), usage.ID))).ResolveURL(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 275, Col: 66}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 277, Col: 66}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var73)
 					if templ_7745c5c3_Err != nil {
@@ -1575,7 +1577,7 @@ func monthContent(page month) templ.Component {
 					var templ_7745c5c3_Var76 string
 					templ_7745c5c3_Var76, templ_7745c5c3_Err = templ.JoinStringErrs(percent(usage))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 282, Col: 142}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 284, Col: 142}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var76))
 					if templ_7745c5c3_Err != nil {
@@ -1639,7 +1641,7 @@ func monthContent(page month) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = panel(i18n.T(ctx, "nav.categories"), "min-w-0 grow basis-59", allCategories(page)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var72), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "nav.categories"), "min-w-0 grow basis-59", allCategories(page)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var72), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1685,7 +1687,7 @@ func statementActions(page month) templ.Component {
 				var templ_7745c5c3_Var80 string
 				templ_7745c5c3_Var80, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(page.yearMonth(), ""))).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 301, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 303, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var80)
 				if templ_7745c5c3_Err != nil {
@@ -1695,7 +1697,7 @@ func statementActions(page month) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var81 = []any{textAction, "flex items-center gap-2"}
+				var templ_7745c5c3_Var81 = []any{console.TextAction, "flex items-center gap-2"}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var81...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1736,7 +1738,7 @@ func statementActions(page month) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = newAction("/transactions/new").Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.NewAction("/transactions/new").Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -1778,7 +1780,7 @@ func allCategories(page month) templ.Component {
 				var templ_7745c5c3_Var84 string
 				templ_7745c5c3_Var84, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.SafeURL(monthURL(page.yearMonth(), ""))).ResolveURL(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 313, Col: 57}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 315, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var84)
 				if templ_7745c5c3_Err != nil {
@@ -1788,7 +1790,7 @@ func allCategories(page month) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				var templ_7745c5c3_Var85 = []any{textAction}
+				var templ_7745c5c3_Var85 = []any{console.TextAction}
 				templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_ElementWriter, templ_7745c5c3_Var85...)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
@@ -1823,7 +1825,7 @@ func allCategories(page month) templ.Component {
 			var templ_7745c5c3_Var87 string
 			templ_7745c5c3_Var87, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.all"))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 313, Col: 107}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 315, Col: 115}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var87))
 			if templ_7745c5c3_Err != nil {
@@ -1870,7 +1872,7 @@ func todayLine(page month) templ.Component {
 		var templ_7745c5c3_Var89 string
 		templ_7745c5c3_Var89, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.today"))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 327, Col: 144}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 329, Col: 144}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var89))
 		if templ_7745c5c3_Err != nil {
@@ -1883,7 +1885,7 @@ func todayLine(page month) templ.Component {
 		var templ_7745c5c3_Var90 string
 		templ_7745c5c3_Var90, templ_7745c5c3_Err = templ.JoinStringErrs(shortDay(ctx, page.Today))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 327, Col: 177}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 329, Col: 177}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var90))
 		if templ_7745c5c3_Err != nil {
@@ -1905,7 +1907,7 @@ func todayLine(page month) templ.Component {
 
 // pendingRow is a pending occurrence in the statement, with its date when withDate: muted, its [pendente] or
 // [atrasada] chip and "confirmar", which swaps the month in place. The row itself opens "confirmar ocorrência".
-func pendingRow(page month, p occurrence, withDate bool) templ.Component {
+func pendingRow(page month, p shell.Occurrence, withDate bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -1955,7 +1957,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 					var templ_7745c5c3_Var94 string
 					templ_7745c5c3_Var94, templ_7745c5c3_Err = templ.JoinStringErrs(shortDay(ctx, p.Date))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 341, Col: 54}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 343, Col: 54}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var94))
 					if templ_7745c5c3_Err != nil {
@@ -1970,7 +1972,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = description(p.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Description(p.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -1990,7 +1992,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 						var templ_7745c5c3_Var96 string
 						templ_7745c5c3_Var96, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.overdue"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 346, Col: 35}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 348, Col: 35}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var96))
 						if templ_7745c5c3_Err != nil {
@@ -2018,7 +2020,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 						var templ_7745c5c3_Var98 string
 						templ_7745c5c3_Var98, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.pending_chip"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 350, Col: 40}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 352, Col: 40}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var98))
 						if templ_7745c5c3_Err != nil {
@@ -2082,7 +2084,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 				var templ_7745c5c3_Var101 string
 				templ_7745c5c3_Var101, templ_7745c5c3_Err = templruntime.NewAttributeExpression(url).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 362, Col: 22}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 364, Col: 22}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var101)
 				if templ_7745c5c3_Err != nil {
@@ -2095,7 +2097,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 				var templ_7745c5c3_Var102 string
 				templ_7745c5c3_Var102, templ_7745c5c3_Err = templruntime.NewAttributeExpression(page.yearMonth()).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 363, Col: 62}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 365, Col: 62}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var102)
 				if templ_7745c5c3_Err != nil {
@@ -2108,7 +2110,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 				var templ_7745c5c3_Var103 string
 				templ_7745c5c3_Var103, templ_7745c5c3_Err = templruntime.NewAttributeExpression(page.Filter.ID).Resolve(ctx)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 364, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 366, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var103)
 				if templ_7745c5c3_Err != nil {
@@ -2137,7 +2139,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 					var templ_7745c5c3_Var105 string
 					templ_7745c5c3_Var105, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "month.confirm"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 366, Col: 41}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 368, Col: 41}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var105))
 					if templ_7745c5c3_Err != nil {
@@ -2178,7 +2180,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 				var templ_7745c5c3_Var107 string
 				templ_7745c5c3_Var107, templ_7745c5c3_Err = templ.JoinStringErrs(shared.Money(ctx, signed(p.Recurrence.Kind, p.Recurrence.Amount)))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 371, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 373, Col: 70}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var107))
 				if templ_7745c5c3_Err != nil {
@@ -2192,7 +2194,7 @@ func pendingRow(page month, p occurrence, withDate bool) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = table.Row(table.RowProps{Class: "*:text-muted-foreground", Attributes: sheetRow(url, false).Attributes}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var92), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = table.Row(table.RowProps{Class: "*:text-muted-foreground", Attributes: console.SheetRow(url, false).Attributes}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var92), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -2235,7 +2237,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = description(form.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.Description(form.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2246,7 +2248,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			var templ_7745c5c3_Var110 string
 			templ_7745c5c3_Var110, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 388, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/month.templ`, Line: 390, Col: 77}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var110))
 			if templ_7745c5c3_Err != nil {
@@ -2272,11 +2274,11 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = kindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.KindChoice(form.Kind, form.Errors["kind"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = amountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.AmountField(form.Amount, i18n.T(ctx, "occurrence.hint"), form.Errors["amount"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2298,7 +2300,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var111), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var111), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2306,11 +2308,11 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = dateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.DateField("occurred_at", i18n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = categoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"]).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -2320,7 +2322,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{
+		templ_7745c5c3_Err = console.Sheet(console.SheetProps{
 			Title:  i18n.T(ctx, "occurrence.title"),
 			Action: "/recurrences/" + form.Recurrence.ID + "/occurrences/" + form.Date,
 			Submit: i18n.T(ctx, "month.confirm"),

@@ -2,6 +2,7 @@ package web
 
 import (
 	"fmt"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
@@ -11,59 +12,14 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// budgetScript recalculates the division on the Categorias screen at each input, as the server would: the active
-// mode's fields are the division, the other mode, the sliders, the bar, the status line and "> salvar divisão" follow
-// from them. Changing the mode copies the division into the other fields; changing the Receita mensal keeps the
-// percentages in percent and the values in value. The server checks everything again on POST /budget.
-templ budgetScript() {
-	<script>
-		(() => {
-		  const cents = (d, s) => { const n = Number(s.trim().split(d.thousands).join('').replace(d.decimal, '.')); return isNaN(n) || n < 0 ? 0 : Math.round(n * 100) }
-		  const amount = (d, n) => { const w = String(Math.trunc(n / 100)).replace(/\B(?=(\d{3})+$)/g, d.thousands); return w + d.decimal + String(n % 100).padStart(2, '0') }
-		  const money = (d, n) => (n < 0 ? '−' : '') + d.symbol + ' ' + amount(d, Math.abs(n))
-		  const points = (n, total) => total ? Math.floor((n * 20000 + total) / (2 * total)) : 0
-		  addEventListener('input', e => {
-		    const f = e.target.closest('form[data-budget]')
-		    if (!f) return
-		    const d = f.dataset, percent = !f.querySelector('[name=mode][value=value]')?.checked, income = cents(d, f.elements.income.value)
-		    const rows = [...f.querySelectorAll('[data-row]')]
-		    let gapCents = income, gapPoints = 10000
-		    f.dataset.mode = percent ? 'percent' : 'value'
-		    f.querySelector('[data-hint]').textContent = percent ? d.hintPercent : d.hintValue
-		    for (const row of rows) {
-		      const p = row.querySelector('[data-percent]'), v = row.querySelector('[data-value]'), range = row.querySelector('[type=range]')
-		      if (e.target === range) (percent ? p : v).value = amount(d, percent ? Math.round(range.value * 100) : Math.round(income * range.value / 100))
-		      const typed = e.target.name === 'mode' ? !percent : percent
-		      const c = typed ? Math.trunc(income * cents(d, p.value) / 10000) : cents(d, v.value), pt = typed ? cents(d, p.value) : points(c, income)
-		      if (e.target.name === 'mode') (percent ? p : v).value = amount(d, percent ? pt : c)
-		      p.disabled = !percent; v.disabled = percent
-		      if (e.target !== range) range.value = pt / 100
-		      range.style.setProperty('--p', Math.min(100, Math.max(0, pt / 100)) + '%')
-		      row.querySelector('[data-derived]').textContent = percent ? money(d, c) : amount(d, pt) + '%'
-		      f.querySelector('[data-slice="' + row.dataset.row + '"]').style.width = Math.max(0, pt / 100) + '%'
-		      gapCents -= c; gapPoints -= pt
-		    }
-		    if (percent) gapCents = Math.trunc(income * gapPoints / 10000)
-		    else gapPoints = Math.sign(gapCents) * points(Math.abs(gapCents), income)
-		    const gap = percent ? gapPoints : gapCents, closed = income > 0 && (!rows.length || gap === 0), status = f.querySelector('[data-status]')
-		    f.querySelector('[data-slice=free]')?.style.setProperty('width', Math.max(0, gapPoints / 100) + '%')
-		    f.classList.toggle('over', rows.length > 0 && gap < 0)
-		    f.classList.toggle('closed', rows.length > 0 && closed)
-		    if (status) status.textContent = !income || !rows.length ? '' : closed ? d.closed : (gap > 0 ? d.missing : d.over) + ' ' + money(d, Math.abs(gapCents)) + ' · ' + amount(d, Math.abs(gapPoints)) + '%'
-		    f.querySelector('[type=submit]').disabled = !closed
-		  })
-		})()
-	</script>
-}
-
 // budgetInput is a bare input of the division, with the block caret.
 const budgetInput = "min-w-0 bg-transparent tabular-nums caret-primary [caret-shape:block] outline-none"
 
 // budgetField is a category's limit field: an underline that turns primary on focus and destructive on error.
 const budgetField = "border-b border-line text-right transition-colors focus:border-primary aria-invalid:border-destructive"
 
-// budgetName is a category's name opening its sheet, inverted on hover and focus.
-const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + inverted + " focus-visible:bg-foreground focus-visible:text-background"
+// budgetName is a category's name opening its sheet, console.Inverted on hover and focus.
+const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + console.Inverted + " focus-visible:bg-foreground focus-visible:text-background"
 
 // budgetSlice is a slice of the 100% bar, its width set by the server and the script.
 const budgetSlice = "block bg-current transition-all duration-(--move)"
@@ -92,7 +48,7 @@ templ budgetScreen(form budgetForm, flash string) {
 		data-hint-percent={ i18n.T(ctx, "budget.hint_percent") }
 		data-hint-value={ i18n.T(ctx, "budget.hint_value") }
 	>
-		@panel(i18n.T(ctx, "budget.title"), "", nil) {
+		@console.Panel(i18n.T(ctx, "budget.title"), "", nil) {
 			<label class="flex items-center gap-2 border-b border-line pb-1 text-base transition-colors focus-within:border-primary">
 				<span class="text-primary" aria-hidden="true">&gt;</span>
 				<span class="text-xs text-muted-foreground">{ shared.CurrencySymbol(ctx) }</span>
@@ -107,10 +63,10 @@ templ budgetScreen(form budgetForm, flash string) {
 					data-mask="money"
 					autocomplete="off"
 					autofocus?={ !hasIncome }
-					{ ariaInvalid(form.Errors["income"])... }
+					{ console.AriaInvalid(form.Errors["income"])... }
 				/>
 			</label>
-			@fieldNote(utils.IfElse(hasIncome, "", i18n.T(ctx, "budget.income_first")), form.Errors["income"])
+			@console.FieldNote(utils.IfElse(hasIncome, "", i18n.T(ctx, "budget.income_first")), form.Errors["income"])
 			if hasIncome {
 				<p class="mt-1 text-2xs text-muted-foreground" data-hint>{ i18n.T(ctx, utils.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
 				<div class="mt-5 flex h-6 gap-0.5 bg-line-faint" aria-hidden="true">
@@ -129,9 +85,9 @@ templ budgetScreen(form budgetForm, flash string) {
 			}
 		}
 		{ children... }
-		@panel(i18n.T(ctx, "nav.categories"), "", budgetActions(form, hasIncome)) {
+		@console.Panel(i18n.T(ctx, "nav.categories"), "", budgetActions(form, hasIncome)) {
 			if len(form.Categories) == 0 {
-				@empty(i18n.T(ctx, "categories.empty"))
+				@console.Empty(i18n.T(ctx, "categories.empty"))
 			}
 			<div class="grid grid-cols-[auto_1fr_auto_--spacing(30)] items-center gap-x-4 gap-y-3 text-sm @max-2xl/console:grid-flow-row-dense @max-2xl/console:grid-cols-[1fr_auto_auto] @max-2xl/console:gap-x-2 @max-2xl/console:gap-y-1.5">
 				for _, category := range form.Categories {
@@ -194,7 +150,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 					disabled?={ !form.percent() }
 					class={ budgetInput, budgetField, "w-15" }
 					data-percent
-					{ ariaInvalid(utils.IfElse(form.percent(), form.Errors["limit_"+id], ""))... }
+					{ console.AriaInvalid(utils.IfElse(form.percent(), form.Errors["limit_"+id], ""))... }
 				/>
 				<span aria-hidden="true">%</span>
 			</span>
@@ -210,7 +166,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 					disabled?={ form.percent() }
 					class={ budgetInput, budgetField, "w-25" }
 					data-value
-					{ ariaInvalid(utils.IfElse(form.percent(), "", form.Errors["limit_"+id]))... }
+					{ console.AriaInvalid(utils.IfElse(form.percent(), "", form.Errors["limit_"+id]))... }
 				/>
 			</span>
 		</span>
@@ -223,7 +179,7 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 		</span>
 		if message := form.Errors["limit_"+id]; message != "" {
 			<div class="col-span-full">
-				@fieldNote("", message)
+				@console.FieldNote("", message)
 			</div>
 		}
 	</div>
@@ -236,11 +192,11 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 		if hasIncome {
 			<span class="flex items-center gap-2">
 				<span id="mode-label" class="text-2xs uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "budget.mode") }</span>
-				<span role="radiogroup" aria-labelledby="mode-label" class={ choiceGroup }>
-					@choiceOption("mode", budgetInValue, !form.percent()) {
+				<span role="radiogroup" aria-labelledby="mode-label" class={ console.ChoiceGroup }>
+					@console.ChoiceOption("mode", budgetInValue, !form.percent()) {
 						{ i18n.T(ctx, "budget.mode_value") }
 					}
-					@choiceOption("mode", budgetInPercent, form.percent()) {
+					@console.ChoiceOption("mode", budgetInPercent, form.percent()) {
 						%
 					}
 				</span>
@@ -249,7 +205,7 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 			<input type="hidden" name="mode" value={ budgetInPercent }/>
 		}
 		if !form.Welcome {
-			@newAction("/categories/new")
+			@console.NewAction("/categories/new")
 		}
 	</span>
 }

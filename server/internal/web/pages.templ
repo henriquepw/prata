@@ -1,7 +1,8 @@
 package web
 
 import (
-	"maps"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -27,20 +28,6 @@ type authForm struct {
 
 // choiceNames are the fields of the configurações iniciais, in the order the screen shows them.
 var choiceNames = []string{"language", "date_format", "number_format", "currency"}
-
-// ariaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
-func ariaInvalid(message string, attributes ...templ.Attributes) templ.Attributes {
-	all := templ.Attributes{}
-	for _, a := range attributes {
-		maps.Copy(all, a)
-	}
-
-	if message != "" {
-		all["aria-invalid"] = "true"
-	}
-
-	return all
-}
 
 // figlet is PRATA in the ANSI Shadow font.
 const figlet = `██████╗ ██████╗  █████╗ ████████╗ █████╗
@@ -112,7 +99,7 @@ templ signupPage(form authForm) {
 // setupPage is the configurações iniciais: the Idioma, Formato de data, Formato numérico and Moeda, asked before the
 // signup and stored by it.
 templ setupPage(form settingsForm) {
-	@document(i18n.T(ctx, "setup.title")) {
+	@shell.Document(i18n.T(ctx, "setup.title")) {
 		@entrance(figlet, "Prata", i18n.T(ctx, "setup.title"), "max-w-100") {
 			<form method="post" action="/setup" class="flex flex-col gap-4">
 				<p class="text-xs text-muted-foreground">{ i18n.T(ctx, "setup.note") }</p>
@@ -130,7 +117,7 @@ templ setupPage(form settingsForm) {
 
 // authPage is the entrance shared by login and signup: a form under the PRATA figlet.
 templ authPage(title, action string, form authForm) {
-	@document(title) {
+	@shell.Document(title) {
 		@entrance(figlet, "Prata", title, "max-w-100") {
 			<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
 				for _, name := range choiceNames {
@@ -138,11 +125,11 @@ templ authPage(title, action string, form authForm) {
 						<input type="hidden" name={ name } value={ form.Choices[name] }/>
 					}
 				}
-				@formField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
-					@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, ariaInvalid(form.EmailError))})
+				@console.FormField("email", i18n.T(ctx, "auth.email"), form.EmailError) {
+					@input.Input(input.Props{ID: "email", Name: "email", Type: "email", Value: form.Email, Required: true, Attributes: utils.MergeAttributes(templ.Attributes{"autocomplete": "email"}, console.AriaInvalid(form.EmailError))})
 				}
-				@formField("password", i18n.T(ctx, "auth.password"), form.PasswordError) {
-					@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: ariaInvalid(form.PasswordError)})
+				@console.FormField("password", i18n.T(ctx, "auth.password"), form.PasswordError) {
+					@input.Input(input.Props{ID: "password", Name: "password", Type: "password", Required: true, Attributes: console.AriaInvalid(form.PasswordError)})
 				}
 				if form.Error != "" {
 					@field.Error() {
@@ -163,9 +150,9 @@ templ authPage(title, action string, form authForm) {
 // notFoundPage is the entrance for a path with no route: a panel under the 404 figlet logging the missing path,
 // with the way back home.
 templ notFoundPage(path string) {
-	@document(i18n.T(ctx, "notfound.title")) {
+	@shell.Document(i18n.T(ctx, "notfound.title")) {
 		@entrance(figlet404, "404", i18n.T(ctx, "notfound.title"), "max-w-100") {
-			@empty(i18n.T(ctx, "notfound.text"), "mb-4 text-xs")
+			@console.Empty(i18n.T(ctx, "notfound.text"), "mb-4 text-xs")
 			@button.Button(button.Props{Href: "/"}) {
 				{ "> " + i18n.T(ctx, "notfound.back") }
 			}
@@ -177,9 +164,9 @@ templ notFoundPage(path string) {
 // and the children.
 templ entrance(art, label, title, width string) {
 	@entranceShell(art, label, width) {
-		<section class={ panelBox, "w-full bg-background" }>
-			<header class={ panelHead }>
-				<h1 class={ panelTitle }>{ title }</h1>
+		<section class={ console.PanelBox, "w-full bg-background" }>
+			<header class={ console.PanelHead }>
+				<h1 class={ console.PanelTitle }>{ title }</h1>
 			</header>
 			{ children... }
 		</section>
@@ -197,7 +184,7 @@ templ entranceShell(art, label, width string) {
 		</div>
 		<footer class="absolute inset-x-0 bottom-0 flex justify-between gap-4 border-t border-line-soft bg-background px-4 py-2.5 text-2xs tracking-wider uppercase">
 			<span>prata v1</span>
-			@online()
+			@console.Online()
 			<span data-clock={ shared.SessionFrom(ctx).DateFormat }></span>
 		</footer>
 		@templ.Raw("<script>" + authScript + "</script>")

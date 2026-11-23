@@ -10,6 +10,8 @@ import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -19,7 +21,7 @@ import (
 )
 
 // devicesPage lays the Dispositivos panel beside the activity log, or over it on mobile.
-func devicesPage(s shell, devices []store.Device, activity []store.Activity) templ.Component {
+func devicesPage(s shell.Shell, devices []store.Device, activity []store.Activity) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -67,7 +69,7 @@ func devicesPage(s shell, devices []store.Device, activity []store.Activity) tem
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = shell.Layout(s).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -106,7 +108,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 			}
 			ctx = templ.InitializeContext(ctx)
 			if len(devices) == 0 {
-				templ_7745c5c3_Err = empty(i18n.T(ctx, "devices.empty")).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Empty(i18n.T(ctx, "devices.empty")).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -162,7 +164,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var9 string
 								templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.name"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 33, Col: 34}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 35, Col: 34}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 								if templ_7745c5c3_Err != nil {
@@ -189,7 +191,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var11 string
 								templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.last_seen"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 36, Col: 41}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 38, Col: 41}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 								if templ_7745c5c3_Err != nil {
@@ -216,7 +218,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var13 string
 								templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.created_at"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 39, Col: 42}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 41, Col: 42}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 								if templ_7745c5c3_Err != nil {
@@ -284,7 +286,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var17 string
 									templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(device.Name)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 48, Col: 21}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 50, Col: 21}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 									if templ_7745c5c3_Err != nil {
@@ -311,7 +313,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var19 string
 									templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(ctx, device.LastSeenAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 51, Col: 48}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 53, Col: 48}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 									if templ_7745c5c3_Err != nil {
@@ -338,7 +340,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var21 string
 									templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(ctx, device.CreatedAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 54, Col: 47}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 56, Col: 47}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 									if templ_7745c5c3_Err != nil {
@@ -377,7 +379,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 										var templ_7745c5c3_Var24 string
 										templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.revoke"))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 58, Col: 40}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 60, Col: 40}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 										if templ_7745c5c3_Err != nil {
@@ -385,11 +387,11 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 										}
 										return nil
 									})
-									templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+									templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.ToggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}
-									templ_7745c5c3_Err = confirmInline(i18n.T(ctx, "devices.confirm_revoke", device.Name), i18n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID}).Render(ctx, templ_7745c5c3_Buffer)
+									templ_7745c5c3_Err = console.ConfirmInline(i18n.T(ctx, "devices.confirm_revoke", device.Name), i18n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID}).Render(ctx, templ_7745c5c3_Buffer)
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}
@@ -421,7 +423,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = panel(i18n.T(ctx, "nav.devices"), "min-w-0 grow-3 basis-101", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "nav.devices"), "min-w-0 grow-3 basis-101", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

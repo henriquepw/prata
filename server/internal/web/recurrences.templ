@@ -3,7 +3,9 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -24,11 +26,11 @@ type recurrenceForm struct {
 	Errors      map[string]string
 }
 
-templ recurrencesPage(s shell, recurrences []store.Recurrence) {
-	@layout(s) {
-		@panel(i18n.T(ctx, "nav.recurrences"), "", newAction("/recurrences/new")) {
+templ recurrencesPage(s shell.Shell, recurrences []store.Recurrence) {
+	@shell.Layout(s) {
+		@console.Panel(i18n.T(ctx, "nav.recurrences"), "", console.NewAction("/recurrences/new")) {
 			if len(recurrences) == 0 {
-				@empty(i18n.T(ctx, "recurrences.empty"))
+				@console.Empty(i18n.T(ctx, "recurrences.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
@@ -46,9 +48,9 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 					}
 					@table.Body() {
 						for _, recurrence := range recurrences {
-							@table.Row(sheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
+							@table.Row(console.SheetRow("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
 								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
-									@description(recurrence.Description)
+									@console.Description(recurrence.Description)
 								}
 								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
 									{ i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
@@ -66,29 +68,29 @@ templ recurrencesPage(s shell, recurrences []store.Recurrence) {
 }
 
 templ recurrenceSheet(form recurrenceForm) {
-	@sheet(sheetProps{
+	@console.Sheet(console.SheetProps{
 		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "recurrences.new", "recurrences.edit")),
 		Action:    utils.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/recurrences/"+form.ID),
 		Confirm:   i18n.T(ctx, "recurrences.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@kindChoice(form.Kind, form.Errors["kind"])
-		@amountField(form.Amount, "", form.Errors["amount"])
-		@formField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
+		@console.KindChoice(form.Kind, form.Errors["kind"])
+		@console.AmountField(form.Amount, "", form.Errors["amount"])
+		@console.FormField("description", i18n.T(ctx, "field.description"), form.Errors["description"]) {
 			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
 		}
 		<div class="grid grid-cols-2 gap-4">
-			@hintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
-				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: ariaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
+			@console.HintField("day", i18n.T(ctx, "recurrences.day"), i18n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
+				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: console.AriaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
 			}
-			@categoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
+			@console.CategoryField(form.Categories, form.CategoryID, form.Errors["category_id"])
 		</div>
 		<div class="grid grid-cols-2 gap-4">
-			@formField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
-				@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: ariaInvalid(form.Errors["start_at"])})
+			@console.FormField("start_at", i18n.T(ctx, "field.start"), form.Errors["start_at"]) {
+				@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: console.AriaInvalid(form.Errors["start_at"])})
 			}
-			@endField(form.EndAt, form.Errors["end_at"])
+			@console.EndField(form.EndAt, form.Errors["end_at"])
 		</div>
 	}
 }

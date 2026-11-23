@@ -11,6 +11,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"context"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -71,7 +72,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 				var templ_7745c5c3_Var3 string
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs("> [" + shared.FormatDate(a.CreatedAt, loc, "15:04") + "]")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 28, Col: 104}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 29, Col: 104}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -84,7 +85,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(a.Device)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 28, Col: 124}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 29, Col: 124}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -97,7 +98,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(activityPhrase(ctx, a))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 28, Col: 154}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 29, Col: 154}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -113,7 +114,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = empty(i18n.T(ctx, "activity.empty")).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = console.Empty(i18n.T(ctx, "activity.empty")).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -129,7 +130,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 			var templ_7745c5c3_Var6 string
 			templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(">")
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 33, Col: 83}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/activity.templ`, Line: 34, Col: 83}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 			if templ_7745c5c3_Err != nil {
@@ -141,7 +142,7 @@ func activityLog(activity []store.Activity, loc *time.Location) templ.Component 
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = panel(i18n.T(ctx, "activity.title"), "flex min-w-0 grow basis-59 flex-col", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Panel(i18n.T(ctx, "activity.title"), "flex min-w-0 grow basis-59 flex-col", nil).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

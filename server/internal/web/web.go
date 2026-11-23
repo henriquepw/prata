@@ -14,6 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
@@ -351,15 +352,15 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
 // now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
 // name, as "nav.devices".
-func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell, bool) {
+func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool) {
 	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
 	balance, err := h.balance(r.Context(), session.AccountID, now)
 	if err != nil {
 		shared.InternalError(w, "reading balance", err)
-		return shell{}, false
+		return shell.Shell{}, false
 	}
 
-	s := shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
+	s := shell.Shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
 	if cookie, err := r.Cookie(shared.FlashCookie); err == nil {
 		s.Flash = cookie.Value
 		http.SetCookie(w, &http.Cookie{Name: shared.FlashCookie, Path: r.URL.Path, MaxAge: -1})

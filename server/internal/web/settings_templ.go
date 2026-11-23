@@ -13,6 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
@@ -114,7 +115,7 @@ func settingsSheet(form settingsForm) templ.Component {
 							var templ_7745c5c3_Var6 string
 							templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "daily_limit_mode."+m.Value))
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 36, Col: 48}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 37, Col: 48}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 							if templ_7745c5c3_Err != nil {
@@ -129,13 +130,13 @@ func settingsSheet(form settingsForm) templ.Component {
 					}
 					return nil
 				})
-				templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: ariaInvalid(form.Errors["daily_limit_mode"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["daily_limit_mode"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = formField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.FormField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var3), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -151,7 +152,7 @@ func settingsSheet(form settingsForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = sheet(sheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.Sheet(console.SheetProps{Title: i18n.T(ctx, "nav.settings"), Action: "/settings"}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -216,7 +217,7 @@ func languageField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var11 string
 						templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(l.Label)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 53, Col: 14}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 54, Col: 14}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 						if templ_7745c5c3_Err != nil {
@@ -231,13 +232,13 @@ func languageField(form settingsForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: ariaInvalid(form.Errors["language"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["language"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var9), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.FormField("language", i18n.T(ctx, "settings.language"), form.Errors["language"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -302,7 +303,7 @@ func dateFormatField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var16 string
 						templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "date_format."+f.Value))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 65, Col: 42}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 66, Col: 42}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 						if templ_7745c5c3_Err != nil {
@@ -317,13 +318,13 @@ func dateFormatField(form settingsForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["date_format"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["date_format"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var14), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.FormField("date_format", i18n.T(ctx, "settings.date_format"), form.Errors["date_format"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var13), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -388,7 +389,7 @@ func numberFormatField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var21 string
 						templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(f.Value)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 77, Col: 14}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 78, Col: 14}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 						if templ_7745c5c3_Err != nil {
@@ -403,13 +404,13 @@ func numberFormatField(form settingsForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: ariaInvalid(form.Errors["number_format"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["number_format"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.FormField("number_format", i18n.T(ctx, "settings.number_format"), form.Errors["number_format"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var18), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -474,7 +475,7 @@ func currencyField(form settingsForm) templ.Component {
 						var templ_7745c5c3_Var26 string
 						templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs(c.Value + " (" + c.Symbol + ")")
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 89, Col: 38}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 90, Col: 38}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 						if templ_7745c5c3_Err != nil {
@@ -489,7 +490,7 @@ func currencyField(form settingsForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: ariaInvalid(form.Errors["currency"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["currency"])}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var24), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -508,7 +509,7 @@ func currencyField(form settingsForm) templ.Component {
 				var templ_7745c5c3_Var28 string
 				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "settings.currency_note"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 94, Col: 42}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 95, Col: 42}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {
@@ -522,7 +523,7 @@ func currencyField(form settingsForm) templ.Component {
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = formField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.FormField("currency", i18n.T(ctx, "settings.currency"), form.Errors["currency"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var23), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -561,13 +562,13 @@ func pluggyFields(form settingsForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: ariaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: console.AriaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = hintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.HintField("pluggy_client_id", i18n.T(ctx, "settings.pluggy_client_id"), i18n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var30), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -583,13 +584,13 @@ func pluggyFields(form settingsForm) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: ariaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: console.AriaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			return nil
 		})
-		templ_7745c5c3_Err = hintField("pluggy_client_secret", i18n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = console.HintField("pluggy_client_secret", i18n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]).Render(templ.WithChildren(ctx, templ_7745c5c3_Var31), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -613,7 +614,7 @@ func pluggyFields(form settingsForm) templ.Component {
 				var templ_7745c5c3_Var33 string
 				templ_7745c5c3_Var33, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "settings.pluggy_delete"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 111, Col: 43}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/settings.templ`, Line: 112, Col: 43}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var33))
 				if templ_7745c5c3_Err != nil {
@@ -621,11 +622,11 @@ func pluggyFields(form settingsForm) templ.Component {
 				}
 				return nil
 			})
-			templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(toggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.ToggleConfirm), "data-focus": true}}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var32), templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = confirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"}).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.ConfirmInline(i18n.T(ctx, "settings.pluggy_confirm"), i18n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"}).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

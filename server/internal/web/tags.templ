@@ -3,6 +3,8 @@ package web
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
@@ -18,12 +20,12 @@ type tagForm struct {
 	Errors  map[string]string
 }
 
-templ tagsPage(s shell, tags []store.Tag) {
+templ tagsPage(s shell.Shell, tags []store.Tag) {
 	{{ loc := s.Now.Location() }}
-	@layout(s) {
-		@panel(i18n.T(ctx, "nav.tags"), "", newAction("/tags/new")) {
+	@shell.Layout(s) {
+		@console.Panel(i18n.T(ctx, "nav.tags"), "", console.NewAction("/tags/new")) {
 			if len(tags) == 0 {
-				@empty(i18n.T(ctx, "tags.empty"))
+				@console.Empty(i18n.T(ctx, "tags.empty"))
 			} else {
 				@table.Table() {
 					@table.Header() {
@@ -38,7 +40,7 @@ templ tagsPage(s shell, tags []store.Tag) {
 					}
 					@table.Body() {
 						for _, tag := range tags {
-							@table.Row(sheetRow("/tags/"+tag.ID, tag.ID == s.Flash)) {
+							@table.Row(console.SheetRow("/tags/"+tag.ID, tag.ID == s.Flash)) {
 								@table.Cell() {
 									{ "#" + tag.Name }
 								}
@@ -59,17 +61,17 @@ templ tagsPage(s shell, tags []store.Tag) {
 }
 
 templ tagSheet(form tagForm) {
-	@sheet(sheetProps{
+	@console.Sheet(console.SheetProps{
 		Title:     i18n.T(ctx, utils.IfElse(form.ID == "", "tags.new", "tags.edit")),
 		Action:    utils.IfElse(form.ID == "", "/tags", "/tags/"+form.ID),
 		DeleteURL: utils.IfElse(form.ID == "", "", "/tags/"+form.ID),
 		Confirm:   i18n.T(ctx, "tags.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {
-		@nameField(form.Name, form.Errors["name"])
+		@console.NameField(form.Name, form.Errors["name"])
 		<div class="grid grid-cols-2 gap-4">
-			@dateField("start_at", i18n.T(ctx, "field.start"), form.StartAt, form.Errors["start_at"])
-			@endField(form.EndAt, form.Errors["end_at"])
+			@console.DateField("start_at", i18n.T(ctx, "field.start"), form.StartAt, form.Errors["start_at"])
+			@console.EndField(form.EndAt, form.Errors["end_at"])
 		</div>
 	}
 }

@@ -1,6 +1,7 @@
 package web
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -12,7 +13,7 @@ import (
 // on screen, which the answer morphs, so only what changed moves and the new row flashes, then clears the line; a 422
 // swaps only the preview. headScript focuses it on "/", completes "@" and "#" on tab and blurs it on esc.
 templ launchPanel(page month) {
-	@panel(i18n.T(ctx, "launch.title"), "", launchKeys()) {
+	@console.Panel(i18n.T(ctx, "launch.title"), "", launchKeys()) {
 		<form
 			hx-post="/launch"
 			hx-target="#month"
@@ -22,10 +23,10 @@ templ launchPanel(page month) {
 		>
 			<input type="hidden" name="month" value={ page.yearMonth() }/>
 			<input type="hidden" name="category" value={ page.Filter.ID }/>
-			<label class={ utils.CN(prompt, "mb-0 text-base") }>
+			<label class={ utils.CN(console.Prompt, "mb-0 text-base") }>
 				<span class="text-primary" aria-hidden="true">&gt;</span>
 				<input
-					class={ promptInput }
+					class={ console.PromptInput }
 					id="launch"
 					name="line"
 					autofocus?={ page.Focus }
@@ -68,7 +69,7 @@ templ launchPreview(line string, l launchLine) {
 				<span class={ utils.CN("tabular-nums", kindClass(l.Kind)) }>{ shared.Money(ctx, signed(l.Kind, l.Amount)) }</span>
 			}
 			if l.Description == "" {
-				@description(nil)
+				@console.Description(nil)
 			} else {
 				<span>"{ l.Description }"</span>
 			}
