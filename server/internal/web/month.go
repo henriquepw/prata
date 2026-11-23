@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -120,7 +121,12 @@ type month struct {
 	Filter                             store.CategoryUsage
 	Flash, Error                       string
 	Focus                              bool
+	Limit                              int
+	More                               bool
 }
+
+// statementPage is how many entries the statement adds each time it opens, and shows at first.
+const statementPage = 20
 
 // day is one day of the statement, as YYYY-MM-DD: its pending occurrences, its transactions and their Total.
 type day struct {
@@ -227,10 +233,10 @@ func (m month) shows(categoryID *string) bool {
 // readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
 // occurrences pending in it plus, on the current month, the overdue ones of earlier months. The statement lists only
 // the entries of category when it is one of the live categories.
-func (h handler) readMonth(ctx context.Context, accountID string, now, shown time.Time, category string) (month, error) {
+func (h handler) readMonth(ctx context.Context, accountID string, now, shown time.Time, category string, limit int) (month, error) {
 	first, from, to := monthWindow(shown)
 	last := first.AddDate(0, 1, -1)
-	page := month{Month: first, Today: now.Format(time.DateOnly)}
+	page := month{Month: first, Today: now.Format(time.DateOnly), Limit: limit}
 	previous, err := h.db.BalanceBefore(ctx, accountID, from)
 	if err != nil {
 		return month{}, fmt.Errorf("reading the balance before the month: %w", err)
@@ -307,7 +313,45 @@ func (h handler) readMonth(ctx context.Context, accountID string, now, shown tim
 		}
 	}
 
+	page.trim()
+
 	return page, nil
+}
+
+// trim keeps the newest Limit entries (pending occurrences and transactions) of the statement, setting More when it cut
+// any; the "hoje" line goes too when it falls in the cut part.
+func (m *month) trim() {
+	left := m.Limit
+	for i, d := range m.Days {
+		n := len(d.Pending) + len(d.Transactions)
+		if n <= left {
+			left -= n
+			continue
+		}
+
+		m.More = true
+		m.Days = m.Days[:i+1]
+		if left == 0 {
+			m.Days = m.Days[:i]
+		} else if len(d.Pending) >= left {
+			m.Days[i].Pending, m.Days[i].Transactions = d.Pending[:left], nil
+		} else {
+			m.Days[i].Transactions = d.Transactions[:left-len(d.Pending)]
+		}
+
+		break
+	}
+
+	if m.TodayAt > len(m.Days) {
+		m.TodayAt = -1
+	}
+}
+
+// statementLimit is the ?limit= of the request: how many entries the statement shows, at least one page.
+func statementLimit(r *http.Request) int {
+	limit, _ := strconv.Atoi(r.FormValue("limit"))
+
+	return max(limit, statementPage)
 }
 
 // shownMonth is the month in ?month=YYYY-MM, or the current one, in now's location.
@@ -328,7 +372,7 @@ func (h handler) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"))
+	page, err := h.readMonth(r.Context(), sessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return
@@ -472,7 +516,7 @@ func (h handler) createInMonth(w http.ResponseWriter, r *http.Request, change st
 // its error, along with the ticker it changed.
 func (h handler) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
 	session, now := sessionFrom(r.Context()), time.Now().In(location(r))
-	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now), r.FormValue("category"))
+	page, err := h.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
 		internalError(w, "reading month", err)
 		return

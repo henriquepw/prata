@@ -287,6 +287,7 @@ var ptBR = map[string]string{
 	"month.statement":        "Extrato",
 	"month.empty":            "nenhuma transação neste mês",
 	"month.empty_category":   "nenhuma transação nesta categoria",
+	"month.more":             "[ver mais]",
 	"month.all":              "[todas]",
 	"month.today":            "hoje",
 	"month.overdue":          "[atrasada]",

@@ -257,6 +257,9 @@ templ monthContent(page month) {
 							}
 						}
 					}
+					if page.More {
+						<a href={ templ.SafeURL(monthURL(page.yearMonth(), page.Filter.ID) + "&limit=" + strconv.Itoa(page.Limit+statementPage)) } class={ textAction, "mt-2 block text-center" }>{ i18n.T(ctx, "month.more") }</a>
+					}
 				}
 			}
 			@panel(i18n.T(ctx, "nav.categories"), "min-w-0 grow basis-59", allCategories(page)) {

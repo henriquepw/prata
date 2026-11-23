@@ -287,6 +287,7 @@ var en = map[string]string{
 	"month.statement":        "Statement",
 	"month.empty":            "no transactions this month",
 	"month.empty_category":   "no transactions in this category",
+	"month.more":             "[show more]",
 	"month.all":              "[all]",
 	"month.today":            "today",
 	"month.overdue":          "[overdue]",
