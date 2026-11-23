@@ -57,9 +57,9 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
-	mux.HandleFunc("GET /login", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, loginPage(authForm{})) }))
+	mux.HandleFunc("GET /login", visitor(h.loginForm))
 	mux.HandleFunc("POST /login", visitor(h.login))
-	mux.HandleFunc("GET /signup", visitor(func(w http.ResponseWriter, r *http.Request) { render(w, r, http.StatusOK, signupPage(authForm{})) }))
+	mux.HandleFunc("GET /signup", visitor(h.signupForm))
 	mux.HandleFunc("POST /signup", visitor(h.signup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
@@ -119,11 +119,44 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	return http.NewCrossOriginProtection().Handler(mux)
 }
 
+func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
+	h.renderEntrance(w, r, http.StatusOK, authForm{}, loginPage)
+}
+
+func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
+	empty, err := h.db.IsEmpty(r.Context())
+	if err != nil {
+		internalError(w, "checking users", err)
+		return
+	}
+
+	if !empty && !h.isSignupAllowed {
+		redirect(w, r, "/login")
+		return
+	}
+
+	h.renderEntrance(w, r, http.StatusOK, authForm{}, signupPage)
+}
+
+// renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
+// and accepts signup.
+func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, form authForm, page func(authForm) templ.Component) {
+	empty, err := h.db.IsEmpty(r.Context())
+	if err != nil {
+		internalError(w, "checking users", err)
+		return
+	}
+
+	form.CanSignUp = empty || h.isSignupAllowed
+	form.HasUsers = !empty
+	render(w, r, status, page(form))
+}
+
 func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	userID, err := h.db.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if errors.Is(err, store.ErrInvalidCredentials) {
-		render(w, r, http.StatusUnprocessableEntity, loginPage(authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}))
+		h.renderEntrance(w, r, http.StatusUnprocessableEntity, authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, loginPage)
 		return
 	}
 
@@ -164,7 +197,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	render(w, r, http.StatusUnprocessableEntity, signupPage(form))
+	h.renderEntrance(w, r, http.StatusUnprocessableEntity, form, signupPage)
 }
 
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {
