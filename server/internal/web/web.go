@@ -17,6 +17,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
 	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
+	"github.com/henriquepw/prata/server/internal/web/pages/movementpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/recurrencepage"
 	"github.com/henriquepw/prata/server/internal/web/pages/tagpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/transactionpage"
@@ -42,6 +43,7 @@ type handler struct {
 	tags            tagpage.Page
 	transactions    transactionpage.Page
 	recurrences     recurrencepage.Page
+	movements       movementpage.Page
 	welcome         welcomepage.Page
 }
 
@@ -66,6 +68,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	h.tags = tagpage.New(db, h.shell)
 	h.transactions = transactionpage.New(db)
 	h.recurrences = recurrencepage.New(db, h.shell, h.home)
+	h.movements = movementpage.New(db, h.shell)
 	h.welcome = welcomepage.New(db)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
@@ -111,13 +114,13 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /tags", h.requireSession(h.tags.Save))
 	mux.Handle("POST /tags/{id}", h.requireSession(h.tags.Save))
 	mux.Handle("DELETE /tags/{id}", h.requireSession(h.tags.Delete))
-	mux.Handle("GET /movements", h.requireSession(h.movements))
-	mux.Handle("POST /movements/import", h.requireSession(h.importMovements))
-	mux.Handle("POST /movements/confirm", h.requireSession(h.confirmMovements))
-	mux.Handle("POST /movements/ignore", h.requireSession(h.ignoreMovements))
-	mux.Handle("POST /movements/{id}/confirm", h.requireSession(h.confirmMovement))
-	mux.Handle("POST /movements/{id}/occurrence", h.requireSession(h.confirmMovementAsOccurrence))
-	mux.Handle("POST /movements/{id}/ignore", h.requireSession(h.ignoreMovement))
+	mux.Handle("GET /movements", h.requireSession(h.movements.Movements))
+	mux.Handle("POST /movements/import", h.requireSession(h.movements.Import))
+	mux.Handle("POST /movements/confirm", h.requireSession(h.movements.ConfirmAll))
+	mux.Handle("POST /movements/ignore", h.requireSession(h.movements.IgnoreAll))
+	mux.Handle("POST /movements/{id}/confirm", h.requireSession(h.movements.Confirm))
+	mux.Handle("POST /movements/{id}/occurrence", h.requireSession(h.movements.ConfirmAsOccurrence))
+	mux.Handle("POST /movements/{id}/ignore", h.requireSession(h.movements.Ignore))
 	mux.Handle("GET /connections", h.requireSession(h.connections))
 	mux.Handle("POST /connections", h.requireSession(h.saveConnection))
 	mux.Handle("POST /connections/fetch", h.requireSession(h.fetchConnections))

@@ -1,4 +1,5 @@
-package web
+// Package movementpage is the Movimentos screen: the import of a file and the review of its pending movements.
+package movementpage
 
 import (
 	"cmp"
@@ -19,6 +20,17 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
+// Page is the movements' handlers.
+type Page struct {
+	db    *store.Store
+	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+}
+
+// New returns the movements page over db; shell reads the console chrome of an authenticated page, as web's shell does.
+func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)) Page {
+	return Page{db: db, shell: shell}
+}
+
 // maxImport is the size limit of an imported file.
 const maxImport = 1 << 20
 
@@ -38,13 +50,14 @@ type currencyView struct {
 	AccountCurrency string
 }
 
-func (h handler) movements(w http.ResponseWriter, r *http.Request) {
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+// Movements is the review screen.
+func (p Page) Movements(w http.ResponseWriter, r *http.Request) {
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
-// importMovements reads the uploaded file into pending movements of the session's account, all or none, and answers
+// Import reads the uploaded file into pending movements of the session's account, all or none, and answers
 // the screen with the summary, or 422 with the reason and nothing stored.
-func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
+func (p Page) Import(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxImport+1<<16)
 
 	var view movementsView
@@ -57,7 +70,7 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 		}
 
 		session := shared.SessionFrom(r.Context())
-		added, existing, err := h.db.ImportMovements(r.Context(), session.UserID, session.AccountID, statements)
+		added, existing, err := p.db.ImportMovements(r.Context(), session.UserID, session.AccountID, statements)
 		if errors.Is(err, store.ErrNotFound) {
 			http.NotFound(w, r)
 			return
@@ -76,7 +89,7 @@ func (h handler) importMovements(w http.ResponseWriter, r *http.Request) {
 		status = http.StatusUnprocessableEntity
 	}
 
-	h.renderMovements(w, r, status, view)
+	p.renderMovements(w, r, status, view)
 }
 
 // askCurrency answers, and reports it did, with the confirmation dialog swapped into #sheet when a statement
@@ -117,26 +130,26 @@ func readImportFile(r *http.Request) ([]importfile.Statement, error) {
 	return importfile.Parse(content)
 }
 
-func (h handler) renderMovements(w http.ResponseWriter, r *http.Request, status int, view movementsView) {
+func (p Page) renderMovements(w http.ResponseWriter, r *http.Request, status int, view movementsView) {
 	session := shared.SessionFrom(r.Context())
 
 	var err error
-	if view.Categories, err = h.db.Categories(r.Context(), session.AccountID); err != nil {
+	if view.Categories, err = p.db.Categories(r.Context(), session.AccountID); err != nil {
 		shared.InternalError(w, "listing categories", err)
 		return
 	}
 
-	if view.Movements, err = h.db.PendingMovements(r.Context(), session); err != nil {
+	if view.Movements, err = p.db.PendingMovements(r.Context(), session); err != nil {
 		shared.InternalError(w, "listing movements", err)
 		return
 	}
 
-	if view.Occurrences, err = h.pendingThisMonth(r); err != nil {
+	if view.Occurrences, err = p.pendingThisMonth(r); err != nil {
 		shared.InternalError(w, "listing pending occurrences", err)
 		return
 	}
 
-	s, ok := h.shell(w, r, "nav.movements")
+	s, ok := p.shell(w, r, "nav.movements")
 	if !ok {
 		return
 	}
@@ -154,16 +167,16 @@ func movementDate(ctx context.Context, stored string) string {
 	return date.Format(shared.DateLayout(ctx))
 }
 
-// confirmMovement makes the pending movement in the path a transaction with the description and category of the
+// Confirm makes the pending movement in the path a transaction with the description and category of the
 // form, then answers the screen. A movement already reviewed is not made twice.
-func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
-	categoryID, ok := h.formCategory(w, r)
+func (p Page) Confirm(w http.ResponseWriter, r *http.Request) {
+	categoryID, ok := p.formCategory(w, r)
 	if !ok {
 		return
 	}
 
 	description := strings.TrimSpace(r.PostFormValue("description"))
-	reason, err := h.db.ConfirmMovement(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id"), description, categoryID, shared.Location(r))
+	reason, err := p.db.ConfirmMovement(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id"), description, categoryID, shared.Location(r))
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		shared.InternalError(w, "confirming movement", err)
 		return
@@ -175,12 +188,12 @@ func (h handler) confirmMovement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
 // formCategory is the category_id of the form, empty or one of the account's live categories; any other answers 422.
-func (h handler) formCategory(w http.ResponseWriter, r *http.Request) (string, bool) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) formCategory(w http.ResponseWriter, r *http.Request) (string, bool) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return "", false
 	}
@@ -194,25 +207,25 @@ func (h handler) formCategory(w http.ResponseWriter, r *http.Request) (string, b
 	return categoryID, true
 }
 
-// ignoreMovement drops the pending movement in the path from review for good, then answers the screen.
-func (h handler) ignoreMovement(w http.ResponseWriter, r *http.Request) {
-	if err := h.db.IgnoreMovement(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
+// Ignore drops the pending movement in the path from review for good, then answers the screen.
+func (p Page) Ignore(w http.ResponseWriter, r *http.Request) {
+	if err := p.db.IgnoreMovement(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
 		shared.InternalError(w, "ignoring movement", err)
 		return
 	}
 
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
-// confirmMovements makes every pending movement among the selected ids a transaction with the bank's description
+// ConfirmAll makes every pending movement among the selected ids a transaction with the bank's description
 // and the batch category, as one commit, then answers the screen.
-func (h handler) confirmMovements(w http.ResponseWriter, r *http.Request) {
-	categoryID, ok := h.formCategory(w, r)
+func (p Page) ConfirmAll(w http.ResponseWriter, r *http.Request) {
+	categoryID, ok := p.formCategory(w, r)
 	if !ok {
 		return
 	}
 
-	reason, err := h.db.ConfirmMovements(r.Context(), shared.SessionFrom(r.Context()), r.PostForm["id"], categoryID, shared.Location(r))
+	reason, err := p.db.ConfirmMovements(r.Context(), shared.SessionFrom(r.Context()), r.PostForm["id"], categoryID, shared.Location(r))
 	if err != nil {
 		shared.InternalError(w, "confirming movements", err)
 		return
@@ -224,27 +237,27 @@ func (h handler) confirmMovements(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
-// ignoreMovements drops every pending movement among the selected ids from review for good, then answers the screen.
-func (h handler) ignoreMovements(w http.ResponseWriter, r *http.Request) {
+// IgnoreAll drops every pending movement among the selected ids from review for good, then answers the screen.
+func (p Page) IgnoreAll(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 
-	if err := h.db.IgnoreMovements(r.Context(), shared.SessionFrom(r.Context()), r.PostForm["id"]); err != nil {
+	if err := p.db.IgnoreMovements(r.Context(), shared.SessionFrom(r.Context()), r.PostForm["id"]); err != nil {
 		shared.InternalError(w, "ignoring movements", err)
 		return
 	}
 
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
 
 // pendingThisMonth are the account's pending occurrences up to the end of the current month, the ones the ticker counts.
-func (h handler) pendingThisMonth(r *http.Request) ([]shell.Occurrence, error) {
+func (p Page) pendingThisMonth(r *http.Request) ([]shell.Occurrence, error) {
 	now := time.Now().In(shared.Location(r))
 	month, _, _ := shared.MonthWindow(now)
 
-	return shell.Pending(r.Context(), h.db, shared.SessionFrom(r.Context()).AccountID, now, month.AddDate(0, 1, -1))
+	return shell.Pending(r.Context(), p.db, shared.SessionFrom(r.Context()).AccountID, now, month.AddDate(0, 1, -1))
 }
 
 // occurrencesFor are the pending occurrences of the movement's kind, the ones of an equal amount first and then the
@@ -269,17 +282,17 @@ func occurrencesFor(m store.Movement, pending []shell.Occurrence) []shell.Occurr
 	return matches
 }
 
-// confirmMovementAsOccurrence makes the pending movement in the path the confirmation of the occurrence of the form,
+// ConfirmAsOccurrence makes the pending movement in the path the confirmation of the occurrence of the form,
 // "<recurrence id>:<date>", then answers the screen. Only a pending occurrence of the movement's kind is accepted
 // (422 otherwise), and one confirmed meanwhile, by another movement or by hand, creates nothing (409).
-func (h handler) confirmMovementAsOccurrence(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) ConfirmAsOccurrence(w http.ResponseWriter, r *http.Request) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
 	recurrenceID, date, _ := strings.Cut(r.PostFormValue("occurrence"), ":")
-	pending, err := h.pendingThisMonth(r)
+	pending, err := p.pendingThisMonth(r)
 	if err != nil {
 		shared.InternalError(w, "listing pending occurrences", err)
 		return
@@ -296,7 +309,7 @@ func (h handler) confirmMovementAsOccurrence(w http.ResponseWriter, r *http.Requ
 		categoryID = ""
 	}
 
-	reason, err := h.db.ConfirmMovementAsOccurrence(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id"), recurrenceID, date, "", categoryID, shared.Location(r))
+	reason, err := p.db.ConfirmMovementAsOccurrence(r.Context(), shared.SessionFrom(r.Context()), r.PathValue("id"), recurrenceID, date, "", categoryID, shared.Location(r))
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		shared.InternalError(w, "confirming movement as occurrence", err)
 		return
@@ -307,5 +320,5 @@ func (h handler) confirmMovementAsOccurrence(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	h.renderMovements(w, r, http.StatusOK, movementsView{})
+	p.renderMovements(w, r, http.StatusOK, movementsView{})
 }
