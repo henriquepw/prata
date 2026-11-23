@@ -1,6 +1,7 @@
-package web
+package categorypage
 
 import (
+	"github.com/henriquepw/prata/server/internal/web/components/budget"
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"strings"
@@ -21,10 +22,10 @@ type categoryForm struct {
 	Errors      map[string]string
 }
 
-// categoriesPage is the Categorias screen, which is the division of the Receita mensal (budgetScreen).
-templ categoriesPage(s shell.Shell, form budgetForm) {
+// categoriesPage is the Categorias screen, which is the division of the Receita mensal (budget.Screen).
+templ categoriesPage(s shell.Shell, form budget.Form) {
 	@shell.Layout(s) {
-		@budgetScreen(form, s.Flash)
+		@budget.Screen(form, s.Flash)
 	}
 }
 

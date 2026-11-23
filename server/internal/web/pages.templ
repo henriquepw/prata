@@ -9,7 +9,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
-	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -29,14 +28,6 @@ type authForm struct {
 // choiceNames are the fields of the configurações iniciais, in the order the screen shows them.
 var choiceNames = []string{"language", "date_format", "number_format", "currency"}
 
-// figlet is PRATA in the ANSI Shadow font.
-const figlet = `██████╗ ██████╗  █████╗ ████████╗ █████╗
-██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗
-██████╔╝██████╔╝███████║   ██║   ███████║
-██╔═══╝ ██╔══██╗██╔══██║   ██║   ██╔══██║
-██║     ██║  ██║██║  ██║   ██║   ██║  ██║
-╚═╝     ╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝`
-
 // figlet404 is 404 in the ANSI Shadow font.
 const figlet404 = `██╗  ██╗ ██████╗ ██╗  ██╗
 ██║  ██║██╔═████╗██║  ██║
@@ -44,37 +35,6 @@ const figlet404 = `██╗  ██╗ ██████╗ ██╗  ██�
 ╚════██║████╔╝██║╚════██║
      ██║╚██████╔╝     ██║
      ╚═╝ ╚═════╝      ╚═╝`
-
-// authScript draws the ASCII particle field in a diagonal band, sized to the window on every frame and
-// still with reduced motion. It stops once a page change detaches it. The footer clock ticks from headScript.
-const authScript = `(() => {
-  const pre = document.querySelector('[data-particles]')
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches, CH = ' .·:-=+*#%@'
-  const probe = pre.appendChild(document.createElement('span'))
-  probe.textContent = 'MMMMMMMMMM'
-  const { width, height } = probe.getBoundingClientRect()
-  probe.remove()
-  let t = 0
-  const frame = () => {
-    if (!pre.isConnected) return
-    const cols = Math.ceil(pre.clientWidth / (width / 10)), rows = Math.ceil(pre.clientHeight / height)
-    let out = ''
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        const d = (y - (rows * .8 - x / cols * rows * .6)) / (rows * .17)
-        const n = (Math.sin(x * .09 + t) + Math.sin(y * .21 - t * .7) + Math.sin((x + y) * .05 + t * .4) + Math.sin(x * .023 - y * .05 + t * 1.3)) / 4
-        const v = Math.exp(-d * d) * (.55 + .45 * n) + (!still && Math.random() < .003 ? .35 : 0)
-        out += CH[Math.max(0, Math.min(CH.length - 1, Math.floor(v * v * CH.length * 1.3)))]
-      }
-      out += '\n'
-    }
-    pre.textContent = out
-    t += .08
-    if (!still) setTimeout(frame, 90)
-  }
-  frame()
-  if (still) addEventListener('resize', frame)
-})()`
 
 templ loginPage(form authForm) {
 	@authPage(i18n.T(ctx, "auth.sign_in"), "/login", form) {
@@ -100,7 +60,7 @@ templ signupPage(form authForm) {
 // signup and stored by it.
 templ setupPage(form settingsForm) {
 	@shell.Document(i18n.T(ctx, "setup.title")) {
-		@entrance(figlet, "Prata", i18n.T(ctx, "setup.title"), "max-w-100") {
+		@entrance(console.Figlet, "Prata", i18n.T(ctx, "setup.title"), "max-w-100") {
 			<form method="post" action="/setup" class="flex flex-col gap-4">
 				<p class="text-xs text-muted-foreground">{ i18n.T(ctx, "setup.note") }</p>
 				@languageField(form)
@@ -118,7 +78,7 @@ templ setupPage(form settingsForm) {
 // authPage is the entrance shared by login and signup: a form under the PRATA figlet.
 templ authPage(title, action string, form authForm) {
 	@shell.Document(title) {
-		@entrance(figlet, "Prata", title, "max-w-100") {
+		@entrance(console.Figlet, "Prata", title, "max-w-100") {
 			<form method="post" action={ templ.SafeURL(action) } class="flex flex-col gap-4">
 				for _, name := range choiceNames {
 					if form.Choices[name] != "" {
@@ -160,10 +120,10 @@ templ notFoundPage(path string) {
 	}
 }
 
-// entrance is the console entrance of the pages without a session: the entranceShell with a panel holding the title
+// entrance is the console entrance of the pages without a session: the console.EntranceShell with a panel holding the title
 // and the children.
 templ entrance(art, label, title, width string) {
-	@entranceShell(art, label, width) {
+	@console.EntranceShell(art, label, width) {
 		<section class={ console.PanelBox, "w-full bg-background" }>
 			<header class={ console.PanelHead }>
 				<h1 class={ console.PanelTitle }>{ title }</h1>
@@ -171,22 +131,4 @@ templ entrance(art, label, title, width string) {
 			{ children... }
 		</section>
 	}
-}
-
-// entranceShell is the frame of the pages without a session: the particle field behind the figlet art, the children
-// under it, and a footer pinned to the bottom with the version, the server status and a clock.
-templ entranceShell(art, label, width string) {
-	<main class="relative grid min-h-dvh place-items-center overflow-x-hidden pb-10">
-		<pre class="pointer-events-none absolute inset-0 overflow-hidden text-xs leading-tight whitespace-pre text-muted-foreground opacity-55 select-none" data-particles aria-hidden="true"></pre>
-		<div class={ "relative flex w-full flex-col items-center gap-5 p-4", width }>
-			<pre class="bg-background px-2 py-1 font-figlet text-2xs leading-none" role="img" aria-label={ label }>{ art }</pre>
-			{ children... }
-		</div>
-		<footer class="absolute inset-x-0 bottom-0 flex justify-between gap-4 border-t border-line-soft bg-background px-4 py-2.5 text-2xs tracking-wider uppercase">
-			<span>prata v1</span>
-			@console.Online()
-			<span data-clock={ shared.SessionFrom(ctx).DateFormat }></span>
-		</footer>
-		@templ.Raw("<script>" + authScript + "</script>")
-	</main>
 }

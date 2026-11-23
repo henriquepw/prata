@@ -1,11 +1,11 @@
-package web
+package budget
 
 import (
 	"fmt"
-	"github.com/henriquepw/prata/server/internal/web/components/console"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
+	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/shared"
@@ -24,12 +24,12 @@ const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + conso
 // budgetSlice is a slice of the 100% bar, its width set by the server and the script.
 const budgetSlice = "block bg-current transition-all duration-(--move)"
 
-// budgetScreen is the Categorias screen: the Receita mensal panel, with its prompt, the 100% bar and the line that
+// Screen is the Categorias screen: the Receita mensal panel, with its prompt, the 100% bar and the line that
 // says what is missing or exceeds, and the Categorias panel, with a row per category (its name opening its sheet, a
 // slider, the field in the typed mode and the value in the other) and "> salvar divisão". Without a Receita mensal it
 // asks for it first: no bar, slider nor limit field, and the stored division goes along hidden, in percent, until a
 // typed one above zero comes back in a 422. flash is the category a sheet just saved.
-templ budgetScreen(form budgetForm, flash string) {
+templ Screen(form Form, flash string) {
 	{{ hasIncome := form.Welcome || form.income > 0 || shared.SessionFrom(ctx).MonthlyIncome > 0 }}
 	{{ format, _ := shared.Find(shared.NumberFormats, shared.SessionFrom(ctx).NumberFormat) }}
 	@input.MoneyScript()
@@ -117,7 +117,7 @@ templ budgetScreen(form budgetForm, flash string) {
 
 // budgetRow is a category's row in the division: its name, the slider, the field in each mode (the inactive one
 // hidden and disabled, so only the typed mode is sent) and the value in the other mode.
-templ budgetRow(form budgetForm, id, name, color string, flash bool) {
+templ budgetRow(form Form, id, name, color string, flash bool) {
 	<div class="contents" data-row={ id }>
 		if form.Welcome {
 			<span class="px-0.5">
@@ -187,22 +187,22 @@ templ budgetRow(form budgetForm, id, name, color string, flash bool) {
 
 // budgetActions is the Categorias panel's "editar em [valor] [%]", only while there is a Receita mensal to divide,
 // and its "+ nova [n]".
-templ budgetActions(form budgetForm, hasIncome bool) {
+templ budgetActions(form Form, hasIncome bool) {
 	<span class="flex flex-wrap items-center justify-end gap-4">
 		if hasIncome {
 			<span class="flex items-center gap-2">
 				<span id="mode-label" class="text-2xs uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "budget.mode") }</span>
 				<span role="radiogroup" aria-labelledby="mode-label" class={ console.ChoiceGroup }>
-					@console.ChoiceOption("mode", budgetInValue, !form.percent()) {
+					@console.ChoiceOption("mode", InValue, !form.percent()) {
 						{ i18n.T(ctx, "budget.mode_value") }
 					}
-					@console.ChoiceOption("mode", budgetInPercent, form.percent()) {
+					@console.ChoiceOption("mode", InPercent, form.percent()) {
 						%
 					}
 				</span>
 			</span>
 		} else {
-			<input type="hidden" name="mode" value={ budgetInPercent }/>
+			<input type="hidden" name="mode" value={ InPercent }/>
 		}
 		if !form.Welcome {
 			@console.NewAction("/categories/new")
@@ -212,7 +212,7 @@ templ budgetActions(form budgetForm, hasIncome bool) {
 
 // budgetStatus is the line under the bar: what is missing to close the Receita mensal, what exceeds it, in
 // destructive, or "fechado em 100%".
-templ budgetStatus(form budgetForm) {
+templ budgetStatus(form Form) {
 	{{ cents, points := form.gap() }}
 	<span class="text-muted-foreground in-[.closed]:text-cat-green in-[.over]:text-destructive" role="status" data-status>
 		switch  {

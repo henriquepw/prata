@@ -1,7 +1,8 @@
-package web
+package welcomepage
 
 import (
 	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/web/components/budget"
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
@@ -11,9 +12,9 @@ import (
 // welcomePage is the tela inicial after a signup, without the app navigation: a panel explaining the Receita mensal,
 // the division and the limite diário, then the division form filled with the Divisão sugerida and the Modo do limite
 // diário with mode checked, as sibling panels, and "configurar depois" going home.
-templ welcomePage(form budgetForm, mode string) {
+templ welcomePage(form budget.Form, mode string) {
 	@shell.Document(i18n.T(ctx, "welcome.title")) {
-		@entranceShell(figlet, "Prata", "max-w-2xl") {
+		@console.EntranceShell(console.Figlet, "Prata", "max-w-2xl") {
 			<div class="flex w-full flex-col gap-5 [&_.panel]:bg-background">
 				<section class={ console.PanelBox }>
 					<header class={ console.PanelHead }>
@@ -25,7 +26,7 @@ templ welcomePage(form budgetForm, mode string) {
 						<p>{ i18n.T(ctx, "welcome.daily_limit") }</p>
 					</div>
 				</section>
-				@budgetScreen(form, "") {
+				@budget.Screen(form, "") {
 					@console.Panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
 						@console.ChoiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
 							for _, m := range shared.DailyLimitModes {

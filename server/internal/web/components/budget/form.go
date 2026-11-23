@@ -1,8 +1,8 @@
-package web
+// Package budget is the division form of the Receita mensal, shared by the Categorias and the welcome pages.
+package budget
 
 import (
 	"cmp"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -13,11 +13,11 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// budgetForm is the division on the Categorias screen: the Receita mensal as typed and in cents, the Mode the limits
+// Form is the division on the Categorias screen: the Receita mensal as typed and in cents, the Mode the limits
 // are typed in ("value" or "percent"), each category's limit as the text of its value and percent fields and in
 // cents and hundredths of a percent, and an error message per field name ("income", "limit_<id>", and "form" for a
 // division that does not close the Receita mensal).
-type budgetForm struct {
+type Form struct {
 	Income     string
 	income     int64
 	Mode       string
@@ -32,22 +32,23 @@ type budgetForm struct {
 	Welcome bool
 }
 
-// The budgetForm modes: limits typed in value or in percent of the Receita mensal.
+// The Form modes: limits typed in value or in percent of the Receita mensal.
 const (
-	budgetInValue   = "value"
-	budgetInPercent = "percent"
+	InValue   = "value"
+	InPercent = "percent"
 )
 
-func newBudgetForm(categories []store.Category, mode string) budgetForm {
-	return budgetForm{Mode: mode, Categories: categories, Values: map[string]string{}, Percents: map[string]string{},
+// NewForm is an empty form in mode over categories.
+func NewForm(categories []store.Category, mode string) Form {
+	return Form{Mode: mode, Categories: categories, Values: map[string]string{}, Percents: map[string]string{},
 		Cents: map[string]int64{}, Points: map[string]int64{}, Errors: map[string]string{}}
 }
 
-func (f budgetForm) percent() bool { return f.Mode == budgetInPercent }
+func (f Form) percent() bool { return f.Mode == InPercent }
 
 // gap is what is missing to close the Receita mensal, negative when it exceeds, in cents and in hundredths of a
 // percent; the typed mode decides, and the other follows from it.
-func (f budgetForm) gap() (cents, points int64) {
+func (f Form) gap() (cents, points int64) {
 	cents, points = f.income, store.HundredPercent
 	for _, category := range f.Categories {
 		cents -= f.Cents[category.ID]
@@ -66,14 +67,14 @@ func (f budgetForm) gap() (cents, points int64) {
 }
 
 // gapSign is the sign of the gap in the typed mode: 1 when something is missing, -1 when it exceeds.
-func (f budgetForm) gapSign() int64 {
+func (f Form) gapSign() int64 {
 	cents, points := f.gap()
 
 	return utils.IfElse(f.percent(), sign(points), sign(cents))
 }
 
 // closed tells whether the division adds up exactly to a Receita mensal, in the typed mode.
-func (f budgetForm) closed() bool {
+func (f Form) closed() bool {
 	cents, points := f.gap()
 
 	return f.income > 0 && (f.percent() && points == 0 || !f.percent() && cents == 0)
@@ -88,42 +89,12 @@ func sign(n int64) int64 { return int64(cmp.Compare(n, 0)) }
 
 func abs(n int64) int64 { return max(n, -n) }
 
-// saveBudget stores the Receita mensal and the division, or answers 422 with the screen's form, from what was typed,
-// and stores nothing when a value is not an amount, the Receita mensal is not above zero or the division does not
-// close it.
-func (h handler) saveBudget(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
-	if !ok {
-		return
-	}
-
-	form, budget := parseBudget(r, categories)
-	if len(form.Errors) == 0 {
-		err := h.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), budget)
-		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
-			shared.InternalError(w, "saving budget", err)
-			return
-		}
-
-		if err == nil {
-			w.Header().Set("HX-Refresh", "true")
-			w.WriteHeader(http.StatusNoContent)
-
-			return
-		}
-
-		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
-	}
-
-	shared.Render(w, r, http.StatusUnprocessableEntity, budgetScreen(form, ""))
-}
-
-// parseBudget reads the division form: the typed form, with an error message per invalid field, and the Budget it
+// Parse reads the division form: the typed form, with an error message per invalid field, and the Budget it
 // stores when there is none.
-func parseBudget(r *http.Request, categories []store.Category) (budgetForm, store.Budget) {
-	form := newBudgetForm(categories, r.PostFormValue("mode"))
+func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
+	form := NewForm(categories, r.PostFormValue("mode"))
 	if !form.percent() {
-		form.Mode = budgetInValue
+		form.Mode = InValue
 	}
 
 	form.Income = r.PostFormValue("income")
@@ -155,9 +126,9 @@ func parseBudget(r *http.Request, categories []store.Category) (budgetForm, stor
 	return form, budget
 }
 
-// storedBudgetForm fills the screen with the stored Receita mensal and division, typed in percent.
-func storedBudgetForm(r *http.Request, categories []store.Category) budgetForm {
-	form := newBudgetForm(categories, budgetInPercent)
+// Stored fills the screen with the stored Receita mensal and division, typed in percent.
+func Stored(r *http.Request, categories []store.Category) Form {
+	form := NewForm(categories, InPercent)
 	if form.income = shared.SessionFrom(r.Context()).MonthlyIncome; form.income > 0 {
 		form.Income = shared.Amount(r.Context(), form.income)
 	}

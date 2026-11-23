@@ -15,7 +15,9 @@ import (
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
+	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
 	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
+	"github.com/henriquepw/prata/server/internal/web/pages/welcomepage"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 	"github.com/oklog/ulid/v2"
 )
@@ -33,6 +35,8 @@ type handler struct {
 	isSignupAllowed bool
 	openFinance     OpenFinance
 	home            homepage.Page
+	categories      categorypage.Page
+	welcome         welcomepage.Page
 }
 
 // OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
@@ -52,6 +56,8 @@ func (o OpenFinance) Enabled() bool {
 func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
 	h.home = homepage.New(db, h.shell)
+	h.categories = categorypage.New(db, h.shell)
+	h.welcome = welcomepage.New(db)
 	mux := http.NewServeMux()
 	mux.Handle("GET /static/", http.FileServerFS(static))
 	mux.HandleFunc("GET /login", visitor(h.loginForm))
@@ -65,8 +71,8 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 		shared.Render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
 	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home.Home))
-	mux.Handle("GET /welcome", h.requireSession(h.welcome))
-	mux.Handle("POST /welcome", h.requireSession(h.saveWelcome))
+	mux.Handle("GET /welcome", h.requireSession(h.welcome.Welcome))
+	mux.Handle("POST /welcome", h.requireSession(h.welcome.Save))
 	mux.Handle("GET /launch", h.requireSession(h.home.LaunchPreview))
 	mux.Handle("POST /launch", h.requireSession(h.home.Launch))
 	mux.Handle("GET /transactions", h.requireSession(h.transactions))
@@ -75,15 +81,13 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.Handle("POST /transactions", h.requireSession(h.saveTransaction))
 	mux.Handle("POST /transactions/{id}", h.requireSession(h.saveTransaction))
 	mux.Handle("DELETE /transactions/{id}", h.requireSession(h.deleteTransaction))
-	mux.Handle("GET /categories", h.requireSession(h.categories))
-	mux.Handle("GET /categories/new", h.requireSession(func(w http.ResponseWriter, r *http.Request) {
-		shared.Render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
-	}))
-	mux.Handle("GET /categories/{id}", h.requireSession(h.editCategory))
-	mux.Handle("POST /categories", h.requireSession(h.saveCategory))
-	mux.Handle("POST /categories/{id}", h.requireSession(h.saveCategory))
-	mux.Handle("DELETE /categories/{id}", h.requireSession(h.deleteCategory))
-	mux.Handle("POST /budget", h.requireSession(h.saveBudget))
+	mux.Handle("GET /categories", h.requireSession(h.categories.Categories))
+	mux.Handle("GET /categories/new", h.requireSession(h.categories.NewSheet))
+	mux.Handle("GET /categories/{id}", h.requireSession(h.categories.Edit))
+	mux.Handle("POST /categories", h.requireSession(h.categories.Save))
+	mux.Handle("POST /categories/{id}", h.requireSession(h.categories.Save))
+	mux.Handle("DELETE /categories/{id}", h.requireSession(h.categories.Delete))
+	mux.Handle("POST /budget", h.requireSession(h.categories.SaveBudget))
 	mux.Handle("GET /recurrences", h.requireSession(h.recurrences))
 	mux.Handle("GET /recurrences/new", h.requireSession(h.newRecurrence))
 	mux.Handle("GET /recurrences/{id}", h.requireSession(h.editRecurrence))

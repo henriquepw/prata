@@ -1,4 +1,5 @@
-package web
+// Package welcomepage is the tela inicial after a signup: the division form and the Modo do limite diário.
+package welcomepage
 
 import (
 	"errors"
@@ -6,22 +7,29 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/budget"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
+
+// Page is the welcome handlers.
+type Page struct{ db *store.Store }
+
+// New returns the welcome page over db.
+func New(db *store.Store) Page { return Page{db: db} }
 
 // suggestedDivision is the Divisão sugerida: the hundredths of a percent of the Receita mensal that go to each
 // initial category. Nothing of it is stored as a percentage; the screen only fills the form with it.
 var suggestedDivision = map[string]int64{"Gastos fixos": 5000, "Investimento": 2000, "Meta": 1500, "Livre": 1500}
 
-// welcome is the tela inicial after a signup: the division form in percent, filled with the Divisão sugerida, and the
+// Welcome is the tela inicial after a signup: the division form in percent, filled with the Divisão sugerida, and the
 // Modo do limite diário, dynamic.
-func (h handler) welcome(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) Welcome(w http.ResponseWriter, r *http.Request) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	form := newBudgetForm(categories, budgetInPercent)
+	form := budget.NewForm(categories, budget.InPercent)
 	form.Welcome = true
 	for _, category := range categories {
 		form.Points[category.ID] = suggestedDivision[category.Name]
@@ -31,16 +39,16 @@ func (h handler) welcome(w http.ResponseWriter, r *http.Request) {
 	shared.Render(w, r, http.StatusOK, welcomePage(form, shared.DailyLimitDynamic))
 }
 
-// saveWelcome stores the Receita mensal, the division and the Modo do limite diário and goes home, or answers 422 with
+// Save stores the Receita mensal, the division and the Modo do limite diário and goes home, or answers 422 with
 // the form and stores nothing when the Receita mensal is not above zero, a value is invalid or the division does not
 // close it.
-func (h handler) saveWelcome(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, h.db)
+func (p Page) Save(w http.ResponseWriter, r *http.Request) {
+	categories, ok := shared.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	form, budget := parseBudget(r, categories)
+	form, division := budget.Parse(r, categories)
 	form.Welcome = true
 	mode := r.PostFormValue("daily_limit_mode")
 	if _, ok := shared.Find(shared.DailyLimitModes, mode); !ok {
@@ -48,8 +56,8 @@ func (h handler) saveWelcome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(form.Errors) == 0 {
-		budget.DailyLimitMode = mode
-		err := h.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), budget)
+		division.DailyLimitMode = mode
+		err := p.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), division)
 		if err == nil {
 			shared.Redirect(w, r, "/")
 			return
