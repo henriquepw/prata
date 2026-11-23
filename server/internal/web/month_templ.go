@@ -62,7 +62,7 @@ func percent(usage store.CategoryUsage) string {
 }
 
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
-const tightTable = "@max-[640px]:[&_:is(td,th)]:px-1"
+const tightTable = "@max-2xl:[&_:is(td,th)]:px-1"
 
 // shortDay writes a pure "YYYY-MM-DD" date without the year in the request's Formato de data, as "19/11".
 func shortDay(ctx context.Context, date string) string {

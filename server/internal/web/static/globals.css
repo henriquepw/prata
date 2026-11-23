@@ -16,6 +16,10 @@
 }
 
 @theme {
+  --color-*: initial;
+  --breakpoint-3xl: 90rem;
+  --text-2xs: 11px;
+  --text-2xs--line-height: 16px;
   --font-sans: "Geist Mono", ui-monospace, monospace;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 }
@@ -203,7 +207,7 @@
   /* Panel: the unit of every screen, inside main and never inside another panel. */
   .panel {
     --cc: var(--line-strong);
-    --cl: 12px;
+    --cl: --spacing(3);
     position: relative;
     border: 1px solid var(--line-faint);
     padding: 1lh 2ch;
@@ -236,7 +240,7 @@
   /* KPI box: a big number read at a glance, always loose in a strip on top of main. */
   .kpi {
     --cc: var(--line-strong);
-    --cl: 6px;
+    --cl: --spacing(1.5);
     position: relative;
     border: 1px solid var(--line-soft);
     padding: 1lh 1ch 0.8lh;
@@ -392,7 +396,7 @@
   .console-frame {
     position: relative;
     height: 100dvh;
-    width: min(100%, 1440px);
+    width: min(100%, --theme(--breakpoint-3xl));
     margin-inline: auto;
     background: var(--background);
   }
@@ -612,7 +616,7 @@
     color: var(--primary);
   }
 
-  /* Mobile balance line: the ticker's realized, projected and pending, under the status bar up to 640px. */
+  /* Mobile balance line: the ticker's realized, projected and pending, under the status bar below @2xl. */
   .mbal {
     display: none;
     justify-content: space-between;
@@ -636,7 +640,7 @@
     gap: 1ch;
   }
 
-  @container console (max-width: 640px) {
+  @variant @max-2xl/console {
     .rail,
     .ticker,
     .keybar {
@@ -661,7 +665,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.6ch;
-      min-height: 44px;
+      min-height: --spacing(11);
       padding-inline: 1.2ch;
     }
 
@@ -669,20 +673,20 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 44px;
-      min-height: 44px;
+      min-width: --spacing(11);
+      min-height: --spacing(11);
     }
 
     main [data-slot="button"] {
-      min-height: 44px;
+      min-height: --spacing(11);
     }
   }
 
   /* The sheet is a dialog outside the console container, so its 44px targets follow the viewport. */
-  @media (max-width: 640px) {
+  @variant max-md {
     .sheet :is([data-slot="button"], [data-slot="input"], [data-slot="native-select"], .lnk),
     .sheet .choice span {
-      min-height: 44px;
+      min-height: --spacing(11);
     }
 
     .sheet .choice span {
@@ -696,9 +700,9 @@
     }
   }
 
-  /* Above 1440px the console becomes a centered window: --line borders, a darker outside and a 5px marker where
+  /* From 3xl (1440px) the console becomes a centered window: --line borders, a darker outside and a 5px marker where
      the status bar line, carried across the viewport, crosses each border. */
-  @media (min-width: 1441px) {
+  @variant 3xl {
     body:has(.console-frame) {
       overflow: hidden;
       background: color-mix(in oklab, var(--background) 90%, black);
@@ -717,7 +721,7 @@
       width: 5px;
       height: 5px;
       background: var(--line-strong);
-      box-shadow: 1439px 0 0 var(--line-strong);
+      box-shadow: calc(--theme(--breakpoint-3xl) - 1px) 0 0 var(--line-strong);
     }
 
     .sbar::after {
@@ -1154,7 +1158,7 @@
 
   /* On a phone each category takes two lines: name, field and value, then the slider across, which dense packing
      leaves under them. */
-  @container console (max-width: 640px) {
+  @variant @max-2xl/console {
     .budget-rows {
       grid-template-columns: 1fr auto auto;
       grid-auto-flow: row dense;
@@ -1495,7 +1499,7 @@
     border-color: var(--destructive);
   }
 
-  @container console (max-width: 640px) {
+  @variant @max-2xl/console {
     .hide-m {
       display: none;
     }
@@ -1658,21 +1662,21 @@ dialog.sheet[open] {
 @keyframes enter-up {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    transform: translateY(--spacing(0.5));
   }
 }
 
 @keyframes vt-out {
   to {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(--spacing(-1));
   }
 }
 
 @keyframes vt-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(--spacing(1));
   }
 }
 
