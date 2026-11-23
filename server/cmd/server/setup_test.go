@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -99,4 +100,34 @@ func TestWebSetup_SecondSignupSkipsSetupWithTheDefaults(t *testing.T) {
 
 	w := &webClient{client: &client{t: t, handler: handler}, cookie: sessionCookie(t, signedUp)}
 	w.assertSelected("pt-BR", "DD/MM/YYYY", "1.234,56", "BRL")
+}
+
+func TestAPISignup_KeepsTheResponseAndTheDefaults(t *testing.T) {
+	handler := newHandler(openStore(t), config{})
+
+	response := postSignup(t, handler, newSignup())
+
+	var body map[string]string
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+
+	if response.Code != http.StatusCreated || len(body) != 1 || body["api_key"] == "" {
+		t.Fatalf("signup = %d %v, want %d with only api_key", response.Code, body, http.StatusCreated)
+	}
+
+	w := &webClient{client: &client{t: t, handler: handler}, cookie: login(t, handler)}
+	w.assertSelected("pt-BR", "DD/MM/YYYY", "1.234,56", "BRL")
+}
+
+func TestWebSetup_FirstSignupDoesNotOfferLogin(t *testing.T) {
+	handler := newHandler(openStore(t), config{})
+	location := postForm(handler, "/setup", englishChoices()).Header().Get("Location")
+
+	for _, language := range []string{"pt-BR", "en"} {
+		body := browse(handler, http.MethodGet, location, language, nil).Body.String()
+		if strings.Contains(body, "Já tem conta?") || strings.Contains(body, "Already have an account?") {
+			t.Errorf("first signup in %s offers login: %s", language, body)
+		}
+	}
 }

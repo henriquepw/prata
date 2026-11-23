@@ -47,21 +47,15 @@ func (h handler) saveWelcome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(form.Errors) == 0 {
-		session := sessionFrom(r.Context())
-		err := h.db.SaveBudget(r.Context(), session, budget)
-		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
-			internalError(w, "saving budget", err)
+		budget.DailyLimitMode = mode
+		err := h.db.SaveBudget(r.Context(), sessionFrom(r.Context()), budget)
+		if err == nil {
+			redirect(w, r, "/")
 			return
 		}
 
-		if err == nil {
-			if err := h.db.SaveDailyLimitMode(r.Context(), session.UserID, mode); err != nil {
-				internalError(w, "saving daily limit mode", err)
-				return
-			}
-
-			redirect(w, r, "/")
-
+		if !errors.Is(err, store.ErrDivisionNotClosed) {
+			internalError(w, "saving budget", err)
 			return
 		}
 

@@ -123,35 +123,37 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	return http.NewCrossOriginProtection().Handler(mux)
 }
 
+// loginForm shows the login, or sends the request to /setup while the Servidor has no user.
 func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
-	if h.redirectToSetup(w, r) {
+	empty, ok := h.isEmpty(w, r)
+	if !ok {
 		return
-	}
-
-	h.renderEntrance(w, r, http.StatusOK, authForm{}, loginPage)
-}
-
-// redirectToSetup sends the request to /setup and reports true when the Servidor has no user yet.
-func (h handler) redirectToSetup(w http.ResponseWriter, r *http.Request) bool {
-	empty, err := h.db.IsEmpty(r.Context())
-	if err != nil {
-		internalError(w, "checking users", err)
-		return true
 	}
 
 	if empty {
 		redirect(w, r, "/setup")
+		return
 	}
 
-	return empty
+	h.renderEntrance(w, r, http.StatusOK, empty, authForm{}, loginPage)
+}
+
+// isEmpty reports whether the Servidor has no user; ok is false once the failure was answered.
+func (h handler) isEmpty(w http.ResponseWriter, r *http.Request) (empty, ok bool) {
+	empty, err := h.db.IsEmpty(r.Context())
+	if err != nil {
+		internalError(w, "checking users", err)
+		return false, false
+	}
+
+	return empty, true
 }
 
 // signupForm shows the signup in the Idioma of the configurações iniciais it carries. With no user, it needs them and
 // otherwise goes back to /setup; with users, it goes to /login when signup is closed.
 func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
-	empty, err := h.db.IsEmpty(r.Context())
-	if err != nil {
-		internalError(w, "checking users", err)
+	empty, ok := h.isEmpty(w, r)
+	if !ok {
 		return
 	}
 
@@ -166,18 +168,12 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, authForm{Choices: choices.fields()}, signupPage)
+	h.renderEntrance(w, r, http.StatusOK, empty, authForm{Choices: choices.fields()}, signupPage)
 }
 
 // renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
-// and accepts signup.
-func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, form authForm, page func(authForm) templ.Component) {
-	empty, err := h.db.IsEmpty(r.Context())
-	if err != nil {
-		internalError(w, "checking users", err)
-		return
-	}
-
+// (empty) and accepts signup.
+func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, form authForm, page func(authForm) templ.Component) {
 	form.CanSignUp = empty || h.isSignupAllowed
 	form.HasUsers = !empty
 	render(w, r, status, page(form))
@@ -187,7 +183,12 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	userID, err := h.db.Authenticate(r.Context(), email, r.PostFormValue("password"))
 	if errors.Is(err, store.ErrInvalidCredentials) {
-		h.renderEntrance(w, r, http.StatusUnprocessableEntity, authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, loginPage)
+		empty, ok := h.isEmpty(w, r)
+		if !ok {
+			return
+		}
+
+		h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, loginPage)
 		return
 	}
 
@@ -229,7 +230,12 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	h.renderEntrance(w, r, http.StatusUnprocessableEntity, form, signupPage)
+	empty, ok := h.isEmpty(w, r)
+	if !ok {
+		return
+	}
+
+	h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, form, signupPage)
 }
 
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {
@@ -287,9 +293,17 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 
 // redirectToEntrance sends a visitor to /setup while the Servidor has no user, and to /login after.
 func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
-	if !h.redirectToSetup(w, r) {
-		redirect(w, r, "/login")
+	empty, ok := h.isEmpty(w, r)
+	if !ok {
+		return
 	}
+
+	if empty {
+		redirect(w, r, "/setup")
+		return
+	}
+
+	redirect(w, r, "/login")
 }
 
 // visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and

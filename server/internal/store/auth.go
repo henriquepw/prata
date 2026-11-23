@@ -88,12 +88,12 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	defer tx.Rollback()
 
-	hasUsers, err := hasUsers(ctx, tx)
+	used, err := hasUsers(ctx, tx)
 	if err != nil {
 		return "", err
 	}
 
-	if hasUsers && !isSignupAllowed {
+	if used && !isSignupAllowed {
 		return "", ErrSignupClosed
 	}
 
@@ -105,7 +105,17 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	webDeviceID := ulid.Make().String()
 	insertUser := `
 		INSERT INTO users (id, email, secret, language, date_format, number_format, created_at, updated_at)
-		VALUES (?, ?, ?, COALESCE(NULLIF(?, ''), 'pt-BR'), COALESCE(NULLIF(?, ''), 'DD/MM/YYYY'), COALESCE(NULLIF(?, ''), '1.234,56'), ?, ?)
+		VALUES (
+			?, ?, ?,
+			COALESCE(NULLIF(?, ''), 'pt-BR'),
+			COALESCE(NULLIF(?, ''), 'DD/MM/YYYY'),
+			COALESCE(NULLIF(?, ''), '1.234,56'),
+			?, ?
+		)
+	`
+	insertAccount := `
+		INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at)
+		VALUES (?, ?, COALESCE(NULLIF(?, ''), 'BRL'), ?, ?, ?)
 	`
 	statements := []statement{
 		{
@@ -113,7 +123,7 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 			[]any{signup.OwnerID, signup.Email, hashPassword(signup.Password), signup.Language, signup.DateFormat, signup.NumberFormat, now, now},
 		},
 		{
-			"INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at) VALUES (?, ?, COALESCE(NULLIF(?, ''), 'BRL'), ?, ?, ?)",
+			insertAccount,
 			[]any{signup.AccountID, signup.Email, signup.Currency, signup.OwnerID, now, now},
 		},
 		{

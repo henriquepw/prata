@@ -12,11 +12,12 @@ import (
 var ErrDivisionNotClosed = errors.New("division does not close the monthly income")
 
 // Budget is the Receita mensal and its division as the user typed them, keyed by category id: Limits are cents, or
-// hundredths of a percent when Percent.
+// hundredths of a percent when Percent. A DailyLimitMode, when set, is stored with them for the session's user.
 type Budget struct {
-	Income  int64
-	Percent bool
-	Limits  map[string]int64
+	Income         int64
+	Percent        bool
+	Limits         map[string]int64
+	DailyLimitMode string
 }
 
 // HundredPercent is 100% in hundredths of a percent, the unit of a division typed in percent.
@@ -80,6 +81,13 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 	query = "UPDATE accounts SET monthly_income = ?, updated_at = ? WHERE id = ?"
 	if _, err := tx.ExecContext(ctx, query, budget.Income, formatTime(time.Now()), session.AccountID); err != nil {
 		return fmt.Errorf("saving monthly income: %w", err)
+	}
+
+	if budget.DailyLimitMode != "" {
+		query = "UPDATE users SET daily_limit_mode = ?, updated_at = ? WHERE id = ?"
+		if _, err := tx.ExecContext(ctx, query, budget.DailyLimitMode, formatTime(time.Now()), session.UserID); err != nil {
+			return fmt.Errorf("saving daily limit mode: %w", err)
+		}
 	}
 
 	changes := make([]Change, 0, len(categories))

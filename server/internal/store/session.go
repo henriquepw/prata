@@ -201,9 +201,11 @@ func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, pref
 func (s *Store) SaveDailyLimitMode(ctx context.Context, userID, mode string) error {
 	query := "UPDATE users SET daily_limit_mode = ?, updated_at = ? WHERE id = ?"
 
-	_, err := s.ExecContext(ctx, query, mode, formatTime(time.Now()), userID)
+	if _, err := s.ExecContext(ctx, query, mode, formatTime(time.Now()), userID); err != nil {
+		return fmt.Errorf("saving daily limit mode: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // DeleteSession deletes only the session of this token.
