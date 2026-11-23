@@ -17,10 +17,15 @@ import (
 
 const meterSegments = 20
 
-// meter is the class of each of the 20 segments of a category's usage: the used share of the limit in the category's
-// color and, past the limit, the limit's share in color (19 at most) and the excess "over"; all empty without a limit.
+// meter is the color class of each of the 20 segments of a category's usage: the used share of the limit in the
+// category's color and, past the limit, the limit's share in color (19 at most) and the excess in destructive; all
+// empty, in --line-soft, without a limit.
 func meter(usage store.CategoryUsage) []string {
 	segments := make([]string, meterSegments)
+	for i := range segments {
+		segments[i] = "text-line-soft"
+	}
+
 	if usage.MonthlyLimit == 0 {
 		return segments
 	}
@@ -36,7 +41,7 @@ func meter(usage store.CategoryUsage) []string {
 		case int64(i) < on:
 			segments[i] = colorClass(usage.Color)
 		case isOver:
-			segments[i] = "over"
+			segments[i] = "text-destructive"
 		}
 	}
 
@@ -51,6 +56,19 @@ func percent(usage store.CategoryUsage) string {
 
 	return strconv.FormatInt((usage.Used*100+usage.MonthlyLimit/2)/usage.MonthlyLimit, 10) + "%"
 }
+
+// monthKeys is the month's hint in a panel slot, as "/ focar · enter lançar": muted caps with the keys in primary.
+const monthKeys = "text-2xs tracking-wider text-muted-foreground uppercase [&_kbd]:text-primary"
+
+// statementDay is a cell of a statement's day line: muted caps over a --line-soft border.
+const statementDay = "border-b border-line-soft px-2 pt-5 pb-1.5 text-2xs tracking-widest text-muted-foreground uppercase"
+
+// dailyDay is a cell of the daily limit grid: its tone's border when red, faded when gray, outlined in primary when
+// today and lifted with a --foreground border on hover or focus, which shows its tooltip.
+const dailyDay = "group relative flex min-w-0 flex-col gap-0.5 border border-line-faint px-2 pt-2.5 pb-4 text-2xs outline-none hover:z-5 hover:border-foreground focus-visible:z-5 focus-visible:border-foreground data-today:outline data-today:outline-solid data-today:outline-offset-1 data-today:outline-primary data-[tone=red]:border-destructive data-[tone=gray]:*:not-[[role=tooltip]]:opacity-55"
+
+// dailyTipBox is a day's tooltip: inverted above the cell, centered or held inside the grid on the edge columns.
+const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 flex w-67 -translate-x-1/2 flex-col gap-1 bg-foreground px-3 py-3 text-background opacity-0 transition-opacity duration-(--snap) ease-(--ease) group-hover:opacity-100 group-focus-visible:opacity-100 group-data-[edge=start]:left-0 group-data-[edge=start]:translate-x-0 group-data-[edge=end]:right-0 group-data-[edge=end]:left-auto group-data-[edge=end]:translate-x-0"
 
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
 const tightTable = "@max-2xl:[&_:is(td,th)]:px-1"
@@ -93,10 +111,10 @@ templ monthSwap(s shell, page month) {
 
 // monthBar is "‹ novembro de 2026 ›", with "[mês atual]" away from it and the [ ] keys on the right.
 templ monthBar(page month) {
-	<div class="month-bar">
-		<div class="flex items-center gap-[1ch]">
+	<div class="mb-5 flex items-center justify-between gap-4">
+		<div class="flex items-center gap-2">
 			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, -1), page.Filter.ID)) } class="lnk" data-key="[" aria-label={ i18n.T(ctx, "month.previous") }>‹</a>
-			<span class="month-label">{ i18n.T(ctx, "month.year", i18n.T(ctx, "month."+page.Month.Month().String()), page.Month.Year()) }</span>
+			<span class="min-w-38 text-center tracking-widest uppercase">{ i18n.T(ctx, "month.year", i18n.T(ctx, "month."+page.Month.Month().String()), page.Month.Year()) }</span>
 			<a href={ templ.SafeURL(monthURL(monthOffset(page.Month, 1), page.Filter.ID)) } class="lnk" data-key="]" aria-label={ i18n.T(ctx, "month.next") }>›</a>
 			if !page.isCurrent() {
 				<a href={ templ.SafeURL(monthURL(page.Today[:len(monthLayout)], page.Filter.ID)) } class="lnk">{ i18n.T(ctx, "month.current") }</a>
@@ -110,7 +128,7 @@ var weekdays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
 // dailyBudget is the slot of the daily limit panel: the Modo do limite diário and the budget it spreads over the month.
 templ dailyBudget(d daily) {
 	if d.Defined {
-		<span class="month-keys">{ i18n.T(ctx, "month.daily_budget", money(ctx, d.Budget)) }</span>
+		<span class={ monthKeys }>{ i18n.T(ctx, "month.daily_budget", money(ctx, d.Budget)) }</span>
 	}
 }
 
@@ -118,9 +136,9 @@ templ dailyBudget(d daily) {
 // meter of the share, today marked, and a tooltip on hover or focus with what was left or went over and how the limit
 // is made; the legend of the tones below.
 templ dailyCalendar(page month) {
-	<ol class="daily">
+	<ol class="grid grid-cols-7 gap-1">
 		for _, weekday := range weekdays {
-			<li class="daily-weekday" aria-hidden="true">{ i18n.T(ctx, "weekday."+weekday) }</li>
+			<li class="pb-1.5 text-2xs tracking-widest text-muted-foreground uppercase" aria-hidden="true">{ i18n.T(ctx, "weekday."+weekday) }</li>
 		}
 		for range page.Daily.Lead {
 			<li aria-hidden="true"></li>
@@ -128,7 +146,7 @@ templ dailyCalendar(page month) {
 		for _, cell := range page.Daily.Cells {
 			{{ column := (page.Daily.Lead + cell.Day - 1) % 7 }}
 			<li
-				class="daily-day"
+				class={ dailyDay }
 				data-date={ cell.Date }
 				data-tone={ cell.Tone }
 				data-today?={ cell.Date == page.Today }
@@ -136,15 +154,15 @@ templ dailyCalendar(page month) {
 				tabindex="0"
 				aria-describedby={ "daily-tip-" + cell.Date }
 			>
-				<b>{ strconv.Itoa(cell.Day) }</b>
-				<span class="daily-spent tabular-nums">{ money(ctx, cell.Spent) }</span>
-				<span class="daily-limit tabular-nums text-muted-foreground">{ money(ctx, cell.Limit) }</span>
-				<i class="daily-meter" style={ "width:" + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
+				<b class="font-medium text-muted-foreground group-data-today:text-primary group-data-today:before:content-['▌']">{ strconv.Itoa(cell.Day) }</b>
+				<span class="truncate text-xs font-semibold tabular-nums group-data-[tone=gray]:font-normal">{ money(ctx, cell.Spent) }</span>
+				<span class="truncate tabular-nums before:content-['/_'] text-muted-foreground">{ money(ctx, cell.Limit) }</span>
+				<i class="absolute bottom-0 left-0 h-0.75 w-(--w) bg-(--tone)" style={ "--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
 				@dailyTip(page, cell)
 			</li>
 		}
 	</ol>
-	<p class="daily-legend">
+	<p class="mt-5 flex flex-wrap gap-x-4 text-2xs text-muted-foreground *:before:text-(--tone) *:before:content-['■_']">
 		for _, tone := range []string{"green", "yellow", "red", "gray"} {
 			<span data-tone={ tone }>{ i18n.T(ctx, "month.daily_"+tone) }</span>
 		}
@@ -154,7 +172,7 @@ templ dailyCalendar(page month) {
 // dailyTip is the tooltip of a day: its date, spent and limit, what was left or went over with the share, nothing of
 // that for a day still to come, and how the Modo do limite diário makes the limit.
 templ dailyTip(page month, cell dailyCell) {
-	<span id={ "daily-tip-" + cell.Date } role="tooltip" class="daily-tip">
+	<span id={ "daily-tip-" + cell.Date } role="tooltip" class={ dailyTipBox }>
 		<strong>{ i18n.T(ctx, "weekday."+dayOf(cell.Date).Weekday().String()) } { shortDay(ctx, cell.Date) }</strong>
 		<span>{ i18n.T(ctx, "month.daily_spent", money(ctx, cell.Spent)) }</span>
 		<span>{ i18n.T(ctx, "month.daily_limit", money(ctx, cell.Limit)) }</span>
@@ -171,7 +189,7 @@ templ dailyTip(page month, cell dailyCell) {
 
 // monthContent is the six boxes of the month's account and the grid of the statement and the categories.
 templ monthContent(page month) {
-	<div id="month" class="month">
+	<div id="month" class="flex flex-col gap-5">
 		if page.Error != "" {
 			<p role="alert" class="text-destructive">! { page.Error }</p>
 		}
@@ -191,8 +209,8 @@ templ monthContent(page month) {
 				@dailyCalendar(page)
 			}
 		}
-		<div class="split">
-			@panel(i18n.T(ctx, "month.statement"), "", statementActions(page)) {
+		<div class="flex flex-wrap gap-x-4 gap-y-5">
+			@panel(i18n.T(ctx, "month.statement"), "min-w-0 grow-3 basis-101", statementActions(page)) {
 				if len(page.Days) == 0 && len(page.Overdue) == 0 {
 					@empty(i18n.T(ctx, utils.IfElse(page.Filter.ID == "", "month.empty", "month.empty_category")))
 				} else {
@@ -202,9 +220,9 @@ templ monthContent(page month) {
 								if i == page.TodayAt {
 									@todayLine(page)
 								}
-								<tr class="statement-day">
-									<td colspan="3">{ i18n.T(ctx, "weekday."+dayOf(d.Date).Weekday().String()) } { shortDay(ctx, d.Date) }</td>
-									<td class="text-right tabular-nums">
+								<tr>
+									<td colspan="3" class={ statementDay }>{ i18n.T(ctx, "weekday."+dayOf(d.Date).Weekday().String()) } { shortDay(ctx, d.Date) }</td>
+									<td class={ statementDay, "text-right tabular-nums" }>
 										if len(d.Transactions) > 0 {
 											{ money(ctx, d.Total) }
 										}
@@ -241,11 +259,11 @@ templ monthContent(page month) {
 					}
 				}
 			}
-			@panel(i18n.T(ctx, "nav.categories"), "", allCategories(page)) {
+			@panel(i18n.T(ctx, "nav.categories"), "min-w-0 grow basis-59", allCategories(page)) {
 				if len(page.Usages) == 0 {
 					@empty(i18n.T(ctx, "categories.empty"))
 				} else {
-					<div class="usages">
+					<div class="flex flex-col">
 						for _, usage := range page.Usages {
 							{{ isOver := usage.MonthlyLimit > 0 && usage.Used > usage.MonthlyLimit }}
 							<a
@@ -257,9 +275,9 @@ templ monthContent(page month) {
 							>
 								@categoryName(usage.Name, usage.Color)
 								<b class={ "text-xs tabular-nums", templ.KV("text-destructive", isOver), templ.KV("text-muted-foreground", !isOver) }>{ percent(usage) }</b>
-								<span class="meter" aria-hidden="true">
+								<span class="col-span-full flex h-2 gap-0.5" aria-hidden="true">
 									for _, segment := range meter(usage) {
-										<i class={ segment }></i>
+										<i class={ "flex-1 bg-current", segment }></i>
 									}
 								</span>
 							</a>
@@ -273,9 +291,9 @@ templ monthContent(page month) {
 
 // statementActions is the statement's filter, "■ mercado ✕", which clears it, and "+ nova".
 templ statementActions(page month) {
-	<span class="flex items-center gap-[1ch]">
+	<span class="flex items-center gap-2">
 		if page.Filter.ID != "" {
-			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk flex items-center gap-[1ch]">
+			<a href={ templ.SafeURL(monthURL(page.yearMonth(), "")) } class="lnk flex items-center gap-2">
 				@categoryName(page.Filter.Name, page.Filter.Color)
 				✕
 			</a>
@@ -300,8 +318,8 @@ func dayOf(date string) time.Time {
 
 // todayLine is "── hoje · 19/11 ──", with the overdue occurrences of earlier months under it.
 templ todayLine(page month) {
-	<tr class="statement-today">
-		<td colspan="4">── { i18n.T(ctx, "month.today") } · { shortDay(ctx, page.Today) } ──</td>
+	<tr>
+		<td colspan="4" class="bg-primary/8 px-2 py-2 text-center text-2xs tracking-widest text-primary uppercase">── { i18n.T(ctx, "month.today") } · { shortDay(ctx, page.Today) } ──</td>
 	</tr>
 	for _, p := range page.Overdue {
 		@pendingRow(page, p, true)
@@ -312,7 +330,7 @@ templ todayLine(page month) {
 // [atrasada] chip and "confirmar", which swaps the month in place. The row itself opens "confirmar ocorrência".
 templ pendingRow(page month, p occurrence, withDate bool) {
 	{{ url := "/recurrences/" + p.Recurrence.ID + "/occurrences/" + p.Date }}
-	@table.Row(table.RowProps{Class: "statement-pending", Attributes: sheetRow(url, false).Attributes}) {
+	@table.Row(table.RowProps{Class: "*:text-muted-foreground", Attributes: sheetRow(url, false).Attributes}) {
 		@table.Cell(table.CellProps{Class: "w-full whitespace-normal"}) {
 			if withDate {
 				<span class="tabular-nums">{ shortDay(ctx, p.Date) }</span>

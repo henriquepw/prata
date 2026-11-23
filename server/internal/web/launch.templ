@@ -21,7 +21,7 @@ templ launchPanel(page month) {
 		>
 			<input type="hidden" name="month" value={ page.yearMonth() }/>
 			<input type="hidden" name="category" value={ page.Filter.ID }/>
-			<label class="prompt launch-prompt">
+			<label class="prompt mb-0 text-base">
 				<span class="text-primary" aria-hidden="true">&gt;</span>
 				<input
 					id="launch"
@@ -40,7 +40,7 @@ templ launchPanel(page month) {
 					hx-swap="innerHTML"
 				/>
 			</label>
-			<div id="launch-preview" class="launch-preview" aria-live="polite">
+			<div id="launch-preview" class="mt-3 min-h-5 text-xs" aria-live="polite">
 				@launchPreview("", launchLine{})
 			</div>
 		</form>
@@ -49,7 +49,7 @@ templ launchPanel(page month) {
 
 // launchKeys is the prompt panel's "/ focar · enter lançar".
 templ launchKeys() {
-	<span class="month-keys"><kbd>/</kbd> { i18n.T(ctx, "launch.focus") } · <kbd>enter</kbd> { i18n.T(ctx, "launch.submit") }</span>
+	<span class={ monthKeys }><kbd>/</kbd> { i18n.T(ctx, "launch.focus") } · <kbd>enter</kbd> { i18n.T(ctx, "launch.submit") }</span>
 }
 
 // launchPreview is what line saves, as "[despesa] −R$ 45,90 "padaria" ■ Mercado #casa 19/11/2026", with each problem
@@ -58,8 +58,8 @@ templ launchPreview(line string, l launchLine) {
 	if strings.TrimSpace(line) == "" {
 		<p class="text-muted-foreground">{ i18n.T(ctx, "launch.hint") }</p>
 	} else {
-		<p class="launch-parsed">
-			<span class="launch-kind">[{ strings.ToLower(i18n.T(ctx, "kind."+l.Kind)) }]</span>
+		<p class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			<span class="bg-foreground px-1 text-2xs tracking-wider text-background uppercase">[{ strings.ToLower(i18n.T(ctx, "kind."+l.Kind)) }]</span>
 			if l.Amount == 0 {
 				<span class="text-destructive">! { i18n.T(ctx, "launch.no_amount") }</span>
 			} else {
@@ -83,10 +83,10 @@ templ launchPreview(line string, l launchLine) {
 		</p>
 	}
 	if len(l.Suggestions) > 0 {
-		<p class="launch-suggestions">
+		<p class="launch-suggestions mt-2 flex flex-wrap gap-2 text-muted-foreground [&_kbd]:text-primary">
 			<kbd>tab</kbd>
 			for _, suggestion := range l.Suggestions {
-				<b>{ suggestion }</b>
+				<b class="bg-line-soft px-1 font-normal text-foreground">{ suggestion }</b>
 			}
 		</p>
 	}
