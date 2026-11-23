@@ -14,6 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
+	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
 	"github.com/henriquepw/prata/server/internal/web/pages/connectionpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/devicepage"
@@ -80,7 +81,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.HandleFunc("POST /setup", visitor(h.setup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
-		shared.Render(w, r, http.StatusNotFound, notFoundPage(r.URL.Path))
+		shared.Render(w, r, http.StatusNotFound, authpage.NotFoundPage(r.URL.Path))
 	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home.Home))
 	mux.Handle("GET /welcome", h.requireSession(h.welcome.Welcome))
@@ -146,7 +147,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, false, authForm{}, loginPage)
+	h.renderEntrance(w, r, http.StatusOK, false, authpage.Form{}, authpage.LoginPage)
 }
 
 // isEmpty reports whether the Servidor has no user; ok is false once the failure was answered.
@@ -179,12 +180,12 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, empty, authForm{Choices: choices.Fields()}, signupPage)
+	h.renderEntrance(w, r, http.StatusOK, empty, authpage.Form{Choices: choices.Fields()}, authpage.SignupPage)
 }
 
 // renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
 // (empty) and accepts signup.
-func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, form authForm, page func(authForm) templ.Component) {
+func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, form authpage.Form, page func(authpage.Form) templ.Component) {
 	form.CanSignUp = empty || h.isSignupAllowed
 	form.HasUsers = !empty
 	shared.Render(w, r, status, page(form))
@@ -199,7 +200,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, authForm{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, loginPage)
+		h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, authpage.Form{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, authpage.LoginPage)
 		return
 	}
 
@@ -215,7 +216,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	choices, r := settingpage.Chosen(r)
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
-	form := authForm{Email: email, Choices: choices.Fields()}
+	form := authpage.Form{Email: email, Choices: choices.Fields()}
 	if !strings.Contains(email, "@") {
 		form.EmailError = i18n.T(r.Context(), "auth.error.email")
 	}
@@ -246,7 +247,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, form, signupPage)
+	h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, form, authpage.SignupPage)
 }
 
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {

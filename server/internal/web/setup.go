@@ -6,6 +6,7 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
@@ -22,7 +23,7 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 		Currency:    shared.VisitorSession.Currency,
 		Errors:      map[string]string{},
 	}
-	shared.Render(w, r, http.StatusOK, setupPage(form))
+	shared.Render(w, r, http.StatusOK, authpage.SetupPage(form))
 }
 
 // setup validates the configurações iniciais like the Configurações and, writing nothing, carries them to the
@@ -35,7 +36,7 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 	form := settingpage.FromRequest(r)
 	form.Validate(r.Context())
 	if len(form.Errors) > 0 {
-		shared.Render(w, r, http.StatusUnprocessableEntity, setupPage(form))
+		shared.Render(w, r, http.StatusUnprocessableEntity, authpage.SetupPage(form))
 		return
 	}
 
