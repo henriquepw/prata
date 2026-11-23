@@ -175,7 +175,7 @@ templ monthContent(page month) {
 		if page.Error != "" {
 			<p role="alert" class="text-destructive">! { page.Error }</p>
 		}
-		<div class="kpis">
+		<div class="flex flex-wrap gap-3 *:nth-4:border-line *:nth-6:border-line *:nth-6:text-primary">
 			@kpi(i18n.T(ctx, "month.previous_balance"), page.Previous)
 			@kpi(i18n.T(ctx, "month.income"), page.Income)
 			@kpi(i18n.T(ctx, "month.outcome"), -page.Outcome)

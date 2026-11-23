@@ -13,6 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // decodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
@@ -34,12 +35,21 @@ const decodeScript = `(() => {
   addEventListener('htmx:after:swap', decode)
 })()`
 
+// panelBox is a panel's frame: .panel draws the corners and the entry, the rest is its border and padding.
+const panelBox = "panel border border-line-faint px-4 py-5"
+
+// panelHead is a panel's header row: the title on the left and the action slot on the right.
+const panelHead = "mb-5 flex items-center justify-between gap-4"
+
+// panelTitle is a panel's title: caps with a 3px primary bar on its left.
+const panelTitle = "border-l-3 border-primary pl-2 text-xs leading-tight tracking-widest uppercase"
+
 // panel is the unit of every screen: the decoded title, the action on the right of it when not nil, and the content
-// as children. class adds to .panel.
+// as children. class adds to the panel.
 templ panel(title, class string, action templ.Component) {
-	<section class={ "panel", class }>
-		<header class="panel-head">
-			<h2 class="panel-title">
+	<section class={ panelBox, class }>
+		<header class={ panelHead }>
+			<h2 class={ panelTitle }>
 				@decoded(title)
 			</h2>
 			if action != nil {
@@ -52,11 +62,11 @@ templ panel(title, class string, action templ.Component) {
 
 // kpi is a loose KPI box: the decoded amount over its label.
 templ kpi(label string, cents int64) {
-	<div class="kpi">
-		<div class="kpi-value text-nowrap">
+	<div class="kpi min-w-38 flex-1 border border-line-soft px-2 pt-5 pb-4 text-center">
+		<div class="text-2xl font-semibold text-nowrap tabular-nums">
 			@decoded(money(ctx, cents))
 		</div>
-		<div class="kpi-label">{ label }</div>
+		<div class="mt-1.5 text-2xs tracking-widest text-muted-foreground uppercase">{ label }</div>
 	</div>
 }
 
@@ -113,9 +123,9 @@ type sheetProps struct {
 // submit reads "⠋ salvando", and "excluir" swaps the footer for its confirmInline. Every response, a 422 included,
 // swaps into #sheet.
 templ sheet(p sheetProps) {
-	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel">
-		<header class="panel-head">
-			<h2 class="panel-title">{ p.Title }</h2>
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class="panel sheet-panel px-4 py-5">
+		<header class={ utils.CN(panelHead, "mb-0") }>
+			<h2 class={ panelTitle }>{ p.Title }</h2>
 			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
 		{ children... }

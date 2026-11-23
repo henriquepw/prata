@@ -285,9 +285,9 @@ templ balanceLine(b balance, oob bool) {
 templ launcher(items []navItem) {
 	{{ n := len(items) }}
 	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher">
-		<div class="panel">
-			<div class="panel-head">
-				<h2 class="panel-title">{ i18n.T(ctx, "launcher.title") }</h2>
+		<div class={ panelBox }>
+			<div class={ panelHead }>
+				<h2 class={ panelTitle }>{ i18n.T(ctx, "launcher.title") }</h2>
 				<kbd class="text-muted-foreground">esc</kbd>
 			</div>
 			<label class="prompt">

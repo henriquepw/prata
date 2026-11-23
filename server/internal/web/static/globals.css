@@ -206,62 +206,28 @@
 }
 
 @layer components {
-  /* Panel: the unit of every screen, inside main and never inside another panel. */
-  .panel {
+  /* Panel and KPI box: their corners and entry; the rest of their style is in the markup (console.templ). The entry
+     fades in 2px, cascading 30ms by --i or, without it, by their position among siblings. */
+  .panel,
+  .kpi {
     --cc: var(--line-strong);
-    --cl: --spacing(3);
     position: relative;
-    border: 1px solid var(--line-faint);
-    padding: 1lh 2ch;
     transition: --cc var(--snap) var(--ease);
+    animation: enter-up var(--move) var(--ease) both;
+    animation-delay: calc(var(--i, sibling-index() - 1) * 30ms);
+  }
+
+  .panel {
+    --cl: --spacing(3);
+  }
+
+  .kpi {
+    --cl: --spacing(1.5);
   }
 
   .panel:hover,
   .panel:focus-within {
     --cc: var(--primary);
-  }
-
-  /* Panel header: the title on the left and the action slot (second child) on the right. */
-  .panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2ch;
-    margin-bottom: 1lh;
-  }
-
-  .panel-title {
-    border-left: 3px solid var(--primary);
-    padding-left: 1ch;
-    font-size: 13px;
-    line-height: 1.15;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  /* KPI box: a big number read at a glance, always loose in a strip on top of main. */
-  .kpi {
-    --cc: var(--line-strong);
-    --cl: --spacing(1.5);
-    position: relative;
-    border: 1px solid var(--line-soft);
-    padding: 1lh 1ch 0.8lh;
-    text-align: center;
-  }
-
-  .kpi-value {
-    font-size: 22px;
-    font-weight: 600;
-    text-wrap: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .kpi-label {
-    margin-top: 0.3lh;
-    font-size: 11px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
   }
 
   /* Corners: four L shapes of --cl drawn as backgrounds in --cc, so they transition through @property. */
@@ -283,19 +249,13 @@
     background-repeat: no-repeat;
   }
 
-  /* Entry: panels and boxes fade in 2px, cascading 30ms by --i or, without it, by their position among siblings. */
-  .panel,
-  .kpi {
-    animation: enter-up var(--move) var(--ease) both;
-    animation-delay: calc(var(--i, sibling-index() - 1) * 30ms);
-  }
-
-  /* Text action ([tema], [sair]): muted caps that invert on hover. */
+  /* Text action ([tema], [sair]): muted caps that invert on hover. It stays a class because the web tests find the
+     theme action by class="lnk", and the mobile touch targets below widen it. */
   .lnk {
     color: var(--muted-foreground);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0 0.3ch;
+    letter-spacing: --theme(--tracking-wider);
+    padding-inline: --spacing(0.5);
     cursor: pointer;
     white-space: nowrap;
     transition:
@@ -835,26 +795,6 @@
     font-weight: 400;
     color: var(--foreground);
     background: var(--line-soft);
-  }
-
-  /* The boxes read as a sum: the two "=" ones get a --line border and the projected one is primary. */
-  .kpis {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5ch;
-  }
-
-  .kpis > * {
-    flex: 1 1 18ch;
-  }
-
-  .kpis > :nth-child(4),
-  .kpis > :nth-child(6) {
-    border-color: var(--line);
-  }
-
-  .kpis > :nth-child(6) .kpi-value {
-    color: var(--primary);
   }
 
   /* Statement: a day line with its total, the "hoje" line and the pending rows muted. */
@@ -1418,10 +1358,6 @@
   /* Corners inside the dialog, which would scroll on any overflow. */
   .sheet-panel::after {
     inset: 0;
-  }
-
-  .sheet-panel > .panel-head {
-    margin-bottom: 0;
   }
 
   /* An income has no category: [receita] checked hides the sheet's category field. */

@@ -9,6 +9,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
+	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
 // movementsPage is the review screen: the "Importar arquivo" form over the list of pending movements.
@@ -48,9 +49,9 @@ const showFileName = "this.nextElementSibling.textContent = this.files[0]?.name 
 // currencyDialog asks, in #sheet, to import a file whose Moeda is not the Conta's: confirming resubmits the import
 // form, whose file input still holds the file, with confirm_currency set.
 templ currencyDialog(v currencyView) {
-	<div id="currency-dialog" class="panel sheet-panel">
-		<header class="panel-head">
-			<h2 class="panel-title">{ i18n.T(ctx, "movements.currency.title") }</h2>
+	<div id="currency-dialog" class="panel sheet-panel px-4 py-5">
+		<header class={ utils.CN(panelHead, "mb-0") }>
+			<h2 class={ panelTitle }>{ i18n.T(ctx, "movements.currency.title") }</h2>
 			<button type="button" class="lnk" aria-label={ i18n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(closeSheet) }>[esc ✕]</button>
 		</header>
 		<p class="text-xs">{ i18n.T(ctx, "movements.currency.body", v.FileCurrency, v.AccountCurrency) }</p>
