@@ -125,7 +125,7 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 									var templ_7745c5c3_Var8 string
 									templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.name"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `tags.templ`, Line: 31, Col: 35}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 31, Col: 35}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 									if templ_7745c5c3_Err != nil {
@@ -152,7 +152,7 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 									var templ_7745c5c3_Var10 string
 									templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.period"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `tags.templ`, Line: 34, Col: 36}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 34, Col: 36}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 									if templ_7745c5c3_Err != nil {
@@ -216,7 +216,7 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 										var templ_7745c5c3_Var14 string
 										templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("#" + tag.Name)
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `tags.templ`, Line: 42, Col: 25}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 42, Col: 25}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 										if templ_7745c5c3_Err != nil {
@@ -244,7 +244,7 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 											var templ_7745c5c3_Var16 string
 											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.since", formatDate(tag.StartAt, loc, dateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `tags.templ`, Line: 46, Col: 84}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 46, Col: 84}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {
@@ -254,7 +254,7 @@ func tagsPage(s shell, tags []store.Tag) templ.Component {
 											var templ_7745c5c3_Var17 string
 											templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.between", formatDate(tag.StartAt, loc, dateLayout(ctx)), formatDate(*tag.EndAt, loc, dateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `tags.templ`, Line: 48, Col: 132}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/tags.templ`, Line: 48, Col: 132}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 											if templ_7745c5c3_Err != nil {

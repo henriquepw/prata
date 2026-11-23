@@ -184,6 +184,7 @@ templ dailyTip(page month, cell dailyCell) {
 			default:
 				<span>{ i18n.T(ctx, "month.daily_over", money(ctx, cell.Spent-cell.Limit), cell.percent()) }</span>
 		}
+		<span>{ i18n.T(ctx, "month.daily_how_"+page.Daily.Mode) }</span>
 	</span>
 }
 

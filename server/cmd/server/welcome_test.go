@@ -21,7 +21,7 @@ func TestWebWelcome_ShowsTheSuggestedDivisionAndDynamicModeWithoutTheAppNavigati
 
 	body := get(w.handler, "/welcome", w.cookie).Body.String()
 	for _, text := range []string{"Gastos fixos", "Investimento", "Meta", "Livre", `value="50,00"`, `value="20,00"`, `value="15,00"`,
-		`name="income"`, `name="daily_limit_mode"`, `value="DYNAMIC" checked`, `href="/"`} {
+		`name="income"`, `name="daily_limit_mode"`, `value="DYNAMIC" checked`, `data-mode="percent"`, `href="/"`} {
 		if !strings.Contains(body, text) {
 			t.Errorf("welcome lacks %q: %s", text, body)
 		}

@@ -40,12 +40,12 @@ func (h handler) editCategory(w http.ResponseWriter, r *http.Request) {
 // saveCategory creates the category, or updates the one in the path, from the sheet's form.
 func (h handler) saveCategory(w http.ResponseWriter, r *http.Request) {
 	form := categoryForm{
-		ID:           r.PathValue("id"),
-		Name:         strings.TrimSpace(r.PostFormValue("name")),
-		Color:        r.PostFormValue("color"),
-		IsDaily:      r.PostFormValue("is_daily") == "1",
-		MarkDefault:  r.PostFormValue("is_default") == "1",
-		Errors:       map[string]string{},
+		ID:          r.PathValue("id"),
+		Name:        strings.TrimSpace(r.PostFormValue("name")),
+		Color:       r.PostFormValue("color"),
+		IsDaily:     r.PostFormValue("is_daily") == "1",
+		MarkDefault: r.PostFormValue("is_default") == "1",
+		Errors:      map[string]string{},
 	}
 	if form.Name == "" {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")

@@ -174,20 +174,27 @@ templ notFoundPage(path string) {
 	}
 }
 
-// entrance is the console entrance of the pages without a session: the particle field behind the figlet art,
-// a panel with the title and the children, and a footer pinned to the bottom with the version, the server status
-// and a clock.
+// entrance is the console entrance of the pages without a session: the entranceShell with a panel holding the title
+// and the children.
 templ entrance(art, label, title, width string) {
+	@entranceShell(art, label, width) {
+		<section class={ panelBox, "w-full bg-background" }>
+			<header class={ panelHead }>
+				<h1 class={ panelTitle }>{ title }</h1>
+			</header>
+			{ children... }
+		</section>
+	}
+}
+
+// entranceShell is the frame of the pages without a session: the particle field behind the figlet art, the children
+// under it, and a footer pinned to the bottom with the version, the server status and a clock.
+templ entranceShell(art, label, width string) {
 	<main class="relative grid min-h-dvh place-items-center overflow-x-hidden pb-10">
 		<pre class="pointer-events-none absolute inset-0 overflow-hidden text-xs leading-tight whitespace-pre text-muted-foreground opacity-55 select-none" data-particles aria-hidden="true"></pre>
 		<div class={ "relative flex w-full flex-col items-center gap-5 p-4", width }>
 			<pre class="bg-background px-2 py-1 font-figlet text-2xs leading-none" role="img" aria-label={ label }>{ art }</pre>
-			<section class={ panelBox, "w-full bg-background" }>
-				<header class={ panelHead }>
-					<h1 class={ panelTitle }>{ title }</h1>
-				</header>
-				{ children... }
-			</section>
+			{ children... }
 		</div>
 		<footer class="absolute inset-x-0 bottom-0 flex justify-between gap-4 border-t border-line-soft bg-background px-4 py-2.5 text-2xs tracking-wider uppercase">
 			<span>prata v1</span>

@@ -162,7 +162,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var9 string
 								templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.name"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 33, Col: 34}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 33, Col: 34}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 								if templ_7745c5c3_Err != nil {
@@ -189,7 +189,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var11 string
 								templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.last_seen"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 36, Col: 41}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 36, Col: 41}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 								if templ_7745c5c3_Err != nil {
@@ -216,7 +216,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 								var templ_7745c5c3_Var13 string
 								templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.created_at"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 39, Col: 42}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 39, Col: 42}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 								if templ_7745c5c3_Err != nil {
@@ -284,7 +284,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var17 string
 									templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(device.Name)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 48, Col: 21}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 48, Col: 21}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 									if templ_7745c5c3_Err != nil {
@@ -311,7 +311,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var19 string
 									templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(ctx, device.LastSeenAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 51, Col: 48}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 51, Col: 48}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 									if templ_7745c5c3_Err != nil {
@@ -338,7 +338,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									var templ_7745c5c3_Var21 string
 									templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(ctx, device.CreatedAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 54, Col: 47}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 54, Col: 47}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 									if templ_7745c5c3_Err != nil {
@@ -377,7 +377,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 										var templ_7745c5c3_Var24 string
 										templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "devices.revoke"))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `devices.templ`, Line: 58, Col: 40}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/devices.templ`, Line: 58, Col: 40}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 										if templ_7745c5c3_Err != nil {

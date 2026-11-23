@@ -2,32 +2,38 @@ package web
 
 import "github.com/henriquepw/prata/server/internal/i18n"
 
-// welcomePage is the tela inicial after a signup, without the app navigation: what the Receita mensal, the division
-// and the limite diário are, the division form filled with the Divisão sugerida, the Modo do limite diário with mode
-// checked, and "configurar depois" going home.
+// welcomePage is the tela inicial after a signup, without the app navigation: a panel explaining the Receita mensal,
+// the division and the limite diário, then the division form filled with the Divisão sugerida and the Modo do limite
+// diário with mode checked, as sibling panels, and "configurar depois" going home.
 templ welcomePage(form budgetForm, mode string) {
 	@document(i18n.T(ctx, "welcome.title")) {
-		@entrance(figlet, "Prata", i18n.T(ctx, "welcome.title"), "max-w-2xl") {
-			<div class="mb-5 flex flex-col gap-2 text-xs text-muted-foreground">
-				<p>{ i18n.T(ctx, "welcome.income") }</p>
-				<p>{ i18n.T(ctx, "welcome.division") }</p>
-				<p>{ i18n.T(ctx, "welcome.daily_limit") }</p>
-			</div>
-			@budgetScreen(form, "") {
-				@panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
-					@choiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), "", form.Errors["daily_limit_mode"]) {
-						for _, m := range dailyLimitModes {
-							@choiceOption("daily_limit_mode", m.Value, m.Value == mode) {
-								{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
+		@entranceShell(figlet, "Prata", "max-w-2xl") {
+			<div class="flex w-full flex-col gap-5 [&_.panel]:bg-background">
+				<section class={ panelBox }>
+					<header class={ panelHead }>
+						<h1 class={ panelTitle }>{ i18n.T(ctx, "welcome.title") }</h1>
+					</header>
+					<div class="flex flex-col gap-2 text-xs text-muted-foreground">
+						<p>{ i18n.T(ctx, "welcome.income") }</p>
+						<p>{ i18n.T(ctx, "welcome.division") }</p>
+						<p>{ i18n.T(ctx, "welcome.daily_limit") }</p>
+					</div>
+				</section>
+				@budgetScreen(form, "") {
+					@panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
+						@choiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
+							for _, m := range dailyLimitModes {
+								@choiceOption("daily_limit_mode", m.Value, m.Value == mode) {
+									{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
+								}
 							}
 						}
 					}
-					<p class="mt-3 text-2xs text-muted-foreground">{ i18n.T(ctx, "welcome.modes") }</p>
 				}
-			}
-			<p class="mt-4 text-xs text-muted-foreground">
-				<a href="/" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "welcome.later") }</a>
-			</p>
+				<p class="self-start bg-background px-2 py-1 text-xs text-muted-foreground">
+					<a href="/" class="text-foreground underline underline-offset-4">{ i18n.T(ctx, "welcome.later") }</a>
+				</p>
+			</div>
 		}
 	}
 }

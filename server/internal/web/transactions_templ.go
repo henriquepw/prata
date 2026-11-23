@@ -146,7 +146,7 @@ func transactionSheet(form transactionForm) templ.Component {
 						var templ_7745c5c3_Var7 string
 						templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.no_tag"))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `transactions.templ`, Line: 46, Col: 34}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 46, Col: 34}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 						if templ_7745c5c3_Err != nil {
@@ -174,7 +174,7 @@ func transactionSheet(form transactionForm) templ.Component {
 							var templ_7745c5c3_Var9 string
 							templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(tag.Name)
 							if templ_7745c5c3_Err != nil {
-								return templ.Error{Err: templ_7745c5c3_Err, FileName: `transactions.templ`, Line: 50, Col: 16}
+								return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/transactions.templ`, Line: 50, Col: 16}
 							}
 							_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 							if templ_7745c5c3_Err != nil {

@@ -130,7 +130,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var8 string
 									templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.description"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `recurrences.templ`, Line: 36, Col: 42}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 36, Col: 42}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 									if templ_7745c5c3_Err != nil {
@@ -157,7 +157,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var10 string
 									templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.day"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `recurrences.templ`, Line: 39, Col: 40}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 39, Col: 40}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 									if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 									var templ_7745c5c3_Var12 string
 									templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "field.amount"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `recurrences.templ`, Line: 42, Col: 37}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 42, Col: 37}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 									if templ_7745c5c3_Err != nil {
@@ -270,7 +270,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 										var templ_7745c5c3_Var17 string
 										templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `recurrences.templ`, Line: 53, Col: 75}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 53, Col: 75}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 										if templ_7745c5c3_Err != nil {
@@ -297,7 +297,7 @@ func recurrencesPage(s shell, recurrences []store.Recurrence) templ.Component {
 										var templ_7745c5c3_Var19 string
 										templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(money(ctx, signed(recurrence.Kind, recurrence.Amount)))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `recurrences.templ`, Line: 56, Col: 65}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/recurrences.templ`, Line: 56, Col: 65}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 										if templ_7745c5c3_Err != nil {

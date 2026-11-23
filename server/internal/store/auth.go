@@ -88,12 +88,12 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 	}
 	defer tx.Rollback()
 
-	used, err := hasUsers(ctx, tx)
+	exists, err := hasUsers(ctx, tx)
 	if err != nil {
 		return "", err
 	}
 
-	if used && !isSignupAllowed {
+	if exists && !isSignupAllowed {
 		return "", ErrSignupClosed
 	}
 

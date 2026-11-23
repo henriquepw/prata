@@ -26,12 +26,12 @@ func TestAuthPages_FollowTheBrowserLanguage(t *testing.T) {
 	handler := newHandler(openStore(t), config{isSignupAllowed: true})
 	signupKey(t, handler, newSignup())
 	english := map[string][]string{
-		"/login":  {`<html lang="en">`, "Sign in", "Email", "Password", "&gt; sign in", "Don&#39;t have an account yet?", "Create account"},
-		"/signup": {`<html lang="en">`, "Create account", "&gt; create account", "Already use Prata in the app?", "Already have an account?", "Sign in"},
+		"/login":  {`<html lang="en" `, "Sign in", "Email", "Password", "&gt; sign in", "Don&#39;t have an account yet?", "Create account"},
+		"/signup": {`<html lang="en" `, "Create account", "&gt; create account", "Already use Prata in the app?", "Already have an account?", "Sign in"},
 	}
 	portuguese := map[string][]string{
-		"/login":  {`<html lang="pt-BR">`, "Entrar", "Senha", "&gt; entrar", "Ainda não tem conta?"},
-		"/signup": {`<html lang="pt-BR">`, "Criar conta", "&gt; criar conta", "Já usa o Prata no app?", "Já tem conta?"},
+		"/login":  {`<html lang="pt-BR" `, "Entrar", "Senha", "&gt; entrar", "Ainda não tem conta?"},
+		"/signup": {`<html lang="pt-BR" `, "Criar conta", "&gt; criar conta", "Já usa o Prata no app?", "Já tem conta?"},
 	}
 	for language, pages := range map[string]map[string][]string{"en-US,en;q=0.9": english, "fr;q=0.1, en;q=0.9": english, "en;q=0.5, fr": portuguese, "fr": portuguese, "": portuguese} {
 		for path, texts := range pages {
@@ -51,7 +51,7 @@ func TestWebSignup_KeepsThePageLanguageWithTheDefaultFormats(t *testing.T) {
 	response := browse(handler, http.MethodPost, "/signup", "en-US,en;q=0.9", credentials())
 	w := &webClient{client: &client{t: t, handler: handler}, cookie: sessionCookie(t, response)}
 
-	w.assertBody("/", `<html lang="en">`, "Statement")
+	w.assertBody("/", `<html lang="en" `, "Statement")
 	w.assertSelected("en", "DD/MM/YYYY", "1.234,56", "BRL")
 }
 
@@ -62,7 +62,7 @@ func TestAPISignup_IsInPortugueseWhateverTheBrowser(t *testing.T) {
 	response := browse(handler, http.MethodPost, "/login", "en-US,en;q=0.9", credentials())
 	w := &webClient{client: &client{t: t, handler: handler}, cookie: sessionCookie(t, response)}
 
-	w.assertBody("/", `<html lang="pt-BR">`, "Extrato")
+	w.assertBody("/", `<html lang="pt-BR" `, "Extrato")
 	w.assertSelected("pt-BR")
 }
 
@@ -84,7 +84,7 @@ func TestAuthErrors_FollowTheBrowserLanguage(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			response := browse(tt.handler, http.MethodPost, tt.path, "en-US,en;q=0.9", tt.form)
-			for _, text := range append(tt.texts, `<html lang="en">`) {
+			for _, text := range append(tt.texts, `<html lang="en" `) {
 				if body := response.Body.String(); response.Code != http.StatusUnprocessableEntity || !strings.Contains(body, text) {
 					t.Errorf("POST %s = %d, want %d with %q: %s", tt.path, response.Code, http.StatusUnprocessableEntity, text, body)
 				}

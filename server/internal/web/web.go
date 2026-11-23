@@ -135,7 +135,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusOK, empty, authForm{}, loginPage)
+	h.renderEntrance(w, r, http.StatusOK, false, authForm{}, loginPage)
 }
 
 // isEmpty reports whether the Servidor has no user; ok is false once the failure was answered.

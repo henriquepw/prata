@@ -110,7 +110,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 				var templ_7745c5c3_Var5 string
 				templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.no_credentials"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 31, Col: 47}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 31, Col: 47}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 				if templ_7745c5c3_Err != nil {
@@ -136,7 +136,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 					var templ_7745c5c3_Var7 string
 					templ_7745c5c3_Var7, templ_7745c5c3_Err = templruntime.NewAttributeExpression(templ.CSSClasses(templ_7745c5c3_Var6).String()).Resolve(ctx)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 1, Col: 0}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 1, Col: 0}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
 					if templ_7745c5c3_Err != nil {
@@ -163,7 +163,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("[" + i18n.T(ctx, "nav.settings") + "]")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 32, Col: 126}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 32, Col: 126}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -241,7 +241,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 									var templ_7745c5c3_Var13 string
 									templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(account.Name)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 44, Col: 23}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 44, Col: 23}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 									if templ_7745c5c3_Err != nil {
@@ -254,7 +254,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 									var templ_7745c5c3_Var14 string
 									templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(account.Currency)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 44, Col: 45}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 44, Col: 45}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 									if templ_7745c5c3_Err != nil {
@@ -267,7 +267,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 									var templ_7745c5c3_Var15 string
 									templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.only_brl"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 44, Col: 87}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 44, Col: 87}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 									if templ_7745c5c3_Err != nil {
@@ -277,7 +277,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 									var templ_7745c5c3_Var16 string
 									templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(account.Name)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 46, Col: 23}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 46, Col: 23}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 									if templ_7745c5c3_Err != nil {
@@ -322,7 +322,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 					var templ_7745c5c3_Var18 string
 					templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.add_submit"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 53, Col: 55}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 53, Col: 55}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 					if templ_7745c5c3_Err != nil {
@@ -396,7 +396,7 @@ func fetchAction(show bool) templ.Component {
 				var templ_7745c5c3_Var21 string
 				templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.fetch"))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 66, Col: 44}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 66, Col: 44}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 				if templ_7745c5c3_Err != nil {
@@ -455,7 +455,7 @@ func connectionState(c store.Connection) templ.Component {
 				var templ_7745c5c3_Var24 string
 				templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs("[" + i18n.T(ctx, "connections.reconnect") + "]")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 76, Col: 53}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 76, Col: 53}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 				if templ_7745c5c3_Err != nil {
@@ -483,7 +483,7 @@ func connectionState(c store.Connection) templ.Component {
 				var templ_7745c5c3_Var26 string
 				templ_7745c5c3_Var26, templ_7745c5c3_Err = templ.JoinStringErrs("[" + i18n.T(ctx, "connections.status."+c.Status) + "]")
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 80, Col: 60}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 80, Col: 60}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var26))
 				if templ_7745c5c3_Err != nil {
@@ -539,7 +539,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 				var templ_7745c5c3_Var29 string
 				templ_7745c5c3_Var29, templ_7745c5c3_Err = templ.JoinStringErrs(view.FetchError)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 90, Col: 63}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 90, Col: 63}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var29))
 				if templ_7745c5c3_Err != nil {
@@ -611,7 +611,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 								var templ_7745c5c3_Var34 string
 								templ_7745c5c3_Var34, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.institution"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 99, Col: 47}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 99, Col: 47}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var34))
 								if templ_7745c5c3_Err != nil {
@@ -638,7 +638,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 								var templ_7745c5c3_Var36 string
 								templ_7745c5c3_Var36, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "movements.account"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 102, Col: 41}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 102, Col: 41}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var36))
 								if templ_7745c5c3_Err != nil {
@@ -665,7 +665,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 								var templ_7745c5c3_Var38 string
 								templ_7745c5c3_Var38, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.last_update"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 105, Col: 47}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 105, Col: 47}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var38))
 								if templ_7745c5c3_Err != nil {
@@ -692,7 +692,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 								var templ_7745c5c3_Var40 string
 								templ_7745c5c3_Var40, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.state"))
 								if templ_7745c5c3_Err != nil {
-									return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 108, Col: 41}
+									return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 108, Col: 41}
 								}
 								_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var40))
 								if templ_7745c5c3_Err != nil {
@@ -760,7 +760,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 									var templ_7745c5c3_Var44 string
 									templ_7745c5c3_Var44, templ_7745c5c3_Err = templ.JoinStringErrs(c.Institution)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 117, Col: 23}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 117, Col: 23}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var44))
 									if templ_7745c5c3_Err != nil {
@@ -787,7 +787,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 									var templ_7745c5c3_Var46 string
 									templ_7745c5c3_Var46, templ_7745c5c3_Err = templ.JoinStringErrs(c.AccountName)
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 120, Col: 23}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 120, Col: 23}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var46))
 									if templ_7745c5c3_Err != nil {
@@ -814,7 +814,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 									var templ_7745c5c3_Var48 string
 									templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(localTime(ctx, c.LastUpdatedAt.String, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 123, Col: 53}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 123, Col: 53}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 									if templ_7745c5c3_Err != nil {
@@ -875,7 +875,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 										var templ_7745c5c3_Var52 string
 										templ_7745c5c3_Var52, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "connections.remove"))
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `connections.templ`, Line: 130, Col: 44}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/connections.templ`, Line: 130, Col: 44}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var52))
 										if templ_7745c5c3_Err != nil {
