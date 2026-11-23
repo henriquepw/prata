@@ -25,13 +25,13 @@ var categoryColors = []categoryColor{
 // categoryForm is the category sheet: what the user typed and an error message per field name,
 // "form" holding a rejected commit.
 type categoryForm struct {
-	ID           string
-	Name         string
-	Color        string
-	IsDaily      bool
-	IsDefault    bool
-	MarkDefault  bool
-	Errors       map[string]string
+	ID          string
+	Name        string
+	Color       string
+	IsDaily     bool
+	IsDefault   bool
+	MarkDefault bool
+	Errors      map[string]string
 }
 
 // categoriesPage is the Categorias screen, which is the division of the Receita mensal (budgetScreen).
