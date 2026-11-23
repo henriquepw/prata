@@ -148,6 +148,15 @@ const headScript = `(() => {
   })
 })()`
 
+// inverted is the selection inversion of the rail and nav links: foreground and background swap on hover, in --snap.
+const inverted = "transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background"
+
+// tickerCell is one cell of the ticker: its label and value, or the text actions.
+const tickerCell = "flex items-center gap-2 px-3"
+
+// launcherOption is a ctrl+k command, inverted while selected or hovered.
+const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left transition-colors duration-(--snap) ease-(--ease) hover:bg-foreground hover:text-background aria-selected:bg-foreground aria-selected:text-background"
+
 // cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
 const cycleTheme = "cycleTheme()"
 
@@ -175,13 +184,13 @@ templ document(title string) {
 // dialog's: ctrl enter salvar for the sheet and esc fechar.
 templ layout(s shell) {
 	@document(s.Title) {
-		<div class="console-frame">
-			<div class="console">
-				<header class="sbar">
-					<div class="sbar-title"><span class="sbar-brand">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
-					<div class="ticker">
+		<div class="console-frame relative mx-auto h-dvh w-full max-w-(--breakpoint-3xl) bg-background 3xl:border-x 3xl:border-line">
+			<div class="@container/console flex h-full flex-col text-xs">
+				<header class="sbar relative flex items-center justify-between gap-4 border-b border-line-soft px-4 py-3 whitespace-nowrap">
+					<div class="truncate uppercase tracking-wider"><span class="font-bold before:text-primary before:content-['▌']">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
+					<div class="flex overflow-hidden whitespace-nowrap @max-2xl/console:hidden">
 						@ticker(s, false)
-						<div>
+						<div class={ tickerCell }>
 							<button type="button" class="lnk" hx-get="/settings" hx-target="#sheet">{ "["+i18n.T(ctx, "nav.settings")+"]" }</button>
 							<button type="button" class="lnk" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ i18n.T(ctx, "layout.theme") }</button>
 							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class="lnk">{ i18n.T(ctx, "layout.sign_out") }</button></form>
@@ -189,18 +198,19 @@ templ layout(s shell) {
 					</div>
 				</header>
 				@balanceLine(s.Balance, false)
-				<nav class="mnav" aria-label={ i18n.T(ctx, "nav.label") }>
+				<nav class="hidden gap-2 overflow-x-auto border-b border-line px-4 text-xs whitespace-nowrap [scrollbar-width:none] @max-2xl/console:flex" aria-label={ i18n.T(ctx, "nav.label") }>
 					for i, item := range s.nav() {
 						<a
 							href={ templ.SafeURL(item.Href) }
 							if item.Href == s.Path {
 								aria-current="page"
 							}
+							class={ "inline-flex min-h-11 items-center gap-1 px-3 uppercase tracking-wider aria-[current=page]:bg-foreground aria-[current=page]:text-background", inverted }
 						><span class="text-primary">{ strconv.Itoa(i + 1) }</span>{ i18n.T(ctx, item.Label) }</a>
 					}
 				</nav>
-				<div class="console-body">
-					<nav class="rail" aria-label={ i18n.T(ctx, "nav.label") }>
+				<div class="flex min-h-0 flex-1">
+					<nav class="flex w-46 flex-none flex-col border-r border-line-soft py-5 @max-2xl/console:hidden" aria-label={ i18n.T(ctx, "nav.label") }>
 						for i, item := range s.nav() {
 							<a
 								href={ templ.SafeURL(item.Href) }
@@ -208,14 +218,15 @@ templ layout(s shell) {
 								if item.Href == s.Path {
 									aria-current="page"
 								}
-							><span class="text-muted-foreground">{ fmt.Sprintf("%02d", i+1) }</span>{ i18n.T(ctx, item.Label) }</a>
+								class={ "group flex border-l-3 border-transparent px-4 py-2.5 text-xs uppercase tracking-widest aria-[current=page]:border-primary aria-[current=page]:bg-line-soft", inverted }
+							><span class="w-8 flex-none text-muted-foreground group-hover:text-inherit">{ fmt.Sprintf("%02d", i+1) }</span>{ i18n.T(ctx, item.Label) }</a>
 						}
 					</nav>
-					<main>
+					<main class="min-w-0 flex-1 overflow-auto px-4 pt-8 pb-10 @max-2xl/console:px-3">
 						{ children... }
 					</main>
 				</div>
-				<footer class="keybar">
+				<footer class="flex items-center overflow-hidden border-t border-line-soft px-4 py-2 text-2xs whitespace-nowrap text-muted-foreground uppercase tracking-wider @max-2xl/console:hidden [&_kbd]:text-primary">
 					<div class="keys">
 						<span><kbd>{ fmt.Sprintf("1-%d", len(s.nav())) }</kbd> { i18n.T(ctx, "keybar.navigate") }</span>
 						if url := s.newURL(); url != "" {
@@ -232,7 +243,7 @@ templ layout(s shell) {
 						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
 						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
 					</div>
-					<time class="keybar-clock" data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
+					<time class="ml-auto tabular-nums" data-clock={ sessionFrom(ctx).DateFormat }>{ clock(ctx, s.Now) }</time>
 				</footer>
 			</div>
 		</div>
@@ -249,8 +260,9 @@ templ ticker(s shell, oob bool) {
 		if oob {
 			hx-swap-oob="true"
 		}
+		class="contents"
 	>
-		<div class="ticker-user"><dt>{ i18n.T(ctx, "layout.user") }</dt><dd>{ s.Email }</dd></div>
+		<div class={ tickerCell }><dt class="text-2xs uppercase tracking-widest text-muted-foreground">{ i18n.T(ctx, "layout.user") }</dt><dd class="flex items-center gap-2 tabular-nums">{ s.Email }</dd></div>
 	</dl>
 }
 
@@ -262,7 +274,7 @@ templ balanceLine(b balance, oob bool) {
 			hx-swap-oob="true"
 		}
 		aria-label={ i18n.T(ctx, "layout.balance") }
-		class="mbal"
+		class="hidden justify-between gap-2 border-b border-line-soft px-3 py-2 text-2xs tabular-nums @max-2xl/console:flex [&_dd]:flex [&_dd]:items-center [&_dd]:gap-2 [&_dt]:text-2xs [&_dt]:uppercase [&_dt]:tracking-widest [&_dt]:text-muted-foreground"
 	>
 		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ money(ctx, b.Realized) }</dd></div>
 		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ money(ctx, b.Projected) }</dd></div>
@@ -285,16 +297,16 @@ templ balanceLine(b balance, oob bool) {
 templ launcher(items []navItem) {
 	{{ n := len(items) }}
 	<dialog id="launcher" aria-label={ i18n.T(ctx, "launcher.title") } class="launcher">
-		<div class="panel">
+		<div class="panel bg-background">
 			<div class="panel-head">
 				<h2 class="panel-title">{ i18n.T(ctx, "launcher.title") }</h2>
-				<kbd class="text-muted-foreground">esc</kbd>
+				<kbd class="text-2xs uppercase text-muted-foreground">esc</kbd>
 			</div>
 			<label class="prompt">
 				<span class="text-primary">&gt;</span>
 				<input type="text" autocomplete="off" spellcheck="false" placeholder={ i18n.T(ctx, "launcher.placeholder") } aria-label={ i18n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
 			</label>
-			<div id="launcher-options" role="listbox">
+			<div id="launcher-options" role="listbox" class="peer">
 				for i, item := range items {
 					<a
 						href={ templ.SafeURL(item.Href) }
@@ -302,32 +314,38 @@ templ launcher(items []navItem) {
 						if i == 0 {
 							aria-selected="true"
 						}
+						class={ launcherOption }
 					>
-						<span><span class="option-n">{ fmt.Sprintf("%02d", i+1) }</span> { i18n.T(ctx, "launcher.go_to", strings.ToLower(i18n.T(ctx, item.Label))) }</span>
-						<kbd>{ strconv.Itoa(i + 1) }</kbd>
+						@optionLabel(i+1, i18n.T(ctx, "launcher.go_to", strings.ToLower(i18n.T(ctx, item.Label))))
+						<kbd class="text-2xs uppercase text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ strconv.Itoa(i + 1) }</kbd>
 					</a>
 				}
 				for _, item := range items {
 					if item.NewURL != "" {
 						{{ n++ }}
-						<button type="button" role="option" hx-get={ item.NewURL } hx-target="#sheet">
-							<span><span class="option-n">{ fmt.Sprintf("%02d", n) }</span> { i18n.T(ctx, item.NewLabel) }</span>
+						<button type="button" role="option" hx-get={ item.NewURL } hx-target="#sheet" class={ launcherOption }>
+							@optionLabel(n, i18n.T(ctx, item.NewLabel))
 						</button>
 					}
 				}
-				<button type="button" role="option" hx-get="/settings" hx-target="#sheet">
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+1) }</span> { i18n.T(ctx, "launcher.open_settings") }</span>
+				<button type="button" role="option" hx-get="/settings" hx-target="#sheet" class={ launcherOption }>
+					@optionLabel(n+1, i18n.T(ctx, "launcher.open_settings"))
 				</button>
-				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+2) }</span> { i18n.T(ctx, "launcher.toggle_theme") }</span>
+				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(cycleTheme) } class={ launcherOption }>
+					@optionLabel(n+2, i18n.T(ctx, "launcher.toggle_theme"))
 				</button>
-				<button type="submit" role="option" form="logout">
-					<span><span class="option-n">{ fmt.Sprintf("%02d", n+3) }</span> { i18n.T(ctx, "launcher.sign_out") }</span>
+				<button type="submit" role="option" form="logout" class={ launcherOption }>
+					@optionLabel(n+3, i18n.T(ctx, "launcher.sign_out"))
 				</button>
 			</div>
-			<p class="launcher-empty text-muted-foreground">¯\_(ツ)_/¯ { i18n.T(ctx, "launcher.empty") }</p>
+			<p class="hidden px-2 py-1 text-muted-foreground peer-[:not(:has([role=option]:not([hidden])))]:block">¯\_(ツ)_/¯ { i18n.T(ctx, "launcher.empty") }</p>
 		</div>
 	</dialog>
+}
+
+// optionLabel is a launcher option's numbered name, as in "01 ir para mês".
+templ optionLabel(n int, text string) {
+	<span><span class="text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ fmt.Sprintf("%02d", n) }</span> { text }</span>
 }
 
 // currencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
