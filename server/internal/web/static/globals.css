@@ -780,24 +780,6 @@
     }
   }
 
-  /* Activity log: the panel's list fills its height, so the prompt sits at the bottom. */
-  .log-panel {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .log {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    font-size: 12px;
-    line-height: 1.75;
-  }
-
-  .log-prompt {
-    margin-top: auto;
-  }
-
   /* Busy submit: while its form's htmx request is in flight, a braille spinner runs before the label, and a
      data-busy replaces the label, as in "⠋ salvando". */
   .htmx-request [type="submit"]::before {
