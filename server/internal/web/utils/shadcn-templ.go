@@ -49,6 +49,8 @@ func lastTopLevelColon(s string) int {
 			}
 		}
 	}
+
+
 	return last
 }
 
@@ -58,8 +60,10 @@ func twImportantToV3(token string) string {
 	if !strings.HasSuffix(token, "!") {
 		return token
 	}
+
 	base := strings.TrimSuffix(token, "!")
 	i := lastTopLevelColon(base)
+
 	return base[:i+1] + "!" + base[i+1:]
 }
 
@@ -69,6 +73,8 @@ func twImportantToV4(token string) string {
 	if i+1 >= len(token) || token[i+1] != '!' {
 		return token
 	}
+
+
 	return token[:i+1] + token[i+2:] + "!"
 }
 
@@ -76,10 +82,13 @@ func twMapTokens(s string, f func(string) string) string {
 	if !strings.Contains(s, "!") {
 		return s
 	}
+
 	tokens := strings.Fields(s)
 	for i, t := range tokens {
 		tokens[i] = f(t)
 	}
+
+
 	return strings.Join(tokens, " ")
 }
 
@@ -96,25 +105,31 @@ func twReorder(input, merged string) string {
 	if len(survivors) < 2 {
 		return merged
 	}
+
 	remaining := make(map[string]int, len(survivors))
 	for _, c := range survivors {
 		remaining[c]++
 	}
+
 	ordered := make([]string, 0, len(survivors))
 	tokens := strings.Fields(input)
 	for _, token := range slices.Backward(tokens) {
 		if remaining[token] == 0 {
 			continue
 		}
+
 		remaining[token]--
 		ordered = append(ordered, token)
 	}
+
 	// Every survivor is one of the input tokens, verbatim. Should that ever
 	// stop holding, the merge result is still correct, only unordered.
 	if len(ordered) != len(survivors) {
 		return merged
 	}
+
 	slices.Reverse(ordered)
+
 	return strings.Join(ordered, " ")
 }
 
@@ -128,8 +143,10 @@ func CN(classes ...any) string {
 	for i, c := range flat {
 		merged[i] = twMapTokens(twV4Var.ReplaceAllString(c, "-[var($1)]"), twImportantToV3)
 	}
+
 	input := strings.Join(merged, " ")
 	out := twMapTokens(twReorder(input, twmerge.Merge(merged...)), twImportantToV4)
+
 	return twV3Var.ReplaceAllString(out, "-($1)")
 }
 
@@ -159,10 +176,13 @@ func flattenClasses(values []any) []string {
 					keys = append(keys, c)
 				}
 			}
+
 			slices.Sort(keys)
 			out = append(out, keys...)
 		}
 	}
+
+
 	return out
 }
 
@@ -180,6 +200,8 @@ func IfElse[T any](condition bool, trueValue T, falseValue T) T {
 	if condition {
 		return trueValue
 	}
+
+
 	return falseValue
 }
 
@@ -190,6 +212,8 @@ func Map[T, U any](s []T, f func(T) U) []U {
 	for i, v := range s {
 		out[i] = f(v)
 	}
+
+
 	return out
 }
 
@@ -200,6 +224,8 @@ func MergeAttributes(attrs ...templ.Attributes) templ.Attributes {
 	for _, attr := range attrs {
 		maps.Copy(merged, attr)
 	}
+
+
 	return merged
 }
 
@@ -217,6 +243,8 @@ func Direction(ctx context.Context) string {
 	if direction, ok := ctx.Value(directionKey{}).(string); ok && direction != "" {
 		return direction
 	}
+
+
 	return "ltr"
 }
 
@@ -228,6 +256,8 @@ func DirectionAttributes(ctx context.Context) templ.Attributes {
 	if direction, ok := ctx.Value(directionKey{}).(string); ok && direction != "" {
 		return templ.Attributes{"data-templ-direction": direction}
 	}
+
+
 	return templ.Attributes{}
 }
 

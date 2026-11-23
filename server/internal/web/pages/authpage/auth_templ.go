@@ -11,8 +11,8 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
+	"github.com/henriquepw/prata/server/internal/web/components/settingform"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
-	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
@@ -190,7 +190,7 @@ func SignupPage(form Form) templ.Component {
 
 // SetupPage is the configurações iniciais: the Idioma, Formato de data, Formato numérico and Moeda, asked before the
 // signup and stored by it.
-func SetupPage(form settingpage.Form) templ.Component {
+func SetupPage(form settingform.Form) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -248,19 +248,19 @@ func SetupPage(form settingpage.Form) templ.Component {
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = settingpage.LanguageField(form).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = settingform.LanguageField(form).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = settingpage.DateFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = settingform.DateFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = settingpage.NumberFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = settingform.NumberFormatField(form).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
-				templ_7745c5c3_Err = settingpage.CurrencyField(form).Render(ctx, templ_7745c5c3_Buffer)
+				templ_7745c5c3_Err = settingform.CurrencyField(form).Render(ctx, templ_7745c5c3_Buffer)
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}

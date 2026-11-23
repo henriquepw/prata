@@ -13,29 +13,29 @@ import (
 // Page is the Dispositivos handlers.
 type Page struct {
 	db    *store.Store
-	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+	shell shell.Func
 }
 
 // New returns the devices page over db; shell reads the console chrome of an authenticated page, as web's shell does.
-func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)) Page {
+func New(db *store.Store, shell shell.Func) Page {
 	return Page{db: db, shell: shell}
 }
 
 // Devices is the Dispositivos screen.
-func (h Page) Devices(w http.ResponseWriter, r *http.Request) {
-	devices, err := h.db.Devices(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+func (p Page) Devices(w http.ResponseWriter, r *http.Request) {
+	devices, err := p.db.Devices(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
 		shared.InternalError(w, "listing devices", err)
 		return
 	}
 
-	activity, err := h.db.Activity(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+	activity, err := p.db.Activity(r.Context(), shared.SessionFrom(r.Context()).AccountID)
 	if err != nil {
 		shared.InternalError(w, "reading activity", err)
 		return
 	}
 
-	s, ok := h.shell(w, r, "nav.devices")
+	s, ok := p.shell(w, r, "nav.devices")
 	if !ok {
 		return
 	}
@@ -44,8 +44,8 @@ func (h Page) Devices(w http.ResponseWriter, r *http.Request) {
 }
 
 // Revoke revokes the account's device.
-func (h Page) Revoke(w http.ResponseWriter, r *http.Request) {
-	err := h.db.RevokeDevice(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+func (p Page) Revoke(w http.ResponseWriter, r *http.Request) {
+	err := p.db.RevokeDevice(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return

@@ -6,8 +6,8 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/settingform"
 	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
 	"github.com/henriquepw/prata/server/internal/web/shared"
 )
 
@@ -18,7 +18,7 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := settingpage.Form{
+	form := settingform.Form{
 		Preferences: store.Preferences{Language: i18n.Language(r.Context()), DateFormat: shared.VisitorSession.DateFormat, NumberFormat: shared.VisitorSession.NumberFormat},
 		Currency:    shared.VisitorSession.Currency,
 		Errors:      map[string]string{},
@@ -33,7 +33,7 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	form := settingpage.FromRequest(r)
+	form := settingform.FromRequest(r)
 	form.Validate(r.Context())
 	if len(form.Errors) > 0 {
 		shared.Render(w, r, http.StatusUnprocessableEntity, authpage.SetupPage(form))

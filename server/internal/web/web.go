@@ -13,6 +13,7 @@ import (
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/settingform"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
@@ -169,7 +170,7 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	choices, r := settingpage.Chosen(r)
+	choices, r := settingform.Chosen(r)
 	if empty && choices.Language == "" {
 		shared.Redirect(w, r, "/setup")
 		return
@@ -213,7 +214,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) signup(w http.ResponseWriter, r *http.Request) {
-	choices, r := settingpage.Chosen(r)
+	choices, r := settingform.Chosen(r)
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
 	form := authpage.Form{Email: email, Choices: choices.Fields()}

@@ -17,11 +17,11 @@ import (
 // Page is the tags' handlers: the Tags screen and its sheet.
 type Page struct {
 	db    *store.Store
-	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+	shell shell.Func
 }
 
 // New returns the tags page over db; shell reads the console chrome of an authenticated page, as web's shell does.
-func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)) Page {
+func New(db *store.Store, shell shell.Func) Page {
 	return Page{db: db, shell: shell}
 }
 

@@ -31,7 +31,7 @@ func ruleDay(rule string) string {
 // Page is the recurrences' handlers: the Recorrências screen, its sheet and the occurrence sheet.
 type Page struct {
 	db    *store.Store
-	shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool)
+	shell shell.Func
 	month Month
 }
 
@@ -42,7 +42,7 @@ type Month interface {
 
 // New returns the recurrences page over db; shell reads the console chrome of an authenticated page, as web's shell
 // does, and month answers the confirmation of an occurrence made from the Mês.
-func New(db *store.Store, shell func(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool), month Month) Page {
+func New(db *store.Store, shell shell.Func, month Month) Page {
 	return Page{db: db, shell: shell, month: month}
 }
 
