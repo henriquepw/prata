@@ -9,7 +9,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // devicesPage lays the Dispositivos panel beside the activity log, or over it on mobile.
@@ -51,10 +51,10 @@ templ devicesPanel(devices []store.Device, loc *time.Location) {
 								{ device.Name }
 							}
 							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-								{ shared.LocalTime(ctx, device.LastSeenAt, loc) }
+								{ prefs.LocalTime(ctx, device.LastSeenAt, loc) }
 							}
 							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden tabular-nums text-muted-foreground"}) {
-								{ shared.LocalTime(ctx, device.CreatedAt, loc) }
+								{ prefs.LocalTime(ctx, device.CreatedAt, loc) }
 							}
 							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
 								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(console.ToggleConfirm), "data-focus": true}}) {

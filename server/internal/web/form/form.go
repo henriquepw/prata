@@ -1,4 +1,4 @@
-package shared
+package form
 
 import (
 	"context"
@@ -8,6 +8,8 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
 // Form helpers shared by the sheets: entries, dates, optional fields and the live options of a select.
@@ -18,7 +20,7 @@ var Kinds = []string{"OUTCOME", "INCOME"}
 // ParseEntry reads the amount in cents, typed in the request's Formato numérico, and checks the kind every
 // transaction and recurrence has, setting their field errors.
 func ParseEntry(ctx context.Context, errs map[string]string, typed, kind string) int64 {
-	cents, ok := ParseAmount(ctx, typed)
+	cents, ok := prefs.ParseAmount(ctx, typed)
 	if !ok || cents <= 0 {
 		errs["amount"] = i18n.T(ctx, "form.error.amount")
 	}
@@ -45,16 +47,6 @@ func ParseDate(s string, loc *time.Location) (string, bool) {
 	}
 
 	return t.UTC().Format(time.RFC3339), true
-}
-
-// FormatDate writes a stored RFC 3339 time in loc with layout, or the raw value when it does not parse.
-func FormatDate(stored string, loc *time.Location, layout string) string {
-	t, err := time.Parse(time.RFC3339, stored)
-	if err != nil {
-		return stored
-	}
-
-	return t.In(loc).Format(layout)
 }
 
 // OrNil is the value of an optional field: nil (SQL NULL) when empty.
@@ -94,9 +86,9 @@ func HasTag(tags []store.Tag, id string) bool {
 
 // LiveCategories reads the categories a sheet can pick from, answering 500 when it cannot.
 func LiveCategories(w http.ResponseWriter, r *http.Request, db *store.Store) ([]store.Category, bool) {
-	categories, err := db.Categories(r.Context(), SessionFrom(r.Context()).AccountID)
+	categories, err := db.Categories(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {
-		InternalError(w, "listing categories", err)
+		session.InternalError(w, "listing categories", err)
 		return nil, false
 	}
 
@@ -105,21 +97,27 @@ func LiveCategories(w http.ResponseWriter, r *http.Request, db *store.Store) ([]
 
 // LiveTags reads the tags a sheet can pick from, answering 500 when it cannot.
 func LiveTags(w http.ResponseWriter, r *http.Request, db *store.Store) ([]store.Tag, bool) {
-	tags, err := db.Tags(r.Context(), SessionFrom(r.Context()).AccountID)
+	tags, err := db.Tags(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {
-		InternalError(w, "listing tags", err)
+		session.InternalError(w, "listing tags", err)
 		return nil, false
 	}
 
 	return tags, true
 }
 
-// LocalTime writes an RFC 3339 time in loc in the request's Formato de data and 24h time, as "02/01/2006 15:04", or
-// "nunca" when it is empty.
-func LocalTime(ctx context.Context, value string, loc *time.Location) string {
-	if value == "" {
-		return i18n.T(ctx, "devices.never")
+// Signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.
+func Signed(kind string, amount int64) int64 {
+	if kind == "INCOME" {
+		return amount
 	}
 
-	return FormatDate(value, loc, DateLayout(ctx)+" 15:04")
+	return -amount
+}
+
+// MonthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
+func MonthWindow(t time.Time) (month time.Time, from, to string) {
+	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+
+	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 }

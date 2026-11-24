@@ -15,6 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/settingform"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
+	"github.com/henriquepw/prata/server/internal/web/instance"
 	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
 	"github.com/henriquepw/prata/server/internal/web/pages/connectionpage"
@@ -26,7 +27,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/pages/tagpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/transactionpage"
 	"github.com/henriquepw/prata/server/internal/web/pages/welcomepage"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -56,7 +57,7 @@ type handler struct {
 
 // OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
 // turns the feature off.
-type OpenFinance = shared.OpenFinance
+type OpenFinance = instance.OpenFinance
 
 // New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
 // wrapped in requireSession, and every page without a session in visitor.
@@ -82,7 +83,7 @@ func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Ha
 	mux.HandleFunc("POST /setup", visitor(h.setup))
 	mux.HandleFunc("POST /logout", h.logout)
 	mux.HandleFunc("GET /", visitor(func(w http.ResponseWriter, r *http.Request) {
-		shared.Render(w, r, http.StatusNotFound, authpage.NotFoundPage(r.URL.Path))
+		session.Render(w, r, http.StatusNotFound, authpage.NotFoundPage(r.URL.Path))
 	}))
 	mux.Handle("GET /{$}", h.requireSession(h.home.Home))
 	mux.Handle("GET /welcome", h.requireSession(h.welcome.Welcome))
@@ -144,7 +145,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if empty {
-		shared.Redirect(w, r, "/setup")
+		session.Redirect(w, r, "/setup")
 		return
 	}
 
@@ -155,7 +156,7 @@ func (h handler) loginForm(w http.ResponseWriter, r *http.Request) {
 func (h handler) isEmpty(w http.ResponseWriter, r *http.Request) (empty, ok bool) {
 	empty, err := h.db.IsEmpty(r.Context())
 	if err != nil {
-		shared.InternalError(w, "checking users", err)
+		session.InternalError(w, "checking users", err)
 		return false, false
 	}
 
@@ -172,12 +173,12 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 
 	choices, r := settingform.Chosen(r)
 	if empty && choices.Language == "" {
-		shared.Redirect(w, r, "/setup")
+		session.Redirect(w, r, "/setup")
 		return
 	}
 
 	if !empty && !h.isSignupAllowed {
-		shared.Redirect(w, r, "/login")
+		session.Redirect(w, r, "/login")
 		return
 	}
 
@@ -186,10 +187,10 @@ func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 
 // renderEntrance renders a login or signup page with the links that depend on whether the Servidor has users
 // (empty) and accepts signup.
-func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, form authpage.Form, page func(authpage.Form) templ.Component) {
-	form.CanSignUp = empty || h.isSignupAllowed
-	form.HasUsers = !empty
-	shared.Render(w, r, status, page(form))
+func (h handler) renderEntrance(w http.ResponseWriter, r *http.Request, status int, empty bool, fm authpage.Form, page func(authpage.Form) templ.Component) {
+	fm.CanSignUp = empty || h.isSignupAllowed
+	fm.HasUsers = !empty
+	session.Render(w, r, status, page(fm))
 }
 
 func (h handler) login(w http.ResponseWriter, r *http.Request) {
@@ -206,7 +207,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		shared.InternalError(w, "authenticating", err)
+		session.InternalError(w, "authenticating", err)
 		return
 	}
 
@@ -217,25 +218,25 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	choices, r := settingform.Chosen(r)
 	email := strings.TrimSpace(r.PostFormValue("email"))
 	password := r.PostFormValue("password")
-	form := authpage.Form{Email: email, Choices: choices.Fields()}
+	fm := authpage.Form{Email: email, Choices: choices.Fields()}
 	if !strings.Contains(email, "@") {
-		form.EmailError = i18n.T(r.Context(), "auth.error.email")
+		fm.EmailError = i18n.T(r.Context(), "auth.error.email")
 	}
 
 	if password == "" {
-		form.PasswordError = i18n.T(r.Context(), "auth.error.password")
+		fm.PasswordError = i18n.T(r.Context(), "auth.error.password")
 	}
 
-	if form.EmailError == "" && form.PasswordError == "" {
+	if fm.EmailError == "" && fm.PasswordError == "" {
 		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: i18n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
 		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 		switch {
 		case errors.Is(err, store.ErrSignupClosed):
-			form.Error = i18n.T(r.Context(), "auth.error.closed")
+			fm.Error = i18n.T(r.Context(), "auth.error.closed")
 		case errors.Is(err, store.ErrDuplicateID):
-			form.EmailError = i18n.T(r.Context(), "auth.error.taken")
+			fm.EmailError = i18n.T(r.Context(), "auth.error.taken")
 		case err != nil:
-			shared.InternalError(w, "creating account", err)
+			session.InternalError(w, "creating account", err)
 			return
 		default:
 			h.startSession(w, r, signup.OwnerID, "/welcome")
@@ -248,19 +249,19 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, form, authpage.SignupPage)
+	h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, fm, authpage.SignupPage)
 }
 
 func (h handler) logout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(sessionCookie); err == nil {
 		if err := h.db.DeleteSession(r.Context(), cookie.Value); err != nil {
-			shared.InternalError(w, "deleting session", err)
+			session.InternalError(w, "deleting session", err)
 			return
 		}
 	}
 
 	setSessionCookie(w, r, "", time.Time{})
-	shared.Redirect(w, r, "/login")
+	session.Redirect(w, r, "/login")
 }
 
 // startSession opens the user's session and redirects to the page they land on.
@@ -268,12 +269,12 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, la
 	now := time.Now()
 	token, err := h.db.CreateSession(r.Context(), userID, now)
 	if err != nil {
-		shared.InternalError(w, "creating session", err)
+		session.InternalError(w, "creating session", err)
 		return
 	}
 
 	setSessionCookie(w, r, token, now.Add(store.SessionTTL))
-	shared.Redirect(w, r, landing)
+	session.Redirect(w, r, landing)
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
@@ -286,20 +287,20 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 			return
 		}
 
-		session, err := h.db.SessionByToken(r.Context(), cookie.Value, time.Now())
+		sess, err := h.db.SessionByToken(r.Context(), cookie.Value, time.Now())
 		if errors.Is(err, store.ErrInvalidSession) {
 			h.redirectToEntrance(w, r)
 			return
 		}
 
 		if err != nil {
-			shared.InternalError(w, "finding session", err)
+			session.InternalError(w, "finding session", err)
 			return
 		}
 
-		setSessionCookie(w, r, cookie.Value, session.ExpiresAt)
-		ctx := shared.WithSession(r.Context(), session)
-		ctx = i18n.WithLanguage(ctx, session.Language)
+		setSessionCookie(w, r, cookie.Value, sess.ExpiresAt)
+		ctx := session.With(r.Context(), sess)
+		ctx = i18n.WithLanguage(ctx, sess.Language)
 		next(w, r.WithContext(ctx))
 	})
 }
@@ -312,11 +313,11 @@ func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if empty {
-		shared.Redirect(w, r, "/setup")
+		session.Redirect(w, r, "/setup")
 		return
 	}
 
-	shared.Redirect(w, r, "/login")
+	session.Redirect(w, r, "/login")
 }
 
 // visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and
@@ -372,17 +373,17 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 // now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
 // name, as "nav.devices".
 func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool) {
-	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
-	balance, err := shell.ReadBalance(r.Context(), h.db, session.AccountID, now)
+	sess, now := session.From(r.Context()), time.Now().In(session.Location(r))
+	balance, err := shell.ReadBalance(r.Context(), h.db, sess.AccountID, now)
 	if err != nil {
-		shared.InternalError(w, "reading balance", err)
+		session.InternalError(w, "reading balance", err)
 		return shell.Shell{}, false
 	}
 
-	s := shell.Shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: session.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
-	if cookie, err := r.Cookie(shared.FlashCookie); err == nil {
+	s := shell.Shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: sess.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
+	if cookie, err := r.Cookie(session.FlashCookie); err == nil {
 		s.Flash = cookie.Value
-		http.SetCookie(w, &http.Cookie{Name: shared.FlashCookie, Path: r.URL.Path, MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: session.FlashCookie, Path: r.URL.Path, MaxAge: -1})
 	}
 
 	return s, true

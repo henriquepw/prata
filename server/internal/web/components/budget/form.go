@@ -9,7 +9,8 @@ import (
 	"github.com/a-h/templ"
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -101,14 +102,14 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 	budget := store.Budget{Percent: form.percent(), Limits: map[string]int64{}}
 
 	var incomeOK bool
-	if form.income, incomeOK = shared.ParseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
+	if form.income, incomeOK = prefs.ParseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
 		form.Errors["income"] = i18n.T(r.Context(), "budget.error.income")
 	}
 
 	budget.Income = form.income
 	for _, category := range categories {
 		typed := r.PostFormValue("limit_" + category.ID)
-		limit, ok := shared.ParseAmount(r.Context(), typed)
+		limit, ok := prefs.ParseAmount(r.Context(), typed)
 		if !ok || limit < 0 {
 			form.Errors["limit_"+category.ID] = i18n.T(r.Context(), "budget.error.limit")
 		}
@@ -116,10 +117,10 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 		budget.Limits[category.ID] = limit
 		if form.percent() {
 			form.Cents[category.ID], form.Points[category.ID] = form.income*limit/store.HundredPercent, limit
-			form.Values[category.ID], form.Percents[category.ID] = shared.Amount(r.Context(), form.Cents[category.ID]), typed
+			form.Values[category.ID], form.Percents[category.ID] = prefs.Amount(r.Context(), form.Cents[category.ID]), typed
 		} else {
 			form.Cents[category.ID], form.Points[category.ID] = limit, store.BasisPoints(limit, form.income)
-			form.Values[category.ID], form.Percents[category.ID] = typed, shared.Amount(r.Context(), form.Points[category.ID])
+			form.Values[category.ID], form.Percents[category.ID] = typed, prefs.Amount(r.Context(), form.Points[category.ID])
 		}
 	}
 
@@ -129,14 +130,14 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 // Stored fills the screen with the stored Receita mensal and division, typed in percent.
 func Stored(r *http.Request, categories []store.Category) Form {
 	form := NewForm(categories, InPercent)
-	if form.income = shared.SessionFrom(r.Context()).MonthlyIncome; form.income > 0 {
-		form.Income = shared.Amount(r.Context(), form.income)
+	if form.income = session.From(r.Context()).MonthlyIncome; form.income > 0 {
+		form.Income = prefs.Amount(r.Context(), form.income)
 	}
 
 	division := store.Division(categories)
 	for _, category := range categories {
 		form.Cents[category.ID], form.Points[category.ID] = category.MonthlyLimit, division[category.ID]
-		form.Values[category.ID], form.Percents[category.ID] = shared.Amount(r.Context(), category.MonthlyLimit), shared.Amount(r.Context(), division[category.ID])
+		form.Values[category.ID], form.Percents[category.ID] = prefs.Amount(r.Context(), category.MonthlyLimit), prefs.Amount(r.Context(), division[category.ID])
 	}
 
 	return form

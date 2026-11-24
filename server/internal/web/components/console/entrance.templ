@@ -1,6 +1,6 @@
 package console
 
-import "github.com/henriquepw/prata/server/internal/web/shared"
+import "github.com/henriquepw/prata/server/internal/web/session"
 
 // Figlet is PRATA in the ANSI Shadow font.
 const Figlet = `██████╗ ██████╗  █████╗ ████████╗ █████╗
@@ -53,7 +53,7 @@ templ EntranceShell(art, label, width string) {
 		<footer class="absolute inset-x-0 bottom-0 flex justify-between gap-4 border-t border-line-soft bg-background px-4 py-2.5 text-2xs tracking-wider uppercase">
 			<span>prata v1</span>
 			@Online()
-			<span data-clock={ shared.SessionFrom(ctx).DateFormat }></span>
+			<span data-clock={ session.From(ctx).DateFormat }></span>
 		</footer>
 		@templ.Raw("<script>" + authScript + "</script>")
 	</main>

@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/field"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // Form is the Configurações sheet: the Preferences and the account's Moeda shown or typed and an error message
@@ -71,7 +71,7 @@ func LanguageField(form Form) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				for _, l := range shared.Languages {
+				for _, l := range prefs.Languages {
 					templ_7745c5c3_Var4 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 						templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 						templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -157,7 +157,7 @@ func DateFormatField(form Form) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				for _, f := range shared.DateFormats {
+				for _, f := range prefs.DateFormats {
 					templ_7745c5c3_Var9 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 						templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 						templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -243,7 +243,7 @@ func NumberFormatField(form Form) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				for _, f := range shared.NumberFormats {
+				for _, f := range prefs.NumberFormats {
 					templ_7745c5c3_Var14 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 						templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 						templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
@@ -329,7 +329,7 @@ func CurrencyField(form Form) templ.Component {
 					}()
 				}
 				ctx = templ.InitializeContext(ctx)
-				for _, c := range shared.Currencies {
+				for _, c := range prefs.Currencies {
 					templ_7745c5c3_Var19 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 						templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 						templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)

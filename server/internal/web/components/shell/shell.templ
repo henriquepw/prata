@@ -11,7 +11,8 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/console"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
 // Balance is what the ticker shows: the account's realized balance, the occurrences still pending up to the end of
@@ -58,10 +59,10 @@ type Shell struct {
 // its title; NewURL is the screen's "novo" sheet, when it has one, and NewLabel the key of its launcher command.
 var nav = []navItem{
 	{"/", "nav.month", "/transactions/new", "launcher.new_transaction"},
-	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
-	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
 	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
 	{"/movements", "nav.movements", "", ""},
+	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
+	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
 	{"/devices", "nav.devices", "", ""},
 }
 
@@ -192,7 +193,7 @@ const cycleTheme = "cycleTheme()"
 
 templ Document(title string) {
 	<!DOCTYPE html>
-	{{ format, _ := shared.Find(shared.NumberFormats, shared.SessionFrom(ctx).NumberFormat) }}
+	{{ format, _ := prefs.Find(prefs.NumberFormats, session.From(ctx).NumberFormat) }}
 	<html lang={ i18n.Language(ctx) } data-decimal={ format.Decimal } data-thousands={ format.Thousands }>
 		<head>
 			<meta charset="utf-8"/>
@@ -274,7 +275,7 @@ templ Layout(s Shell) {
 						<span class="keys-sheet"><kbd>ctrl enter</kbd> { i18n.T(ctx, "keybar.save") }</span>
 						<span><kbd>esc</kbd> { i18n.T(ctx, "keybar.close") }</span>
 					</div>
-					<time class="ml-auto tabular-nums" data-clock={ shared.SessionFrom(ctx).DateFormat }>{ shared.Clock(ctx, s.Now) }</time>
+					<time class="ml-auto tabular-nums" data-clock={ session.From(ctx).DateFormat }>{ prefs.Clock(ctx, s.Now) }</time>
 				</footer>
 			</div>
 		</div>
@@ -307,8 +308,8 @@ templ BalanceLine(b Balance, oob bool) {
 		aria-label={ i18n.T(ctx, "layout.balance") }
 		class="hidden justify-between gap-2 border-b border-line-soft px-3 py-2 text-2xs tabular-nums @max-2xl/console:flex [&_dd]:flex [&_dd]:items-center [&_dd]:gap-2 [&_dt]:text-2xs [&_dt]:uppercase [&_dt]:tracking-widest [&_dt]:text-muted-foreground"
 	>
-		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ shared.Money(ctx, b.Realized) }</dd></div>
-		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ shared.Money(ctx, b.Projected) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.realized") }</dt><dd>{ prefs.Money(ctx, b.Realized) }</dd></div>
+		<div><dt>{ i18n.T(ctx, "layout.projected") }</dt><dd>{ prefs.Money(ctx, b.Projected) }</dd></div>
 		<div>
 			<dt>{ i18n.T(ctx, "layout.pending") }</dt>
 			<dd>

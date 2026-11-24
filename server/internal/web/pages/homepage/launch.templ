@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -66,7 +67,7 @@ templ launchPreview(line string, l launchLine) {
 			if l.Amount == 0 {
 				<span class="text-destructive">! { i18n.T(ctx, "launch.no_amount") }</span>
 			} else {
-				<span class={ utils.CN("tabular-nums", console.KindClass(l.Kind)) }>{ shared.Money(ctx, shared.Signed(l.Kind, l.Amount)) }</span>
+				<span class={ utils.CN("tabular-nums", console.KindClass(l.Kind)) }>{ prefs.Money(ctx, form.Signed(l.Kind, l.Amount)) }</span>
 			}
 			if l.Description == "" {
 				@console.Description(nil)
@@ -79,7 +80,7 @@ templ launchPreview(line string, l launchLine) {
 			if l.Tag.ID != "" {
 				<span class="text-muted-foreground">#{ l.Tag.Name }</span>
 			}
-			<span class="tabular-nums text-muted-foreground">{ dayOf(l.Date).Format(shared.DateLayout(ctx)) }</span>
+			<span class="tabular-nums text-muted-foreground">{ dayOf(l.Date).Format(prefs.DateLayout(ctx)) }</span>
 			for _, word := range l.Unknown {
 				<span class="text-destructive">! { i18n.T(ctx, "launch.unknown", word) }</span>
 			}

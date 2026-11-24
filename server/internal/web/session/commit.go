@@ -1,4 +1,4 @@
-package shared
+package session
 
 import (
 	"log/slog"
@@ -21,7 +21,7 @@ func Commit(db *store.Store, w http.ResponseWriter, r *http.Request, fieldErrors
 		return
 	}
 
-	reason, err := db.CommitChanges(r.Context(), SessionFrom(r.Context()), changes...)
+	reason, err := db.CommitChanges(r.Context(), From(r.Context()), changes...)
 	if err != nil {
 		InternalError(w, "committing web changes", err)
 		return

@@ -7,7 +7,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // sheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
@@ -19,7 +19,7 @@ templ sheet(form settingform.Form) {
 		@settingform.NumberFormatField(form)
 		@console.FormField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: console.AriaInvalid(form.Errors["daily_limit_mode"])}) {
-				for _, m := range shared.DailyLimitModes {
+				for _, m := range prefs.DailyLimitModes {
 					@nativeselect.Option(nativeselect.OptionProps{Value: m.Value, Selected: m.Value == form.DailyLimitMode}) {
 						{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
 					}

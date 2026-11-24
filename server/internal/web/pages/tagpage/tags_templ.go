@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -245,9 +245,9 @@ func tagsPage(s shell.Shell, tags []store.Tag) templ.Component {
 										ctx = templ.InitializeContext(ctx)
 										if tag.EndAt == nil {
 											var templ_7745c5c3_Var16 string
-											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.since", shared.FormatDate(tag.StartAt, loc, shared.DateLayout(ctx))))
+											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.since", prefs.FormatDate(tag.StartAt, loc, prefs.DateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/tagpage/tags.templ`, Line: 49, Col: 98}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/tagpage/tags.templ`, Line: 49, Col: 96}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {
@@ -255,9 +255,9 @@ func tagsPage(s shell.Shell, tags []store.Tag) templ.Component {
 											}
 										} else {
 											var templ_7745c5c3_Var17 string
-											templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.between", shared.FormatDate(tag.StartAt, loc, shared.DateLayout(ctx)), shared.FormatDate(*tag.EndAt, loc, shared.DateLayout(ctx))))
+											templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "tags.between", prefs.FormatDate(tag.StartAt, loc, prefs.DateLayout(ctx)), prefs.FormatDate(*tag.EndAt, loc, prefs.DateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/tagpage/tags.templ`, Line: 51, Col: 160}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/tagpage/tags.templ`, Line: 51, Col: 156}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 											if templ_7745c5c3_Err != nil {

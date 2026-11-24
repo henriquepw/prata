@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // welcomePage is the tela inicial after a signup, without the app navigation: a panel explaining the Receita mensal,
@@ -274,7 +274,7 @@ func welcomePage(form budget.Form, mode string) templ.Component {
 								}()
 							}
 							ctx = templ.InitializeContext(ctx)
-							for _, m := range shared.DailyLimitModes {
+							for _, m := range prefs.DailyLimitModes {
 								templ_7745c5c3_Var17 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 									templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 									templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)

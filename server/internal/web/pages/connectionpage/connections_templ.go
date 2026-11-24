@@ -23,7 +23,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // connectionsPage is the Conexões screen: the form that registers an Item over the list of Conexões.
@@ -815,9 +815,9 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var48 string
-									templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(shared.LocalTime(ctx, c.LastUpdatedAt.String, loc))
+									templ_7745c5c3_Var48, templ_7745c5c3_Err = templ.JoinStringErrs(prefs.LocalTime(ctx, c.LastUpdatedAt.String, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/connectionpage/connections.templ`, Line: 126, Col: 60}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/connectionpage/connections.templ`, Line: 126, Col: 59}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var48))
 									if templ_7745c5c3_Err != nil {

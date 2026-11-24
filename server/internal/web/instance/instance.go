@@ -1,4 +1,5 @@
-package shared
+// Package instance holds the setup of the whole instance, as opposed to the user's session.
+package instance
 
 import "github.com/henriquepw/prata/server/internal/pluggy"
 

@@ -13,7 +13,9 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -87,8 +89,8 @@ type dailyCell struct {
 // of them after the spending before the day over the days left counting it, never below zero, kept from today on. Each is set against what transactions spent on the
 // daily categories on that day in the location of first. A day is gray when it is after today or spent nothing, else
 // green up to 80% of the limit, yellow up to 100% and red above it.
-func readDaily(session store.Session, first time.Time, today string, usages []store.CategoryUsage, transactions []store.Transaction) daily {
-	if session.MonthlyIncome == 0 {
+func readDaily(sess store.Session, first time.Time, today string, usages []store.CategoryUsage, transactions []store.Transaction) daily {
+	if sess.MonthlyIncome == 0 {
 		return daily{}
 	}
 
@@ -102,18 +104,18 @@ func readDaily(session store.Session, first time.Time, today string, usages []st
 
 	spent := map[string]int64{}
 	for _, t := range transactions {
-		if t.Kind == "OUTCOME" && isDaily[shared.OrEmpty(t.CategoryID)] {
-			spent[shared.FormatDate(t.OccurredAt, first.Location(), time.DateOnly)] += t.Amount
+		if t.Kind == "OUTCOME" && isDaily[form.OrEmpty(t.CategoryID)] {
+			spent[prefs.FormatDate(t.OccurredAt, first.Location(), time.DateOnly)] += t.Amount
 		}
 	}
 
 	days := first.AddDate(0, 1, -1).Day()
 	limit, spentBefore := dailyBudget/int64(days), int64(0)
-	d := daily{Defined: true, Lead: int(first.Weekday()), Mode: session.DailyLimitMode, Budget: dailyBudget}
+	d := daily{Defined: true, Lead: int(first.Weekday()), Mode: sess.DailyLimitMode, Budget: dailyBudget}
 
 	for i := range days {
 		date := first.AddDate(0, 0, i).Format(time.DateOnly)
-		if session.DailyLimitMode == shared.DailyLimitDynamic && (i == 0 || date <= today) {
+		if sess.DailyLimitMode == prefs.DailyLimitDynamic && (i == 0 || date <= today) {
 			limit = max(0, dailyBudget-spentBefore) / int64(days-i)
 		}
 
@@ -153,14 +155,14 @@ func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
 
 // shows reports whether the statement lists an entry of categoryID under the month's filter.
 func (m month) shows(categoryID *string) bool {
-	return m.Filter.ID == "" || shared.OrEmpty(categoryID) == m.Filter.ID
+	return m.Filter.ID == "" || form.OrEmpty(categoryID) == m.Filter.ID
 }
 
 // readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
 // occurrences pending in it plus, on the current month, the overdue ones of earlier months. The statement lists only
 // the entries of category when it is one of the live categories.
 func (p Page) readMonth(ctx context.Context, accountID string, now, shown time.Time, category string, limit int) (month, error) {
-	first, from, to := shared.MonthWindow(shown)
+	first, from, to := form.MonthWindow(shown)
 	last := first.AddDate(0, 1, -1)
 	page := month{Month: first, Today: now.Format(time.DateOnly), Limit: limit}
 	previous, err := p.db.BalanceBefore(ctx, accountID, from)
@@ -188,7 +190,7 @@ func (p Page) readMonth(ctx context.Context, accountID string, now, shown time.T
 	}
 
 	page.Previous = previous
-	page.Daily = readDaily(shared.SessionFrom(ctx), first, page.Today, page.Usages, transactions)
+	page.Daily = readDaily(session.From(ctx), first, page.Today, page.Usages, transactions)
 	page.Income, page.Outcome = totals(transactions)
 	days := map[string]*day{}
 	at := func(date string) *day {
@@ -205,7 +207,7 @@ func (p Page) readMonth(ctx context.Context, accountID string, now, shown time.T
 			continue
 		}
 
-		page.Pending += shared.Signed(p.Recurrence.Kind, p.Recurrence.Amount)
+		page.Pending += form.Signed(p.Recurrence.Kind, p.Recurrence.Amount)
 		switch {
 		case !page.shows(p.Recurrence.CategoryID):
 			continue
@@ -221,9 +223,9 @@ func (p Page) readMonth(ctx context.Context, accountID string, now, shown time.T
 			continue
 		}
 
-		d := at(shared.FormatDate(t.OccurredAt, now.Location(), time.DateOnly))
+		d := at(prefs.FormatDate(t.OccurredAt, now.Location(), time.DateOnly))
 		d.Transactions = append(d.Transactions, t)
-		d.Total += shared.Signed(t.Kind, t.Amount)
+		d.Total += form.Signed(t.Kind, t.Amount)
 	}
 
 	for _, d := range days {
@@ -298,20 +300,20 @@ func (p Page) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := p.readMonth(r.Context(), shared.SessionFrom(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
+	page, err := p.readMonth(r.Context(), session.From(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
-		shared.InternalError(w, "reading month", err)
+		session.InternalError(w, "reading month", err)
 		return
 	}
 
 	page.Flash = s.Flash
-	shared.Render(w, r, http.StatusOK, monthPage(s, page))
+	session.Render(w, r, http.StatusOK, monthPage(s, page))
 }
 
 // CreateInMonth commits change, a new transaction, and answers the month on screen with its row flashing. A rejection
 // answers 409 with the message conflict reads, or 500 when conflict is nil or reads none.
 func (p Page) CreateInMonth(w http.ResponseWriter, r *http.Request, change store.Change, conflict func() (string, error)) {
-	reason, err := p.db.CommitChanges(r.Context(), shared.SessionFrom(r.Context()), change)
+	reason, err := p.db.CommitChanges(r.Context(), session.From(r.Context()), change)
 	message := ""
 	if err == nil && reason != "" && conflict != nil {
 		message, err = conflict()
@@ -322,7 +324,7 @@ func (p Page) CreateInMonth(w http.ResponseWriter, r *http.Request, change store
 	}
 
 	if err != nil {
-		shared.InternalError(w, "creating transaction", err)
+		session.InternalError(w, "creating transaction", err)
 		return
 	}
 
@@ -332,21 +334,21 @@ func (p Page) CreateInMonth(w http.ResponseWriter, r *http.Request, change store
 // renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
 // its error, along with the ticker it changed.
 func (p Page) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
-	session, now := shared.SessionFrom(r.Context()), time.Now().In(shared.Location(r))
-	page, err := p.readMonth(r.Context(), session.AccountID, now, shownMonth(r, now), r.FormValue("category"), statementLimit(r))
+	sess, now := session.From(r.Context()), time.Now().In(session.Location(r))
+	page, err := p.readMonth(r.Context(), sess.AccountID, now, shownMonth(r, now), r.FormValue("category"), statementLimit(r))
 	if err != nil {
-		shared.InternalError(w, "reading month", err)
+		session.InternalError(w, "reading month", err)
 		return
 	}
 
-	balance, err := shell.ReadBalance(r.Context(), p.db, session.AccountID, now)
+	balance, err := shell.ReadBalance(r.Context(), p.db, sess.AccountID, now)
 	if err != nil {
-		shared.InternalError(w, "reading balance", err)
+		session.InternalError(w, "reading balance", err)
 		return
 	}
 
 	page.Flash, page.Error, page.Focus = flash, message, r.URL.Path == "/launch"
-	shared.Render(w, r, status, monthSwap(shell.Shell{Email: session.Email, Balance: balance}, page))
+	session.Render(w, r, status, monthSwap(shell.Shell{Email: sess.Email, Balance: balance}, page))
 }
 
 // totals is the INCOME and the OUTCOME sums of transactions, in cents.

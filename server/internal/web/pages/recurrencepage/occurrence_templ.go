@@ -13,12 +13,12 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/entry"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
 )
 
 // occurrenceSheet is "confirmar ocorrência": the recurrence on a muted line over the transaction's fields filled from
 // it, and "> confirmar".
-func occurrenceSheet(form occurrenceForm) templ.Component {
+func occurrenceSheet(fm occurrenceForm) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -51,7 +51,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = console.Description(form.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = console.Description(fm.Recurrence.Description).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -60,9 +60,9 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
-			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.every_month", ruleDay(form.Recurrence.Rule)))
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(i18n.T(ctx, "recurrences.every_month", ruleDay(fm.Recurrence.Rule)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/recurrencepage/occurrence.templ`, Line: 22, Col: 77}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/recurrencepage/occurrence.templ`, Line: 22, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -72,8 +72,8 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			for _, category := range form.Categories {
-				if category.ID == shared.OrEmpty(form.Recurrence.CategoryID) {
+			for _, category := range fm.Categories {
+				if category.ID == form.OrEmpty(fm.Recurrence.CategoryID) {
 					templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "· ")
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
@@ -88,7 +88,7 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = entry.Fields(form.Form, i18n.T(ctx, "occurrence.hint"), false).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = entry.Fields(fm.Form, i18n.T(ctx, "occurrence.hint"), false).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -96,10 +96,10 @@ func occurrenceSheet(form occurrenceForm) templ.Component {
 		})
 		templ_7745c5c3_Err = console.Sheet(console.SheetProps{
 			Title:  i18n.T(ctx, "occurrence.title"),
-			Action: "/recurrences/" + form.Recurrence.ID + "/occurrences/" + form.Date,
+			Action: "/recurrences/" + fm.Recurrence.ID + "/occurrences/" + fm.Date,
 			Submit: i18n.T(ctx, "month.confirm"),
 			Busy:   i18n.T(ctx, "form.confirming"),
-			Error:  form.Errors["form"],
+			Error:  fm.Errors["form"],
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err

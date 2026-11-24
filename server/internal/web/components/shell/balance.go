@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/shared/recurrence"
 )
 
@@ -19,7 +19,7 @@ func ReadBalance(ctx context.Context, db *store.Store, accountID string, now tim
 		return Balance{}, fmt.Errorf("reading realized balance: %w", err)
 	}
 
-	month, _, _ := shared.MonthWindow(now)
+	month, _, _ := form.MonthWindow(now)
 	pending, err := Pending(ctx, db, accountID, now, month.AddDate(0, 1, -1))
 	if err != nil {
 		return Balance{}, err
@@ -27,7 +27,7 @@ func ReadBalance(ctx context.Context, db *store.Store, accountID string, now tim
 
 	b := Balance{Realized: realized, Projected: realized, Pending: pending}
 	for _, p := range pending {
-		b.Projected += shared.Signed(p.Recurrence.Kind, p.Recurrence.Amount)
+		b.Projected += form.Signed(p.Recurrence.Kind, p.Recurrence.Amount)
 	}
 
 	return b, nil

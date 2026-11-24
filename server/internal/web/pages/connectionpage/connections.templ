@@ -14,7 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // connectionsPage is the Conexões screen: the form that registers an Item over the list of Conexões.
@@ -123,7 +123,7 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 								{ c.AccountName }
 							}
 							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
-								{ shared.LocalTime(ctx, c.LastUpdatedAt.String, loc) }
+								{ prefs.LocalTime(ctx, c.LastUpdatedAt.String, loc) }
 							}
 							@table.Cell() {
 								@connectionState(c)

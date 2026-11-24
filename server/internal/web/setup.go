@@ -5,10 +5,9 @@ import (
 	"net/url"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/settingform"
 	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
 // setupForm shows the configurações iniciais, with the Idioma of the browser and the default formats and Moeda, only
@@ -19,11 +18,13 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := settingform.Form{
-		Preferences: store.Preferences{Language: i18n.Language(r.Context()), DateFormat: shared.VisitorSession.DateFormat, NumberFormat: shared.VisitorSession.NumberFormat},
-		Currency:    shared.VisitorSession.Currency,
-		Errors:      map[string]string{},
+		Language:     i18n.Language(r.Context()),
+		DateFormat:   session.Visitor.DateFormat,
+		NumberFormat: session.Visitor.NumberFormat,
+		Currency:     session.Visitor.Currency,
+		Errors:       map[string]string{},
 	}
-	shared.Render(w, r, http.StatusOK, authpage.SetupPage(form))
+	session.Render(w, r, http.StatusOK, authpage.SetupPage(form))
 }
 
 // setup validates the configurações iniciais like the Configurações and, writing nothing, carries them to the
@@ -36,7 +37,7 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 	form := settingform.FromRequest(r)
 	form.Validate(r.Context())
 	if len(form.Errors) > 0 {
-		shared.Render(w, r, http.StatusUnprocessableEntity, authpage.SetupPage(form))
+		session.Render(w, r, http.StatusUnprocessableEntity, authpage.SetupPage(form))
 		return
 	}
 
@@ -45,14 +46,14 @@ func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 		query.Set(name, value)
 	}
 
-	shared.Redirect(w, r, "/signup?"+query.Encode())
+	session.Redirect(w, r, "/signup?"+query.Encode())
 }
 
 // requireEmpty reports whether the Servidor has no user, sending everyone else to /login.
 func (h handler) requireEmpty(w http.ResponseWriter, r *http.Request) bool {
 	empty, ok := h.isEmpty(w, r)
 	if ok && !empty {
-		shared.Redirect(w, r, "/login")
+		session.Redirect(w, r, "/login")
 	}
 
 	return ok && empty

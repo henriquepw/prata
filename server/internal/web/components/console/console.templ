@@ -14,7 +14,8 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -77,7 +78,7 @@ templ Panel(title, class string, action templ.Component) {
 templ Kpi(label string, cents int64) {
 	<div class="kpi min-w-38 flex-1 border border-line-soft px-2 pt-5 pb-4 text-center">
 		<div class="text-2xl font-semibold text-nowrap tabular-nums">
-			@Decoded(shared.Money(ctx, cents))
+			@Decoded(prefs.Money(ctx, cents))
 		</div>
 		<div class="mt-1.5 text-2xs tracking-widest text-muted-foreground uppercase">{ label }</div>
 	</div>
@@ -227,7 +228,7 @@ templ FieldNote(hint, message string) {
 templ AmountField(value, hint, message string) {
 	@HintField("amount", i18n.T(ctx, "field.amount"), hint, message) {
 		@CurrencyPrefix() {
-			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: shared.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: AriaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: prefs.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: AriaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
 		}
 	}
 }
@@ -323,7 +324,7 @@ templ ChoiceOption(name, value string, checked bool) {
 // KindChoice is the [despesa] [receita] choice of a transaction or recurrence.
 templ KindChoice(value, message string) {
 	@ChoiceField("kind", i18n.T(ctx, "kind.label"), "", message) {
-		for _, kind := range shared.Kinds {
+		for _, kind := range form.Kinds {
 			@ChoiceOption("kind", kind, kind == value) {
 				{ strings.ToLower(i18n.T(ctx, "kind."+kind)) }
 			}
@@ -333,7 +334,7 @@ templ KindChoice(value, message string) {
 
 // Description is an entry's description, or "sem descrição" in muted italics when it has none.
 templ Description(text *string) {
-	if shared.OrEmpty(text) == "" {
+	if form.OrEmpty(text) == "" {
 		<span class="italic text-muted-foreground">{ i18n.T(ctx, "field.no_description") }</span>
 	} else {
 		{ *text }
@@ -346,7 +347,7 @@ const Inverted = "transition-colors hover:bg-foreground hover:text-background"
 // CurrencyPrefix puts the symbol of the request's Moeda before the amount input given as children.
 templ CurrencyPrefix() {
 	<div class="flex items-center gap-2">
-		<span class="text-xs text-muted-foreground">{ shared.CurrencySymbol(ctx) }</span>
+		<span class="text-xs text-muted-foreground">{ prefs.CurrencySymbol(ctx) }</span>
 		{ children... }
 	</div>
 }

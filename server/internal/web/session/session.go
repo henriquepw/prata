@@ -1,6 +1,6 @@
-// Package shared holds what several web pages use: the request's session and location, rendering, redirects and
-// errors, the display and parsing of the preferences, and the form helpers.
-package shared
+// Package session holds the request's session and location, and the responses every handler writes: rendering,
+// redirects, errors and the sheet commit.
+package session
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
+	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -18,19 +19,19 @@ const FlashCookie = "flash"
 
 type sessionKey struct{}
 
-// WithSession carries the session in ctx for SessionFrom.
-func WithSession(ctx context.Context, session store.Session) context.Context {
+// With carries the session in ctx for From.
+func With(ctx context.Context, session store.Session) context.Context {
 	return context.WithValue(ctx, sessionKey{}, session)
 }
 
-// SessionFrom is the request's session, or VisitorSession on a page without one. It never fails, so a route
+// From is the request's session, or Visitor on a page without one. It never fails, so a route
 // that needs a logged-in user relies on requireSession to turn visitors away.
-func SessionFrom(ctx context.Context) store.Session {
+func From(ctx context.Context) store.Session {
 	if session, ok := ctx.Value(sessionKey{}).(store.Session); ok {
 		return session
 	}
 
-	return VisitorSession
+	return Visitor
 }
 
 // Location is the browser time zone from the tz cookie, or UTC when it is missing or unknown.
@@ -74,3 +75,7 @@ func InternalError(w http.ResponseWriter, msg string, err error) {
 	slog.Error(msg, "error", err)
 	http.Error(w, "internal error", http.StatusInternalServerError)
 }
+
+// Visitor holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
+// Idioma comes from visitor.
+var Visitor = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: importfile.CurrencyBRL}

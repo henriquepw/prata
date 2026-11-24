@@ -6,7 +6,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/console"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
 
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // welcomePage is the tela inicial after a signup, without the app navigation: a panel explaining the Receita mensal,
@@ -29,7 +29,7 @@ templ welcomePage(form budget.Form, mode string) {
 				@budget.Screen(form, "") {
 					@console.Panel(i18n.T(ctx, "settings.daily_limit_mode"), "", nil) {
 						@console.ChoiceField("daily_limit_mode", i18n.T(ctx, "settings.daily_limit_mode"), i18n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
-							for _, m := range shared.DailyLimitModes {
+							for _, m := range prefs.DailyLimitModes {
 								@console.ChoiceOption("daily_limit_mode", m.Value, m.Value == mode) {
 									{ i18n.T(ctx, "daily_limit_mode."+m.Value) }
 								}

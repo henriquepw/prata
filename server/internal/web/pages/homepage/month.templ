@@ -13,7 +13,8 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/badge"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
@@ -79,7 +80,7 @@ const tightTable = "@max-2xl/console:[&_:is(td,th)]:px-1"
 func shortDay(ctx context.Context, date string) string {
 	t, _ := time.Parse(time.DateOnly, date)
 
-	return t.Format(strings.Trim(strings.ReplaceAll(shared.DateLayout(ctx), "2006", ""), "/-"))
+	return t.Format(strings.Trim(strings.ReplaceAll(prefs.DateLayout(ctx), "2006", ""), "/-"))
 }
 
 // monthURL is the Mês of month, as YYYY-MM, with the statement narrowed to category when it is not empty.
@@ -130,7 +131,7 @@ var weekdays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", 
 // dailyBudget is the slot of the daily limit panel: the Modo do limite diário and the budget it spreads over the month.
 templ dailyBudget(d daily) {
 	if d.Defined {
-		<span class={ monthKeys }>{ i18n.T(ctx, "month.daily_budget", shared.Money(ctx, d.Budget)) }</span>
+		<span class={ monthKeys }>{ i18n.T(ctx, "month.daily_budget", prefs.Money(ctx, d.Budget)) }</span>
 	}
 }
 
@@ -157,8 +158,8 @@ templ dailyCalendar(page month) {
 				aria-describedby={ "daily-tip-" + cell.Date }
 			>
 				<b class="font-medium text-muted-foreground group-data-today:text-primary group-data-today:before:content-['▌']">{ strconv.Itoa(cell.Day) }</b>
-				<span class="truncate text-xs font-semibold tabular-nums group-data-[tone=gray]:font-normal">{ shared.Money(ctx, cell.Spent) }</span>
-				<span class="truncate tabular-nums before:content-['/_'] text-muted-foreground">{ shared.Money(ctx, cell.Limit) }</span>
+				<span class="truncate text-xs font-semibold tabular-nums group-data-[tone=gray]:font-normal">{ prefs.Money(ctx, cell.Spent) }</span>
+				<span class="truncate tabular-nums before:content-['/_'] text-muted-foreground">{ prefs.Money(ctx, cell.Limit) }</span>
 				<i class="absolute bottom-0 left-0 h-1 w-(--w) bg-(--tone)" style={ "--w: " + strconv.FormatInt(min(100, cell.percent()), 10) + "%" }></i>
 				@dailyTip(page, cell)
 			</li>
@@ -176,15 +177,15 @@ templ dailyCalendar(page month) {
 templ dailyTip(page month, cell dailyCell) {
 	<span id={ "daily-tip-" + cell.Date } role="tooltip" class={ dailyTipBox }>
 		<strong>{ i18n.T(ctx, "weekday."+dayOf(cell.Date).Weekday().String()) } { shortDay(ctx, cell.Date) }</strong>
-		<span>{ i18n.T(ctx, "month.daily_spent", shared.Money(ctx, cell.Spent)) }</span>
-		<span>{ i18n.T(ctx, "month.daily_limit", shared.Money(ctx, cell.Limit)) }</span>
+		<span>{ i18n.T(ctx, "month.daily_spent", prefs.Money(ctx, cell.Spent)) }</span>
+		<span>{ i18n.T(ctx, "month.daily_limit", prefs.Money(ctx, cell.Limit)) }</span>
 		switch  {
 			case cell.Date > page.Today:
 				<span>{ i18n.T(ctx, "month.daily_future") }</span>
 			case cell.Spent <= cell.Limit:
-				<span>{ i18n.T(ctx, "month.daily_left", shared.Money(ctx, cell.Limit-cell.Spent), cell.percent()) }</span>
+				<span>{ i18n.T(ctx, "month.daily_left", prefs.Money(ctx, cell.Limit-cell.Spent), cell.percent()) }</span>
 			default:
-				<span>{ i18n.T(ctx, "month.daily_over", shared.Money(ctx, cell.Spent-cell.Limit), cell.percent()) }</span>
+				<span>{ i18n.T(ctx, "month.daily_over", prefs.Money(ctx, cell.Spent-cell.Limit), cell.percent()) }</span>
 		}
 		<span>{ i18n.T(ctx, "month.daily_how_"+page.Daily.Mode) }</span>
 	</span>
@@ -227,7 +228,7 @@ templ monthContent(page month) {
 									<td colspan="3" class={ statementDay }>{ i18n.T(ctx, "weekday."+dayOf(d.Date).Weekday().String()) } { shortDay(ctx, d.Date) }</td>
 									<td class={ statementDay, "text-right tabular-nums" }>
 										if len(d.Transactions) > 0 {
-											{ shared.Money(ctx, d.Total) }
+											{ prefs.Money(ctx, d.Total) }
 										}
 									</td>
 								</tr>
@@ -250,7 +251,7 @@ templ monthContent(page month) {
 											}
 										}
 										@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums", console.KindClass(t.Kind))}) {
-											{ shared.Money(ctx, shared.Signed(t.Kind, t.Amount)) }
+											{ prefs.Money(ctx, form.Signed(t.Kind, t.Amount)) }
 										}
 									}
 								}
@@ -354,7 +355,7 @@ templ pendingRow(page month, p shell.Occurrence, withDate bool) {
 		}
 		@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
 			for _, usage := range page.Usages {
-				if usage.ID == shared.OrEmpty(p.Recurrence.CategoryID) {
+				if usage.ID == form.OrEmpty(p.Recurrence.CategoryID) {
 					@console.CategoryName(usage.Name, usage.Color)
 				}
 			}
@@ -369,7 +370,7 @@ templ pendingRow(page month, p shell.Occurrence, withDate bool) {
 			</form>
 		}
 		@table.Cell(table.CellProps{Class: utils.CN("text-right tabular-nums opacity-70", console.KindClass(p.Recurrence.Kind))}) {
-			{ shared.Money(ctx, shared.Signed(p.Recurrence.Kind, p.Recurrence.Amount)) }
+			{ prefs.Money(ctx, form.Signed(p.Recurrence.Kind, p.Recurrence.Amount)) }
 		}
 	}
 }

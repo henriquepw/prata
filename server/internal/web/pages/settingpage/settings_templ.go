@@ -16,7 +16,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/input"
 	"github.com/henriquepw/prata/server/internal/web/components/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/settingform"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // sheet is the Configurações sheet: the fields in one list and "> salvar", the Pluggy credentials last when
@@ -86,7 +86,7 @@ func sheet(form settingform.Form) templ.Component {
 						}()
 					}
 					ctx = templ.InitializeContext(ctx)
-					for _, m := range shared.DailyLimitModes {
+					for _, m := range prefs.DailyLimitModes {
 						templ_7745c5c3_Var5 := templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 							templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 							templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)

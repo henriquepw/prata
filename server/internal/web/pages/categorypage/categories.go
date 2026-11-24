@@ -11,7 +11,9 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/henriquepw/prata/server/internal/web/utils"
 	"github.com/oklog/ulid/v2"
 )
@@ -29,14 +31,14 @@ func New(db *store.Store, shell shell.Func) Page {
 
 // NewSheet is the sheet of a new category.
 func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
-	shared.Render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
+	session.Render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
 }
 
 // Categories is the Categorias screen.
 func (p Page) Categories(w http.ResponseWriter, r *http.Request) {
-	categories, err := p.db.Categories(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+	categories, err := p.db.Categories(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {
-		shared.InternalError(w, "listing categories", err)
+		session.InternalError(w, "listing categories", err)
 		return
 	}
 
@@ -45,7 +47,7 @@ func (p Page) Categories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, categoriesPage(s, budget.Stored(r, categories)))
+	session.Render(w, r, http.StatusOK, categoriesPage(s, budget.Stored(r, categories)))
 }
 
 // Edit is the sheet of a category.
@@ -55,7 +57,7 @@ func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
+	session.Render(w, r, http.StatusOK, categorySheet(storedCategoryForm(category)))
 }
 
 // Save creates the category, or updates the one in the path, from the sheet's form.
@@ -72,7 +74,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		form.Errors["name"] = i18n.T(r.Context(), "form.error.name")
 	}
 
-	if _, ok := shared.Find(console.CategoryColors, form.Color); !ok {
+	if _, ok := prefs.Find(console.CategoryColors, form.Color); !ok {
 		form.Errors["color"] = i18n.T(r.Context(), "categories.error.color")
 	}
 
@@ -94,7 +96,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		change.Fields["is_default"] = int64(1)
 	}
 
-	shared.Commit(p.db, w, r, form.Errors, categorySheet(form), change)
+	session.Commit(p.db, w, r, form.Errors, categorySheet(form), change)
 }
 
 // Delete removes the category in the path.
@@ -105,7 +107,7 @@ func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := storedCategoryForm(category)
-	shared.Commit(p.db, w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: store.KindDelete})
+	session.Commit(p.db, w, r, form.Errors, categorySheet(form), store.Change{Entity: "CATEGORY", EntityID: category.ID, Kind: store.KindDelete})
 }
 
 // storedCategoryForm fills the sheet with the stored category.
@@ -116,14 +118,14 @@ func storedCategoryForm(category store.Category) categoryForm {
 
 // category reads the live category in the path, answering 404 when the account has none.
 func (p Page) category(w http.ResponseWriter, r *http.Request) (store.Category, bool) {
-	category, err := p.db.Category(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	category, err := p.db.Category(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Category{}, false
 	}
 
 	if err != nil {
-		shared.InternalError(w, "reading category", err)
+		session.InternalError(w, "reading category", err)
 		return store.Category{}, false
 	}
 
@@ -134,16 +136,16 @@ func (p Page) category(w http.ResponseWriter, r *http.Request) (store.Category, 
 // and stores nothing when a value is not an amount, the Receita mensal is not above zero or the division does not
 // close it.
 func (p Page) SaveBudget(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
 	form, division := budget.Parse(r, categories)
 	if len(form.Errors) == 0 {
-		err := p.db.SaveBudget(r.Context(), shared.SessionFrom(r.Context()), division)
+		err := p.db.SaveBudget(r.Context(), session.From(r.Context()), division)
 		if err != nil && !errors.Is(err, store.ErrDivisionNotClosed) {
-			shared.InternalError(w, "saving budget", err)
+			session.InternalError(w, "saving budget", err)
 			return
 		}
 
@@ -157,5 +159,5 @@ func (p Page) SaveBudget(w http.ResponseWriter, r *http.Request) {
 		form.Errors["form"] = i18n.T(r.Context(), "budget.error.open")
 	}
 
-	shared.Render(w, r, http.StatusUnprocessableEntity, budget.Screen(form, ""))
+	session.Render(w, r, http.StatusUnprocessableEntity, budget.Screen(form, ""))
 }

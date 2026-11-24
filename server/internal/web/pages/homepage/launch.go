@@ -10,7 +10,9 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -40,8 +42,8 @@ func fold(s string) string {
 func parseLaunch(ctx context.Context, line string, categories []store.Category, tags []store.Tag, today time.Time, year int) launchLine {
 	categoryNames, tagNames := names(categories, func(c store.Category) string { return c.Name }), names(tags, func(t store.Tag) string { return t.Name })
 	l, words := launchLine{Kind: "OUTCOME", Date: today.Format(time.DateOnly)}, []string{}
-	for _, word := range strings.Fields(line) {
-		cents, isAmount := shared.ParseAmount(ctx, strings.TrimLeft(word, "+-−"))
+	for word := range strings.FieldsSeq(line) {
+		cents, isAmount := prefs.ParseAmount(ctx, strings.TrimLeft(word, "+-−"))
 		date, err := time.Parse("2/1/2006", word+"/"+strconv.Itoa(year))
 		category, tag := prefixed(categoryNames, word), prefixed(tagNames, word)
 		switch {
@@ -71,7 +73,7 @@ func parseLaunch(ctx context.Context, line string, categories []store.Category, 
 	if l.Kind == "INCOME" {
 		l.Category = store.Category{}
 	} else if l.Category.ID == "" {
-		l.Category = shared.DefaultCategory(categories)
+		l.Category = form.DefaultCategory(categories)
 	}
 
 	switch last := line[strings.LastIndexAny(line, " \t")+1:]; {
@@ -123,17 +125,17 @@ func (l launchLine) isValid() bool { return l.Amount > 0 && len(l.Unknown) == 0 
 // readLaunch parses the request's prompt line against the live categories and tags, today in the user's time zone
 // and the year of the month on screen, answering 500 when it cannot read them.
 func (p Page) readLaunch(w http.ResponseWriter, r *http.Request) (launchLine, bool) {
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return launchLine{}, false
 	}
 
-	tags, ok := shared.LiveTags(w, r, p.db)
+	tags, ok := form.LiveTags(w, r, p.db)
 	if !ok {
 		return launchLine{}, false
 	}
 
-	now := time.Now().In(shared.Location(r))
+	now := time.Now().In(session.Location(r))
 
 	return parseLaunch(r.Context(), r.FormValue("line"), categories, tags, now, shownMonth(r, now).Year()), true
 }
@@ -145,7 +147,7 @@ func (p Page) LaunchPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
+	session.Render(w, r, http.StatusOK, launchPreview(r.FormValue("line"), l))
 }
 
 // Launch creates the transaction the prompt line reads as, at local midnight of its date in UTC, and answers the
@@ -157,14 +159,14 @@ func (p Page) Launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !l.isValid() {
-		shared.Render(w, r, http.StatusUnprocessableEntity, launchPreview(r.FormValue("line"), l))
+		session.Render(w, r, http.StatusUnprocessableEntity, launchPreview(r.FormValue("line"), l))
 		return
 	}
 
-	occurredAt, _ := shared.ParseDate(l.Date, shared.Location(r))
+	occurredAt, _ := form.ParseDate(l.Date, session.Location(r))
 	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
-		"kind": l.Kind, "amount": l.Amount, "description": shared.OrNil(l.Description), "occurred_at": occurredAt,
-		"category_id": shared.OrNil(l.Category.ID), "tag_id": shared.OrNil(l.Tag.ID),
+		"kind": l.Kind, "amount": l.Amount, "description": form.OrNil(l.Description), "occurred_at": occurredAt,
+		"category_id": form.OrNil(l.Category.ID), "tag_id": form.OrNil(l.Tag.ID),
 	}}
 	p.CreateInMonth(w, r, change, nil)
 }

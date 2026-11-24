@@ -18,7 +18,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/button"
 	"github.com/henriquepw/prata/server/internal/web/components/table"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // devicesPage lays the Dispositivos panel beside the activity log, or over it on mobile.
@@ -312,9 +312,9 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var19 string
-									templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(shared.LocalTime(ctx, device.LastSeenAt, loc))
+									templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(prefs.LocalTime(ctx, device.LastSeenAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/devicepage/devices.templ`, Line: 54, Col: 55}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/devicepage/devices.templ`, Line: 54, Col: 54}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 									if templ_7745c5c3_Err != nil {
@@ -339,9 +339,9 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									}
 									ctx = templ.InitializeContext(ctx)
 									var templ_7745c5c3_Var21 string
-									templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(shared.LocalTime(ctx, device.CreatedAt, loc))
+									templ_7745c5c3_Var21, templ_7745c5c3_Err = templ.JoinStringErrs(prefs.LocalTime(ctx, device.CreatedAt, loc))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/devicepage/devices.templ`, Line: 57, Col: 54}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/devicepage/devices.templ`, Line: 57, Col: 53}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var21))
 									if templ_7745c5c3_Err != nil {

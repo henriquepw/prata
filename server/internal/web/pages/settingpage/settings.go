@@ -12,17 +12,19 @@ import (
 	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/settingform"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/instance"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
 // Page is the Configurações handlers.
 type Page struct {
 	db          *store.Store
-	openFinance shared.OpenFinance
+	openFinance instance.OpenFinance
 }
 
 // New returns the settings page over db.
-func New(db *store.Store, openFinance shared.OpenFinance) Page {
+func New(db *store.Store, openFinance instance.OpenFinance) Page {
 	return Page{db: db, openFinance: openFinance}
 }
 
@@ -38,25 +40,25 @@ func (p Page) Settings(w http.ResponseWriter, r *http.Request) {
 
 // renderSettings answers the Configurações sheet with the saved values.
 func (p Page) renderSettings(w http.ResponseWriter, r *http.Request) {
-	session := shared.SessionFrom(r.Context())
-	form := settingform.Form{Preferences: session.Preferences, Currency: session.Currency, Errors: map[string]string{}}
-	if _, err := p.showSavedPluggy(r.Context(), &form); err != nil {
-		shared.InternalError(w, "reading pluggy credentials", err)
+	sess := session.From(r.Context())
+	fm := settingform.Form{Preferences: sess.Preferences, Currency: sess.Currency, Errors: map[string]string{}}
+	if _, err := p.showSavedPluggy(r.Context(), &fm); err != nil {
+		session.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, sheet(form))
+	session.Render(w, r, http.StatusOK, sheet(fm))
 }
 
 // showSavedPluggy turns the form's Pluggy fields on when Open Finance is, marking whether the user has credentials
 // saved, showing their client id when none was typed, and returns the saved client id, empty when there is none.
-func (p Page) showSavedPluggy(ctx context.Context, form *settingform.Form) (string, error) {
+func (p Page) showSavedPluggy(ctx context.Context, fm *settingform.Form) (string, error) {
 	if !p.openFinance.Enabled() {
 		return "", nil
 	}
 
-	form.OpenFinance = true
-	credentials, err := p.db.PluggyCredentials(ctx, p.openFinance.Key, shared.SessionFrom(ctx).UserID)
+	fm.OpenFinance = true
+	credentials, err := p.db.PluggyCredentials(ctx, p.openFinance.Key, session.From(ctx).UserID)
 	if errors.Is(err, store.ErrNotFound) {
 		return "", nil
 	}
@@ -65,9 +67,9 @@ func (p Page) showSavedPluggy(ctx context.Context, form *settingform.Form) (stri
 		return "", err
 	}
 
-	form.HasPluggy = true
-	if form.PluggyClientID == "" {
-		form.PluggyClientID = credentials.ClientID
+	fm.HasPluggy = true
+	if fm.PluggyClientID == "" {
+		fm.PluggyClientID = credentials.ClientID
 	}
 
 	return credentials.ClientID, nil
@@ -78,66 +80,64 @@ func (p Page) showSavedPluggy(ctx context.Context, form *settingform.Form) (stri
 // form and stores nothing when a value is not one of the options, a new client id comes without its secret, or
 // Pluggy refuses the credentials or is unavailable.
 func (p Page) Save(w http.ResponseWriter, r *http.Request) {
-	session := shared.SessionFrom(r.Context())
-	form := settingform.Form{
-		Preferences: store.Preferences{
-			Language:       r.PostFormValue("language"),
-			DateFormat:     r.PostFormValue("date_format"),
-			NumberFormat:   r.PostFormValue("number_format"),
-			DailyLimitMode: r.PostFormValue("daily_limit_mode"),
-		},
+	sess := session.From(r.Context())
+	fm := settingform.Form{
+		Language:       r.PostFormValue("language"),
+		DateFormat:     r.PostFormValue("date_format"),
+		NumberFormat:   r.PostFormValue("number_format"),
+		DailyLimitMode: r.PostFormValue("daily_limit_mode"),
 		Currency:       r.PostFormValue("currency"),
 		PluggyClientID: strings.TrimSpace(r.PostFormValue("pluggy_client_id")),
 		Errors:         map[string]string{},
 	}
-	savedClientID, err := p.showSavedPluggy(r.Context(), &form)
+	savedClientID, err := p.showSavedPluggy(r.Context(), &fm)
 	if err != nil {
-		shared.InternalError(w, "reading pluggy credentials", err)
+		session.InternalError(w, "reading pluggy credentials", err)
 		return
 	}
 
-	form.Validate(r.Context())
+	fm.Validate(r.Context())
 
-	if _, ok := shared.Find(shared.DailyLimitModes, form.DailyLimitMode); !ok {
-		form.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
+	if _, ok := prefs.Find(prefs.DailyLimitModes, fm.DailyLimitMode); !ok {
+		fm.Errors["daily_limit_mode"] = i18n.T(r.Context(), "settings.error.daily_limit_mode")
 	}
 
-	credentials := store.PluggyCredentials{ClientID: form.PluggyClientID, ClientSecret: strings.TrimSpace(r.PostFormValue("pluggy_client_secret"))}
-	isSavingPluggy := form.OpenFinance && credentials.ClientSecret != ""
+	credentials := store.PluggyCredentials{ClientID: fm.PluggyClientID, ClientSecret: strings.TrimSpace(r.PostFormValue("pluggy_client_secret"))}
+	isSavingPluggy := fm.OpenFinance && credentials.ClientSecret != ""
 	if isSavingPluggy && credentials.ClientID == "" {
-		form.Errors["pluggy_client_id"] = i18n.T(r.Context(), "settings.error.pluggy_client_id")
+		fm.Errors["pluggy_client_id"] = i18n.T(r.Context(), "settings.error.pluggy_client_id")
 	}
 
-	if form.OpenFinance && credentials.ClientSecret == "" && credentials.ClientID != savedClientID {
-		form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_secret")
+	if fm.OpenFinance && credentials.ClientSecret == "" && credentials.ClientID != savedClientID {
+		fm.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_secret")
 	}
 
-	if isSavingPluggy && len(form.Errors) == 0 {
+	if isSavingPluggy && len(fm.Errors) == 0 {
 		_, err := p.openFinance.Pluggy.Authenticate(r.Context(), credentials.ClientID, credentials.ClientSecret)
 		if errors.Is(err, pluggy.ErrInvalidCredentials) {
-			form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_rejected")
+			fm.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_rejected")
 		} else if err != nil {
 			slog.Warn("authenticating on pluggy", "error", err)
-			form.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_offline")
+			fm.Errors["pluggy_client_secret"] = i18n.T(r.Context(), "settings.error.pluggy_offline")
 		}
 	}
 
-	if len(form.Errors) > 0 {
-		shared.Render(w, r, http.StatusUnprocessableEntity, sheet(form))
+	if len(fm.Errors) > 0 {
+		session.Render(w, r, http.StatusUnprocessableEntity, sheet(fm))
 		return
 	}
 
 	var sealed []byte
 	if isSavingPluggy {
-		sealed, err = store.SealPluggyCredentials(p.openFinance.Key, session.UserID, credentials)
+		sealed, err = store.SealPluggyCredentials(p.openFinance.Key, sess.UserID, credentials)
 		if err != nil {
-			shared.InternalError(w, "sealing pluggy credentials", err)
+			session.InternalError(w, "sealing pluggy credentials", err)
 			return
 		}
 	}
 
-	if err := p.db.SaveSettings(r.Context(), session.UserID, session.AccountID, form.Preferences, form.Currency, sealed); err != nil {
-		shared.InternalError(w, "saving settings", err)
+	if err := p.db.SaveSettings(r.Context(), sess.UserID, sess.AccountID, fm.Preferences, fm.Currency, sealed); err != nil {
+		session.InternalError(w, "saving settings", err)
 		return
 	}
 
@@ -152,8 +152,8 @@ func (p Page) DeletePluggy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := p.db.DeletePluggyCredentials(r.Context(), shared.SessionFrom(r.Context()).UserID); err != nil {
-		shared.InternalError(w, "deleting pluggy credentials", err)
+	if err := p.db.DeletePluggyCredentials(r.Context(), session.From(r.Context()).UserID); err != nil {
+		session.InternalError(w, "deleting pluggy credentials", err)
 		return
 	}
 

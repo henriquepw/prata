@@ -6,25 +6,24 @@ import (
 	"net/http"
 
 	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
 // Validate flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
 func (f Form) Validate(ctx context.Context) {
-	if _, ok := shared.Find(shared.Languages, f.Language); !ok {
+	if _, ok := prefs.Find(prefs.Languages, f.Language); !ok {
 		f.Errors["language"] = i18n.T(ctx, "settings.error.language")
 	}
 
-	if _, ok := shared.Find(shared.DateFormats, f.DateFormat); !ok {
+	if _, ok := prefs.Find(prefs.DateFormats, f.DateFormat); !ok {
 		f.Errors["date_format"] = i18n.T(ctx, "settings.error.date_format")
 	}
 
-	if _, ok := shared.Find(shared.NumberFormats, f.NumberFormat); !ok {
+	if _, ok := prefs.Find(prefs.NumberFormats, f.NumberFormat); !ok {
 		f.Errors["number_format"] = i18n.T(ctx, "settings.error.number_format")
 	}
 
-	if _, ok := shared.Find(shared.Currencies, f.Currency); !ok {
+	if _, ok := prefs.Find(prefs.Currencies, f.Currency); !ok {
 		f.Errors["currency"] = i18n.T(ctx, "settings.error.currency")
 	}
 }
@@ -32,9 +31,9 @@ func (f Form) Validate(ctx context.Context) {
 // FromRequest reads the configurações iniciais from the request's form or query.
 func FromRequest(r *http.Request) Form {
 	return Form{
-		Preferences: store.Preferences{Language: r.FormValue("language"), DateFormat: r.FormValue("date_format"), NumberFormat: r.FormValue("number_format")},
-		Currency:    r.FormValue("currency"),
-		Errors:      map[string]string{},
+		Language: r.FormValue("language"), DateFormat: r.FormValue("date_format"), NumberFormat: r.FormValue("number_format"),
+		Currency: r.FormValue("currency"),
+		Errors:   map[string]string{},
 	}
 }
 

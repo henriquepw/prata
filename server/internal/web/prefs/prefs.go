@@ -1,4 +1,4 @@
-package shared
+package prefs
 
 import (
 	"context"
@@ -10,12 +10,8 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/importfile"
-	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/session"
 )
-
-// VisitorSession holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
-// Idioma comes from visitor.
-var VisitorSession = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: importfile.CurrencyBRL}
 
 // Option is a choice of a settings or form field: its schema value.
 type Option struct{ Value string }
@@ -77,14 +73,14 @@ var Currencies = []Currency{{Option{importfile.CurrencyBRL}, "R$"}, {Option{"USD
 
 // CurrencySymbol is the symbol of the request's Moeda, as "R$".
 func CurrencySymbol(ctx context.Context) string {
-	c, _ := Find(Currencies, SessionFrom(ctx).Currency)
+	c, _ := Find(Currencies, session.From(ctx).Currency)
 
 	return c.Symbol
 }
 
 // DateLayout is the Go layout of the request's Formato de data, as "02/01/2006".
 func DateLayout(ctx context.Context) string {
-	f, _ := Find(DateFormats, SessionFrom(ctx).DateFormat)
+	f, _ := Find(DateFormats, session.From(ctx).DateFormat)
 
 	return f.Layout
 }
@@ -105,7 +101,7 @@ func Money(ctx context.Context, cents int64) string {
 
 // Amount writes non-negative cents in the request's Formato numérico, as "1.234,56", for display and form fields.
 func Amount(ctx context.Context, cents int64) string {
-	f, _ := Find(NumberFormats, SessionFrom(ctx).NumberFormat)
+	f, _ := Find(NumberFormats, session.From(ctx).NumberFormat)
 	whole := strconv.FormatInt(cents/100, 10)
 	for i := len(whole) - 3; i > 0; i -= 3 {
 		whole = whole[:i] + f.Thousands + whole[i:]
@@ -118,7 +114,7 @@ func Amount(ctx context.Context, cents int64) string {
 // Thousands separators must split the whole part in groups of three, so "1,50" typed for "1.234,56" fails
 // instead of reading as 150.
 func ParseAmount(ctx context.Context, s string) (int64, bool) {
-	f, _ := Find(NumberFormats, SessionFrom(ctx).NumberFormat)
+	f, _ := Find(NumberFormats, session.From(ctx).NumberFormat)
 	whole, frac, _ := strings.Cut(s, f.Decimal)
 	groups := strings.Split(whole, f.Thousands)
 	if len(frac) > 2 || slices.ContainsFunc(groups[1:], func(g string) bool { return len(g) != 3 }) {
@@ -130,18 +126,22 @@ func ParseAmount(ctx context.Context, s string) (int64, bool) {
 	return cents, err == nil
 }
 
-// Signed is the amount with the kind's sign: positive for INCOME, negative for OUTCOME.
-func Signed(kind string, amount int64) int64 {
-	if kind == "INCOME" {
-		return amount
+// FormatDate writes a stored RFC 3339 time in loc with layout, or the raw value when it does not parse.
+func FormatDate(stored string, loc *time.Location, layout string) string {
+	t, err := time.Parse(time.RFC3339, stored)
+	if err != nil {
+		return stored
 	}
 
-	return -amount
+	return t.In(loc).Format(layout)
 }
 
-// MonthWindow is the month of t, as its first day at midnight in t's location and as [from, to) in RFC 3339 UTC.
-func MonthWindow(t time.Time) (month time.Time, from, to string) {
-	month = time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, t.Location())
+// LocalTime writes an RFC 3339 time in loc in the request's Formato de data and 24h time, as "02/01/2006 15:04", or
+// "nunca" when it is empty.
+func LocalTime(ctx context.Context, value string, loc *time.Location) string {
+	if value == "" {
+		return i18n.T(ctx, "devices.never")
+	}
 
-	return month, month.UTC().Format(time.RFC3339), month.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
+	return FormatDate(value, loc, DateLayout(ctx)+" 15:04")
 }

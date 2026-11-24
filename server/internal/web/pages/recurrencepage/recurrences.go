@@ -12,7 +12,9 @@ import (
 	"github.com/henriquepw/prata/server/internal/i18n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/shell"
-	"github.com/henriquepw/prata/server/internal/web/shared"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -48,9 +50,9 @@ func New(db *store.Store, shell shell.Func, month Month) Page {
 
 // Recurrences is the Recorrências screen.
 func (p Page) Recurrences(w http.ResponseWriter, r *http.Request) {
-	recurrences, err := p.db.Recurrences(r.Context(), shared.SessionFrom(r.Context()).AccountID)
+	recurrences, err := p.db.Recurrences(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {
-		shared.InternalError(w, "listing recurrences", err)
+		session.InternalError(w, "listing recurrences", err)
 		return
 	}
 
@@ -59,18 +61,18 @@ func (p Page) Recurrences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
+	session.Render(w, r, http.StatusOK, recurrencesPage(s, recurrences))
 }
 
 // NewSheet is the sheet of a new recurrence.
 func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	form := recurrenceForm{Kind: "OUTCOME", StartAt: time.Now().In(shared.Location(r)).Format(time.DateOnly), Categories: categories}
-	shared.Render(w, r, http.StatusOK, recurrenceSheet(form))
+	fm := recurrenceForm{Kind: "OUTCOME", StartAt: time.Now().In(session.Location(r)).Format(time.DateOnly), Categories: categories}
+	session.Render(w, r, http.StatusOK, recurrenceSheet(fm))
 }
 
 // Edit is the sheet of a recurrence.
@@ -80,24 +82,24 @@ func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	shared.Render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
+	session.Render(w, r, http.StatusOK, recurrenceSheet(storedRecurrenceForm(r.Context(), recurrence, categories)))
 }
 
 // Save creates the recurrence, or updates the one in the path, from the sheet's form. A category left
 // as displayed is not written, so a stored reference to a deleted one, displayed as empty, survives editing
 // other fields.
 func (p Page) Save(w http.ResponseWriter, r *http.Request) {
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	form := recurrenceForm{
+	fm := recurrenceForm{
 		ID:          r.PathValue("id"),
 		Description: strings.TrimSpace(r.PostFormValue("description")),
 		Kind:        r.PostFormValue("kind"),
@@ -109,29 +111,29 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	amount := shared.ParseEntry(r.Context(), form.Errors, form.Amount, form.Kind)
-	if form.CategoryID != "" && !shared.HasCategory(categories, form.CategoryID) {
-		form.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
+	amount := form.ParseEntry(r.Context(), fm.Errors, fm.Amount, fm.Kind)
+	if fm.CategoryID != "" && !form.HasCategory(categories, fm.CategoryID) {
+		fm.Errors["category_id"] = i18n.T(r.Context(), "form.error.category")
 	}
 
-	day, err := strconv.Atoi(form.Day)
+	day, err := strconv.Atoi(fm.Day)
 	if err != nil || day < 1 || day > 31 {
-		form.Errors["day"] = i18n.T(r.Context(), "recurrences.error.day")
+		fm.Errors["day"] = i18n.T(r.Context(), "recurrences.error.day")
 	}
 
-	if !shared.IsDate(form.StartAt) {
-		form.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
+	if !form.IsDate(fm.StartAt) {
+		fm.Errors["start_at"] = i18n.T(r.Context(), "form.error.start")
 	}
 
-	if form.EndAt != "" && (!shared.IsDate(form.EndAt) || form.EndAt < form.StartAt) {
-		form.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
+	if fm.EndAt != "" && (!form.IsDate(fm.EndAt) || fm.EndAt < fm.StartAt) {
+		fm.Errors["end_at"] = i18n.T(r.Context(), "form.error.end")
 	}
 
-	change := store.Change{Entity: "RECURRENCE", EntityID: form.ID, Kind: store.KindUpdate, Fields: map[string]any{
-		"description": shared.OrNil(form.Description), "kind": form.Kind, "amount": amount, "category_id": shared.OrNil(form.CategoryID),
-		"rule": monthlyRule(day), "start_at": form.StartAt, "end_at": shared.OrNil(form.EndAt),
+	change := store.Change{Entity: "RECURRENCE", EntityID: fm.ID, Kind: store.KindUpdate, Fields: map[string]any{
+		"description": form.OrNil(fm.Description), "kind": fm.Kind, "amount": amount, "category_id": form.OrNil(fm.CategoryID),
+		"rule": monthlyRule(day), "start_at": fm.StartAt, "end_at": form.OrNil(fm.EndAt),
 	}}
-	if form.ID == "" {
+	if fm.ID == "" {
 		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
 	} else {
 		stored, ok := p.recurrence(w, r)
@@ -139,12 +141,12 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if form.CategoryID == storedRecurrenceForm(r.Context(), stored, categories).CategoryID {
+		if fm.CategoryID == storedRecurrenceForm(r.Context(), stored, categories).CategoryID {
 			delete(change.Fields, "category_id")
 		}
 	}
 
-	shared.Commit(p.db, w, r, form.Errors, recurrenceSheet(form), change)
+	session.Commit(p.db, w, r, fm.Errors, recurrenceSheet(fm), change)
 }
 
 // Delete tombstones the recurrence only; its confirmed transactions stay.
@@ -154,46 +156,46 @@ func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	categories, ok := shared.LiveCategories(w, r, p.db)
+	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return
 	}
 
-	form := storedRecurrenceForm(r.Context(), recurrence, categories)
-	shared.Commit(p.db, w, r, form.Errors, recurrenceSheet(form), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
+	fm := storedRecurrenceForm(r.Context(), recurrence, categories)
+	session.Commit(p.db, w, r, fm.Errors, recurrenceSheet(fm), store.Change{Entity: "RECURRENCE", EntityID: recurrence.ID, Kind: store.KindDelete})
 }
 
 // storedRecurrenceForm fills the sheet with the stored recurrence as displayed: its category only when it is
 // among the live ones.
 func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, categories []store.Category) recurrenceForm {
-	form := recurrenceForm{
+	fm := recurrenceForm{
 		ID:          recurrence.ID,
-		Description: shared.OrEmpty(recurrence.Description),
+		Description: form.OrEmpty(recurrence.Description),
 		Kind:        recurrence.Kind,
-		Amount:      shared.Amount(ctx, recurrence.Amount),
+		Amount:      prefs.Amount(ctx, recurrence.Amount),
 		Day:         ruleDay(recurrence.Rule),
 		StartAt:     recurrence.StartAt,
-		EndAt:       shared.OrEmpty(recurrence.EndAt),
+		EndAt:       form.OrEmpty(recurrence.EndAt),
 		Categories:  categories,
 		Errors:      map[string]string{},
 	}
-	if id := shared.OrEmpty(recurrence.CategoryID); shared.HasCategory(categories, id) {
-		form.CategoryID = id
+	if id := form.OrEmpty(recurrence.CategoryID); form.HasCategory(categories, id) {
+		fm.CategoryID = id
 	}
 
-	return form
+	return fm
 }
 
 // recurrence reads the live recurrence in the path, answering 404 when the account has none.
 func (p Page) recurrence(w http.ResponseWriter, r *http.Request) (store.Recurrence, bool) {
-	recurrence, err := p.db.Recurrence(r.Context(), shared.SessionFrom(r.Context()).AccountID, r.PathValue("id"))
+	recurrence, err := p.db.Recurrence(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Recurrence{}, false
 	}
 
 	if err != nil {
-		shared.InternalError(w, "reading recurrence", err)
+		session.InternalError(w, "reading recurrence", err)
 		return store.Recurrence{}, false
 	}
 

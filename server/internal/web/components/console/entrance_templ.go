@@ -9,7 +9,7 @@ package console
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/henriquepw/prata/server/internal/web/shared"
+import "github.com/henriquepw/prata/server/internal/web/session"
 
 // Figlet is PRATA in the ANSI Shadow font.
 const Figlet = `██████╗ ██████╗  █████╗ ████████╗ █████╗
@@ -157,9 +157,9 @@ func EntranceShell(art, label, width string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var6 string
-		templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(shared.SessionFrom(ctx).DateFormat).Resolve(ctx)
+		templ_7745c5c3_Var6, templ_7745c5c3_Err = templruntime.NewAttributeExpression(session.From(ctx).DateFormat).Resolve(ctx)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/entrance.templ`, Line: 56, Col: 56}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/console/entrance.templ`, Line: 56, Col: 50}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
 		if templ_7745c5c3_Err != nil {

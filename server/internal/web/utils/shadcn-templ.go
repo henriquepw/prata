@@ -50,7 +50,6 @@ func lastTopLevelColon(s string) int {
 		}
 	}
 
-
 	return last
 }
 
@@ -74,7 +73,6 @@ func twImportantToV4(token string) string {
 		return token
 	}
 
-
 	return token[:i+1] + token[i+2:] + "!"
 }
 
@@ -87,7 +85,6 @@ func twMapTokens(s string, f func(string) string) string {
 	for i, t := range tokens {
 		tokens[i] = f(t)
 	}
-
 
 	return strings.Join(tokens, " ")
 }
@@ -182,7 +179,6 @@ func flattenClasses(values []any) []string {
 		}
 	}
 
-
 	return out
 }
 
@@ -201,7 +197,6 @@ func IfElse[T any](condition bool, trueValue T, falseValue T) T {
 		return trueValue
 	}
 
-
 	return falseValue
 }
 
@@ -213,7 +208,6 @@ func Map[T, U any](s []T, f func(T) U) []U {
 		out[i] = f(v)
 	}
 
-
 	return out
 }
 
@@ -224,7 +218,6 @@ func MergeAttributes(attrs ...templ.Attributes) templ.Attributes {
 	for _, attr := range attrs {
 		maps.Copy(merged, attr)
 	}
-
 
 	return merged
 }
@@ -244,7 +237,6 @@ func Direction(ctx context.Context) string {
 		return direction
 	}
 
-
 	return "ltr"
 }
 
@@ -256,7 +248,6 @@ func DirectionAttributes(ctx context.Context) templ.Attributes {
 	if direction, ok := ctx.Value(directionKey{}).(string); ok && direction != "" {
 		return templ.Attributes{"data-templ-direction": direction}
 	}
-
 
 	return templ.Attributes{}
 }
