@@ -20,8 +20,10 @@ import (
 // connectionsPage is the Connections screen: the form that registers an Item over the list of Connections.
 templ connectionsPage(s shell.Shell, view connectionsView) {
 	@shell.Layout(s) {
-		@connectionFormPanel(view)
-		@connectionsPanel(view, s.Now.Location())
+		<div class="flex flex-col gap-5">
+			@connectionFormPanel(view)
+			@connectionsPanel(view, s.Now.Location())
+		</div>
 	}
 }
 
