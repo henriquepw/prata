@@ -267,7 +267,7 @@ func TestFetch_OnlyTheUsersOwnConnectionsAndBalancesStayPut(t *testing.T) {
 	w.connect(pluggyItemID, w.accountID())
 
 	mate := w.newAccountMate()
-	before := get(w.handler, "/", w.cookie).Body.String()
+	before := stableBody(get(w.handler, "/", w.cookie).Body.String())
 	mate.fetchNow()
 
 	if got := w.movementDescriptions(); len(got) != 0 {
@@ -276,7 +276,7 @@ func TestFetch_OnlyTheUsersOwnConnectionsAndBalancesStayPut(t *testing.T) {
 
 	w.fetchNow()
 
-	if after := get(w.handler, "/", w.cookie).Body.String(); after != before {
+	if after := stableBody(get(w.handler, "/", w.cookie).Body.String()); after != before {
 		t.Errorf("pending movements changed the month screen:\n%s\nwas:\n%s", after, before)
 	}
 

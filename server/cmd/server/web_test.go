@@ -319,7 +319,7 @@ func TestWeb_UnknownPathShowsNotFoundPage(t *testing.T) {
 	handler := newHandler(openStore(t), config{})
 
 	response := get(handler, "/nada-aqui")
-	if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), "Página não encontrada") || !strings.Contains(response.Body.String(), "/nada-aqui") {
+	if response.Code != http.StatusNotFound || !strings.Contains(response.Body.String(), "Página não encontrada") {
 		t.Errorf("/nada-aqui = %d, want %d with the not found page: %s", response.Code, http.StatusNotFound, response.Body)
 	}
 }

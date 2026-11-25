@@ -614,13 +614,13 @@ func TestMovements_ImportedMovementsDoNotTouchTheScreensOfTheMoney(t *testing.T)
 	paths := []string{"/", "/transactions", "/categories"}
 	before := make([]string, len(paths))
 	for i, path := range paths {
-		before[i] = get(w.handler, path, w.cookie).Body.String()
+		before[i] = stableBody(get(w.handler, path, w.cookie).Body.String())
 	}
 
 	w.upload(windows1252(ofxBank))
 
 	for i, path := range paths {
-		if after := get(w.handler, path, w.cookie).Body.String(); after != before[i] {
+		if after := stableBody(get(w.handler, path, w.cookie).Body.String()); after != before[i] {
 			t.Errorf("%s changed after an import", path)
 		}
 	}

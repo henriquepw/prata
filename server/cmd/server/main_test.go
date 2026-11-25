@@ -7,13 +7,23 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
 	_ "modernc.org/sqlite"
 )
+
+// TestMain pins the local zone to UTC, the zone the web uses when the browser sends no tz cookie,
+// so tests that read time.Now() agree with the server about which day it is.
+func TestMain(m *testing.M) {
+	time.Local = time.UTC
+
+	os.Exit(m.Run())
+}
 
 func openStore(t *testing.T) *store.Store {
 	t.Helper()

@@ -8,10 +8,20 @@ import (
 	"testing"
 )
 
+var emoticons = []string{":-)", ":-(", ";-)", ":-/", ":-D", ":|", ":P", "^_^", "o_O", "O_o", "x_x"}
+
+// stableBody is a page body with the random empty state emoticon replaced, so two renders can be compared.
+func stableBody(body string) string {
+	for _, emoticon := range emoticons {
+		body = strings.ReplaceAll(body, `<span aria-hidden="true">`+emoticon+`</span>`, `<span aria-hidden="true">:-)</span>`)
+	}
+
+	return body
+}
+
 func TestWebLists_AreConsolePanelsWithEmptyStates(t *testing.T) {
 	w := newWebClient(t)
 	w.mustSubmit(http.MethodDelete, "/devices/"+w.deviceID, nil)
-	emoticons := []string{":-)", ":-(", ";-)", ":-/", ":-D", ":|", ":P", "^_^", "o_O", "O_o", "x_x"}
 
 	for path, empty := range map[string]string{
 		"/tags":        "nenhuma tag ainda",
