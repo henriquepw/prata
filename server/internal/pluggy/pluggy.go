@@ -103,7 +103,7 @@ func (c Client) Item(ctx context.Context, apiKey, id string) (Item, error) {
 	return item, nil
 }
 
-// Account is a Conta bancária of an Item: a checking account (type BANK) or a credit card (type CREDIT).
+// Account is a bank account of an Item: a checking account (type BANK) or a credit card (type CREDIT).
 type Account struct {
 	ID       string `json:"id"`
 	Type     string `json:"type"`
@@ -111,7 +111,7 @@ type Account struct {
 	Name     string `json:"name"`
 }
 
-// Accounts lists the Contas bancárias of the Item.
+// Accounts lists the bank accounts of the Item.
 func (c Client) Accounts(ctx context.Context, apiKey, itemID string) ([]Account, error) {
 	var page struct {
 		Results []Account `json:"results"`

@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-// welcomeForm is the renda e categorias form: the Receita mensal, the percentages of the Divisão sugerida and the
-// Modo do limite diário.
+// welcomeForm is the income and categories form: the monthly income, the percentages of the suggested division and the
+// daily limit mode.
 func (w *webClient) welcomeForm(income, mode string) url.Values {
 	form := w.budgetForm(income, "percent", map[string]string{"Gastos fixos": "50,00", "Investimento": "20,00", "Meta": "15,00", "Livre": "15,00"})
 	form.Set("daily_limit_mode", mode)

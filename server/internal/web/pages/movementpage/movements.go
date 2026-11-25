@@ -1,4 +1,4 @@
-// Package movementpage is the Movimentos screen: the import of a file and the review of its pending movements.
+// Package movementpage is the Movements screen: the import of a file and the review of its pending movements.
 package movementpage
 
 import (
@@ -46,7 +46,7 @@ type movementsView struct {
 	Error       string
 }
 
-// currencyView is the dialog that asks whether to import a file whose Moeda differs from the Conta's.
+// currencyView is the dialog that asks whether to import a file whose currency differs from the Conta's.
 type currencyView struct {
 	FileCurrency    string
 	AccountCurrency string
@@ -95,7 +95,7 @@ func (p Page) Import(w http.ResponseWriter, r *http.Request) {
 }
 
 // askCurrency answers, and reports it did, with the confirmation dialog swapped into #sheet when a statement
-// declares a Moeda other than the session account's.
+// declares a currency other than the session account's.
 func askCurrency(w http.ResponseWriter, r *http.Request, statements []importfile.Statement) bool {
 	currency := session.From(r.Context()).Currency
 	for _, statement := range statements {
@@ -159,7 +159,7 @@ func (p Page) renderMovements(w http.ResponseWriter, r *http.Request, status int
 	session.Render(w, r, status, movementsPage(s, view))
 }
 
-// movementDate writes a movement's date, as the file has it, in the Formato de data.
+// movementDate writes a movement's date, as the file has it, in the date format.
 func movementDate(ctx context.Context, stored string) string {
 	date, err := time.Parse(time.DateOnly, stored)
 	if err != nil {

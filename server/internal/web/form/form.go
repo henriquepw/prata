@@ -17,7 +17,7 @@ import (
 // Kinds are the transaction and recurrence kinds; each one's label is the i18n key "kind." + kind.
 var Kinds = []string{"OUTCOME", "INCOME"}
 
-// ParseEntry reads the amount in cents, typed in the request's Formato numérico, and checks the kind every
+// ParseEntry reads the amount in cents, typed in the request's number format, and checks the kind every
 // transaction and recurrence has, setting their field errors.
 func ParseEntry(ctx context.Context, errs map[string]string, typed, kind string) int64 {
 	cents, ok := prefs.ParseAmount(ctx, typed)

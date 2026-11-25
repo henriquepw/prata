@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-// ErrDivisionNotClosed means the division does not add up to the Receita mensal.
+// ErrDivisionNotClosed means the division does not add up to the monthly income.
 var ErrDivisionNotClosed = errors.New("division does not close the monthly income")
 
-// Budget is the Receita mensal and its division as the user typed them, keyed by category id: Limits are cents, or
+// Budget is the monthly income and its division as the user typed them, keyed by category id: Limits are cents, or
 // hundredths of a percent when Percent. A DailyLimitMode, when set, is stored with them for the session's user.
 type Budget struct {
 	Income         int64
@@ -53,7 +53,7 @@ func Division(categories []Category) map[string]int64 {
 	return shares
 }
 
-// SaveBudget stores the Receita mensal and the monthly limits of the live categories, as divide sets them, in one
+// SaveBudget stores the monthly income and the monthly limits of the live categories, as divide sets them, in one
 // transaction; a division that does not close stores nothing and returns ErrDivisionNotClosed.
 func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) error {
 	tx, err := s.BeginTxx(ctx, nil)
@@ -108,10 +108,10 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 	return tx.Commit()
 }
 
-// divide is the monthly limit, in cents, of each of categories for budget, which needs a Receita mensal. In percent,
-// typed limits equal to the stored ones mean the Receita mensal alone changed: the stored limits are rescaled to it in
+// divide is the monthly limit, in cents, of each of categories for budget, which needs a monthly income. In percent,
+// typed limits equal to the stored ones mean the monthly income alone changed: the stored limits are rescaled to it in
 // proportion. Otherwise the typed limits are the division, converted from percent when Percent, and must add up to
-// the Receita mensal, or 100%. The cents lost to rounding go to the default category.
+// the monthly income, or 100%. The cents lost to rounding go to the default category.
 func divide(categories []Category, budget Budget) (map[string]int64, error) {
 	var stored, typed int64
 	for _, category := range categories {

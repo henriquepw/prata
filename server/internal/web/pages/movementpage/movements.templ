@@ -52,7 +52,7 @@ templ importPanel(view movementsView) {
 
 const showFileName = "this.nextElementSibling.textContent = this.files[0]?.name ?? ''"
 
-// currencyDialog asks, in #sheet, to import a file whose Moeda is not the Conta's: confirming resubmits the import
+// currencyDialog asks, in #sheet, to import a file whose currency is not the Conta's: confirming resubmits the import
 // form, whose file input still holds the file, with confirm_currency set.
 templ currencyDialog(v currencyView) {
 	<div id="currency-dialog" class={ console.SheetPanel }>

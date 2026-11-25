@@ -1,4 +1,4 @@
-// Package recurrencepage is the Recorrências screen, its sheet and the confirmation of an occurrence.
+// Package recurrencepage is the Recurrences screen, its sheet and the confirmation of an occurrence.
 package recurrencepage
 
 import (
@@ -30,25 +30,25 @@ func ruleDay(rule string) string {
 	return strings.TrimPrefix(rule, monthlyPrefix)
 }
 
-// Page is the recurrences' handlers: the Recorrências screen, its sheet and the occurrence sheet.
+// Page is the recurrences' handlers: the Recurrences screen, its sheet and the occurrence sheet.
 type Page struct {
 	db    *store.Store
 	shell shell.Func
 	month Month
 }
 
-// Month is the Mês as the confirmation of an occurrence from its statement answers: homepage.Page.CreateInMonth.
+// Month is the Month as the confirmation of an occurrence from its statement answers: homepage.Page.CreateInMonth.
 type Month interface {
 	CreateInMonth(w http.ResponseWriter, r *http.Request, change store.Change, conflict func() (string, error))
 }
 
 // New returns the recurrences page over db; shell reads the console chrome of an authenticated page, as web's shell
-// does, and month answers the confirmation of an occurrence made from the Mês.
+// does, and month answers the confirmation of an occurrence made from the Month.
 func New(db *store.Store, shell shell.Func, month Month) Page {
 	return Page{db: db, shell: shell, month: month}
 }
 
-// Recurrences is the Recorrências screen.
+// Recurrences is the Recurrences screen.
 func (p Page) Recurrences(w http.ResponseWriter, r *http.Request) {
 	recurrences, err := p.db.Recurrences(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {

@@ -76,6 +76,6 @@ func InternalError(w http.ResponseWriter, msg string, err error) {
 	http.Error(w, "internal error", http.StatusInternalServerError)
 }
 
-// Visitor holds the Formato de data, Formato numérico and Moeda that pages without a session follow; their
-// Idioma comes from visitor.
+// Visitor holds the date format, number format and currency that pages without a session follow; their
+// language comes from visitor.
 var Visitor = store.Session{DateFormat: "DD/MM/YYYY", NumberFormat: "1.234,56", Currency: importfile.CurrencyBRL}

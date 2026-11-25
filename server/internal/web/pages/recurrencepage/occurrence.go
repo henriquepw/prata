@@ -15,7 +15,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// occurrenceForm is the "confirmar ocorrência" sheet: the transaction sheet filled from the recurrence and the
+// occurrenceForm is the "confirm occurrence" sheet: the transaction sheet filled from the recurrence and the
 // occurrence's date.
 type occurrenceForm struct {
 	entry.Form
@@ -51,7 +51,7 @@ func (p Page) occurrence(w http.ResponseWriter, r *http.Request) (occurrenceForm
 	return occurrenceForm{Form: fm, Recurrence: rec, Date: date}, true
 }
 
-// OccurrenceSheet is the "confirmar ocorrência" sheet of the occurrence in the path.
+// OccurrenceSheet is the "confirm occurrence" sheet of the occurrence in the path.
 func (p Page) OccurrenceSheet(w http.ResponseWriter, r *http.Request) {
 	fm, ok := p.occurrence(w, r)
 	if !ok {
@@ -64,7 +64,7 @@ func (p Page) OccurrenceSheet(w http.ResponseWriter, r *http.Request) {
 // ConfirmOccurrence turns the occurrence in the path into a transaction at local midnight of its date in UTC. The
 // sheet posts what the user adjusted and gets the sheet's answer; the statement's row posts nothing but the month and
 // the filter on screen and gets that month back with the new row flashing. On the row, an occurrence already confirmed
-// elsewhere hits the unique (recurrence_id, occurrence_date) and answers 409 with "já confirmada"; any other rejection
+// elsewhere hits the unique (recurrence_id, occurrence_date) and answers 409 with "already confirmed"; any other rejection
 // is a 500.
 func (p Page) ConfirmOccurrence(w http.ResponseWriter, r *http.Request) {
 	fm, ok := p.occurrence(w, r)

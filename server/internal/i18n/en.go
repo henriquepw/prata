@@ -270,7 +270,7 @@ var en = map[string]string{
 	"activity.kind.UPDATE":        "updated",
 	"activity.kind.DELETE":        "deleted",
 
-	// Mês: the month bar, the account's boxes and the statement.
+	// Month: the month bar, the account's boxes and the statement.
 	"month.previous":          "Previous month",
 	"month.next":              "Next month",
 	"month.current":           "[this month]",
@@ -312,7 +312,7 @@ var en = map[string]string{
 	"weekday.Friday":          "fri",
 	"weekday.Saturday":        "sat",
 
-	// Mês: the launch prompt.
+	// Month: the launch prompt.
 	"launch.title":       "Add",
 	"launch.focus":       "focus",
 	"launch.submit":      "add",
@@ -323,7 +323,7 @@ var en = map[string]string{
 	"launch.no_amount":   "missing the amount",
 	"launch.unknown":     "%s doesn't exist",
 
-	// Confirmar ocorrência sheet.
+	// Confirm occurrence sheet.
 	"occurrence.title": "Confirm occurrence",
 	"occurrence.hint":  "came out different? adjust it before confirming",
 

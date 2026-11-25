@@ -1,4 +1,4 @@
-// Package connectionpage is the Conexões screen: the Pluggy Items feeding the user's accounts.
+// Package connectionpage is the Connections screen: the Pluggy Items feeding the user's accounts.
 package connectionpage
 
 import (
@@ -17,7 +17,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
-// Page is the Conexões handlers.
+// Page is the Connections handlers.
 type Page struct {
 	db          *store.Store
 	shell       shell.Func
@@ -29,8 +29,8 @@ func New(db *store.Store, shell shell.Func, openFinance instance.OpenFinance) Pa
 	return Page{db: db, shell: shell, openFinance: openFinance}
 }
 
-// connectionsView is the Conexões screen: the user's Conexões, the accounts to feed, whether the user has Pluggy
-// credentials, the typed form with its field errors, and the error of the last "buscar agora".
+// connectionsView is the Connections screen: the user's Connections, the accounts to feed, whether the user has Pluggy
+// credentials, the typed form with its field errors, and the error of the last "fetch now".
 type connectionsView struct {
 	Connections    []store.Connection
 	Accounts       []store.AccountRef
@@ -41,7 +41,7 @@ type connectionsView struct {
 	FetchError     string
 }
 
-// Connections is the Conexões screen.
+// Connections is the Connections screen.
 func (p Page) Connections(w http.ResponseWriter, r *http.Request) {
 	p.renderConnections(w, r, http.StatusOK, connectionsView{Errors: map[string]string{}})
 }
@@ -142,7 +142,7 @@ func (p Page) fetchItem(r *http.Request, userID, itemID string) (pluggy.Item, er
 	return p.openFinance.Pluggy.Item(r.Context(), apiKey, itemID)
 }
 
-// Delete removes the user's Conexão and its pending movements, without calling Pluggy.
+// Delete removes the user's Connection and its pending movements, without calling Pluggy.
 func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
 	if !p.openFinance.Enabled() {
 		http.NotFound(w, r)
@@ -164,8 +164,8 @@ func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// Fetch fetches the movements of the user's Conexões now, then reloads the screen. When a Conexão fails,
-// the others are still fetched, the error is logged and the screen answers 502 with a warning over the Conexões, whose
+// Fetch fetches the movements of the user's Connections now, then reloads the screen. When a Connection fails,
+// the others are still fetched, the error is logged and the screen answers 502 with a warning over the Connections, whose
 // state shows any Item that asks to reconnect.
 func (p Page) Fetch(w http.ResponseWriter, r *http.Request) {
 	if !p.openFinance.Enabled() {

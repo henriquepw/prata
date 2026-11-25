@@ -25,9 +25,9 @@ const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + conso
 // budgetSlice is a slice of the 100% bar, its width set by the server and the script.
 const budgetSlice = "block bg-current transition-all duration-(--move)"
 
-// Screen is the Categorias screen: the Receita mensal panel, with its prompt, the 100% bar and the line that
-// says what is missing or exceeds, and the Categorias panel, with a row per category (its name opening its sheet, a
-// slider, the field in the typed mode and the value in the other) and "> salvar divisão". Without a Receita mensal it
+// Screen is the Categories screen: the monthly income panel, with its prompt, the 100% bar and the line that
+// says what is missing or exceeds, and the Categories panel, with a row per category (its name opening its sheet, a
+// slider, the field in the typed mode and the value in the other) and "> save split". Without a monthly income it
 // asks for it first: no bar, slider nor limit field, and the stored division goes along hidden, in percent, until a
 // typed one above zero comes back in a 422. flash is the category a sheet just saved.
 templ Screen(form Form, flash string) {
@@ -186,7 +186,7 @@ templ budgetRow(form Form, id, name, color string, flash bool) {
 	</div>
 }
 
-// budgetActions is the Categorias panel's "editar em [valor] [%]", only while there is a Receita mensal to divide,
+// budgetActions is the Categories panel's "edit in [amount] [%]", only while there is a monthly income to divide,
 // and its "+ nova [n]".
 templ budgetActions(form Form, hasIncome bool) {
 	<span class="flex flex-wrap items-center justify-end gap-4">
@@ -211,7 +211,7 @@ templ budgetActions(form Form, hasIncome bool) {
 	</span>
 }
 
-// budgetStatus is the line under the bar: what is missing to close the Receita mensal, what exceeds it, in
+// budgetStatus is the line under the bar: what is missing to close the monthly income, what exceeds it, in
 // destructive, or "fechado em 100%".
 templ budgetStatus(form Form) {
 	{{ cents, points := form.gap() }}

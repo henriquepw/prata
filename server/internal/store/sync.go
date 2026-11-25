@@ -313,9 +313,9 @@ func demoteDefault(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
 	return nil
 }
 
-// keepDivision keeps a client's push from breaking the division of a defined Receita mensal: the monthly limit of a
+// keepDivision keeps a client's push from breaking the division of a defined monthly income: the monthly limit of a
 // CATEGORY CREATE or UPDATE stays the stored one, 0 for a new category, in the payload too so the client pulls it back.
-// The web divides the Receita mensal through SaveBudget, which does not push.
+// The web divides the monthly income through SaveBudget, which does not push.
 func keepDivision(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Op, error) {
 	var payload map[string]json.RawMessage
 	if op.Entity != "CATEGORY" || op.Kind == KindDelete || json.Unmarshal(op.Payload, &payload) != nil {

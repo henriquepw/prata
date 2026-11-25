@@ -1,4 +1,4 @@
-// Package welcomepage is the tela inicial after a signup: the division form and the Modo do limite diário.
+// Package welcomepage is the welcome screen after a signup: the division form and the daily limit mode.
 package welcomepage
 
 import (
@@ -19,12 +19,12 @@ type Page struct{ db *store.Store }
 // New returns the welcome page over db.
 func New(db *store.Store) Page { return Page{db: db} }
 
-// suggestedDivision is the Divisão sugerida: the hundredths of a percent of the Receita mensal that go to each
+// suggestedDivision is the suggested division: the hundredths of a percent of the monthly income that go to each
 // initial category. Nothing of it is stored as a percentage; the screen only fills the form with it.
 var suggestedDivision = map[string]int64{"Gastos fixos": 5000, "Investimento": 2000, "Meta": 1500, "Livre": 1500}
 
-// Welcome is the tela inicial after a signup: the division form in percent, filled with the Divisão sugerida, and the
-// Modo do limite diário, dynamic.
+// Welcome is the welcome screen after a signup: the division form in percent, filled with the suggested division, and the
+// daily limit mode, dynamic.
 func (p Page) Welcome(w http.ResponseWriter, r *http.Request) {
 	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
@@ -41,8 +41,8 @@ func (p Page) Welcome(w http.ResponseWriter, r *http.Request) {
 	session.Render(w, r, http.StatusOK, welcomePage(form, prefs.DailyLimitDynamic))
 }
 
-// Save stores the Receita mensal, the division and the Modo do limite diário and goes home, or answers 422 with
-// the form and stores nothing when the Receita mensal is not above zero, a value is invalid or the division does not
+// Save stores the monthly income, the division and the daily limit mode and goes home, or answers 422 with
+// the form and stores nothing when the monthly income is not above zero, a value is invalid or the division does not
 // close it.
 func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	categories, ok := form.LiveCategories(w, r, p.db)

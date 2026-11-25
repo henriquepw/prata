@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// fetchedPadaria is a web client whose Conexão already fetched one pending Movimento, "Padaria".
+// fetchedPadaria is a web client whose Connection already fetched one pending Movement, "Padaria".
 func fetchedPadaria(t *testing.T) (*webClient, *fakePluggy) {
 	t.Helper()
 	w, fake := connected(t)
@@ -119,7 +119,7 @@ func TestReview_RemovingTheConnectionKeepsConfirmedTransactionsIgnoredAndFileMov
 		t.Fatal(err)
 	}
 
-	// Padaria CONFIRMED, Padaria Pão Quente IGNORED, Salário (Conexão) dropped as pending, Salário (file) PENDING.
+	// Padaria CONFIRMED, Padaria Pão Quente IGNORED, Salário (connection) dropped as pending, Salário (file) PENDING.
 	if want := []string{"CONFIRMED", "IGNORED", "PENDING"}; !slices.Equal(statuses, want) {
 		t.Errorf("movement statuses after removing the Conexão = %v, want %v", statuses, want)
 	}
@@ -163,7 +163,7 @@ func TestReview_ConfirmingAConnectionMovementAsAnOccurrenceCreatesTheOccurrences
 	}
 }
 
-// confirmSameOccurrence has the Movimento of the first description confirm the Padaria occurrence, then the one of the
+// confirmSameOccurrence has the Movement of the first description confirm the Padaria occurrence, then the one of the
 // second try the same, and checks that only the first made an op.
 func confirmSameOccurrence(t *testing.T, first, second string) {
 	t.Helper()

@@ -12,14 +12,14 @@ func settingsForm(dateFormat, numberFormat string) url.Values {
 	return url.Values{"language": {"pt-BR"}, "date_format": {dateFormat}, "number_format": {numberFormat}, "currency": {"BRL"}, "daily_limit_mode": {"DYNAMIC"}}
 }
 
-// withCurrency sets the form's Moeda.
+// withCurrency sets the form's currency.
 func withCurrency(form url.Values, currency string) url.Values {
 	form.Set("currency", currency)
 
 	return form
 }
 
-// withLanguage sets the form's Idioma.
+// withLanguage sets the form's language.
 func withLanguage(form url.Values, language string) url.Values {
 	form.Set("language", language)
 
@@ -84,7 +84,7 @@ func (w *webClient) assertBody(path string, texts ...string) {
 	}
 }
 
-// assertSettings checks the Configurações sheet, opened as htmx does, is 200 and has every text.
+// assertSettings checks the Settings sheet, opened as htmx does, is 200 and has every text.
 func (w *webClient) assertSettings(texts ...string) {
 	w.t.Helper()
 	sheet := w.submit(http.MethodGet, "/settings", nil)

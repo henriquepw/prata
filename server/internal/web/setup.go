@@ -10,7 +10,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
-// setupForm shows the configurações iniciais, with the Idioma of the browser and the default formats and Moeda, only
+// setupForm shows the initial settings, with the language of the browser and the default formats and currency, only
 // while the Servidor has no user.
 func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 	if !h.requireEmpty(w, r) {
@@ -27,7 +27,7 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 	session.Render(w, r, http.StatusOK, authpage.SetupPage(form))
 }
 
-// setup validates the configurações iniciais like the Configurações and, writing nothing, carries them to the
+// setup validates the initial settings like the Settings and, writing nothing, carries them to the
 // signup in its URL, or answers 422 with the form when a value is not one of the options.
 func (h handler) setup(w http.ResponseWriter, r *http.Request) {
 	if !h.requireEmpty(w, r) {

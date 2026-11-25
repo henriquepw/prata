@@ -9,9 +9,9 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
-// welcomePage is the tela inicial after a signup, without the app navigation: a panel explaining the Receita mensal,
-// the division and the limite diário, then the division form filled with the Divisão sugerida and the Modo do limite
-// diário with mode checked, as sibling panels, and "configurar depois" going home.
+// welcomePage is the welcome screen after a signup, without the app navigation: a panel explaining the monthly income,
+// the division and the daily limit, then the division form filled with the suggested division and the daily limit mode
+// with mode checked, as sibling panels, and "set up later" going home.
 templ welcomePage(form budget.Form, mode string) {
 	@shell.Document(i18n.T(ctx, "welcome.title")) {
 		@console.EntranceShell(console.Figlet, "Prata", "max-w-2xl") {

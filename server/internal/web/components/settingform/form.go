@@ -1,4 +1,4 @@
-// Package settingform is the settings form the Configurações sheet and the initial setup share.
+// Package settingform is the settings form the Settings sheet and the initial setup share.
 package settingform
 
 import (
@@ -9,7 +9,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
-// Validate flags the Idioma, Formato de data, Formato numérico and Moeda that are not one of the options.
+// Validate flags the language, date format, number format and currency that are not one of the options.
 func (f Form) Validate(ctx context.Context) {
 	if _, ok := prefs.Find(prefs.Languages, f.Language); !ok {
 		f.Errors["language"] = i18n.T(ctx, "settings.error.language")
@@ -28,7 +28,7 @@ func (f Form) Validate(ctx context.Context) {
 	}
 }
 
-// FromRequest reads the configurações iniciais from the request's form or query.
+// FromRequest reads the initial settings from the request's form or query.
 func FromRequest(r *http.Request) Form {
 	return Form{
 		Language: r.FormValue("language"), DateFormat: r.FormValue("date_format"), NumberFormat: r.FormValue("number_format"),
@@ -46,8 +46,8 @@ func (f Form) Fields() map[string]string {
 	return map[string]string{"language": f.Language, "date_format": f.DateFormat, "number_format": f.NumberFormat, "currency": f.Currency}
 }
 
-// Chosen is the configurações iniciais the signup request carries, none when they are missing or not all valid, and
-// the request in the chosen Idioma.
+// Chosen is the initial settings the signup request carries, none when they are missing or not all valid, and
+// the request in the chosen language.
 func Chosen(r *http.Request) (Form, *http.Request) {
 	form := FromRequest(r)
 	form.Validate(r.Context())

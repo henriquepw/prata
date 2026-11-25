@@ -259,7 +259,7 @@ var ptBR = map[string]string{
 	"transactions.edit":           "Editar transação",
 	"transactions.confirm_delete": "excluir esta transação? Ela some das listas e dos saldos em todos os dispositivos.",
 
-	// Activity log: entity and op kind, as in `transação "Uber" criada`.
+	// Activity log: entity and op kind, as in `transaction "Uber" created`.
 	"activity.title":              "Log de atividade",
 	"activity.empty":              "nenhuma operação ainda",
 	"activity.entity.CATEGORY":    "categoria",
@@ -270,7 +270,7 @@ var ptBR = map[string]string{
 	"activity.kind.UPDATE":        "alterada",
 	"activity.kind.DELETE":        "excluída",
 
-	// Mês: the month bar, the account's boxes and the statement.
+	// Month: the month bar, the account's boxes and the statement.
 	"month.previous":          "Mês anterior",
 	"month.next":              "Próximo mês",
 	"month.current":           "[mês atual]",
@@ -312,7 +312,7 @@ var ptBR = map[string]string{
 	"weekday.Friday":          "sex",
 	"weekday.Saturday":        "sáb",
 
-	// Mês: the launch prompt.
+	// Month: the launch prompt.
 	"launch.title":       "Lançar",
 	"launch.focus":       "focar",
 	"launch.submit":      "lançar",
@@ -323,7 +323,7 @@ var ptBR = map[string]string{
 	"launch.no_amount":   "falta o valor",
 	"launch.unknown":     "%s não existe",
 
-	// Confirmar ocorrência sheet.
+	// Confirm occurrence sheet.
 	"occurrence.title": "Confirmar ocorrência",
 	"occurrence.hint":  "veio diferente? ajuste antes de confirmar",
 

@@ -1,4 +1,4 @@
-// Package settingpage is the Configurações sheet.
+// Package settingpage is the Settings sheet.
 package settingpage
 
 import (
@@ -17,7 +17,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
-// Page is the Configurações handlers.
+// Page is the Settings handlers.
 type Page struct {
 	db          *store.Store
 	openFinance instance.OpenFinance
@@ -28,7 +28,7 @@ func New(db *store.Store, openFinance instance.OpenFinance) Page {
 	return Page{db: db, openFinance: openFinance}
 }
 
-// Settings answers the Configurações sheet; a full-page request goes home.
+// Settings answers the Settings sheet; a full-page request goes home.
 func (p Page) Settings(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("HX-Request") != "true" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
@@ -38,7 +38,7 @@ func (p Page) Settings(w http.ResponseWriter, r *http.Request) {
 	p.renderSettings(w, r)
 }
 
-// renderSettings answers the Configurações sheet with the saved values.
+// renderSettings answers the Settings sheet with the saved values.
 func (p Page) renderSettings(w http.ResponseWriter, r *http.Request) {
 	sess := session.From(r.Context())
 	fm := settingform.Form{Preferences: sess.Preferences, Currency: sess.Currency, Errors: map[string]string{}}
@@ -75,7 +75,7 @@ func (p Page) showSavedPluggy(ctx context.Context, fm *settingform.Form) (string
 	return credentials.ClientID, nil
 }
 
-// Save stores the Preferences, Idioma included, the account's Moeda and, when a secret is typed, the
+// Save stores the Preferences, language included, the account's currency and, when a secret is typed, the
 // Pluggy credentials after Pluggy accepts them, all at once, and reloads the page in them, or answers 422 with the
 // form and stores nothing when a value is not one of the options, a new client id comes without its secret, or
 // Pluggy refuses the credentials or is unavailable.

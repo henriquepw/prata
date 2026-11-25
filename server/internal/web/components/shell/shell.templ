@@ -51,7 +51,7 @@ type Shell struct {
 	Now     time.Time
 	Balance Balance
 	Flash   string
-	// Connections turns the Conexões screen on, with Open Finance.
+	// Connections turns the Connections screen on, with Open Finance.
 	Connections bool
 }
 
@@ -68,7 +68,7 @@ var nav = []navItem{
 
 type navItem struct{ Href, Label, NewURL, NewLabel string }
 
-// nav is the rail of this page: the screens, with Conexões after Movimentos when the instance has Open Finance on.
+// nav is the rail of this page: the screens, with Connections after Movements when the instance has Open Finance on.
 func (s Shell) Nav() []navItem {
 	if !s.Connections {
 		return nav
@@ -92,10 +92,10 @@ func (s Shell) newURL() string {
 
 // HeadScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
 // the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
-// [data-clock] (status bar and login footer) in the Formato de data its value holds, with the time in 24h. It also
+// [data-clock] (status bar and login footer) in the date format its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
-// outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Mês prompt and enter opens
+// outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Month prompt and enter opens
 // the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
 templ HeadScript() {
 	<script>
@@ -375,14 +375,14 @@ templ launcher(items []navItem) {
 	</dialog>
 }
 
-// optionLabel is a launcher option's numbered name, as in "01 ir para mês".
+// optionLabel is a launcher option's numbered name, as in "01 go to month".
 templ optionLabel(n int, text string) {
 	<span><span class="text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ fmt.Sprintf("%02d", n) }</span> { text }</span>
 }
 
-// BudgetScript recalculates the division on the Categorias screen at each input, as the server would: the active
-// mode's fields are the division, the other mode, the sliders, the bar, the status line and "> salvar divisão" follow
-// from them. Changing the mode copies the division into the other fields; changing the Receita mensal keeps the
+// BudgetScript recalculates the division on the Categories screen at each input, as the server would: the active
+// mode's fields are the division, the other mode, the sliders, the bar, the status line and "> save split" follow
+// from them. Changing the mode copies the division into the other fields; changing the monthly income keeps the
 // percentages in percent and the values in value. The server checks everything again on POST /budget.
 templ BudgetScript() {
 	<script>

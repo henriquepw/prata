@@ -19,7 +19,7 @@ type AccountRef struct {
 	Currency string `db:"currency"`
 }
 
-// Movement is a line read from a Conta bancária that waits for review.
+// Movement is a line read from a bank account that waits for review.
 type Movement struct {
 	ID              string `db:"id"`
 	Institution     string `db:"institution"`
@@ -50,7 +50,7 @@ func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, 
 }
 
 // ownMovement keeps, in a WHERE taking the user id, the movements the user may see: the imported ones, which belong to
-// the account, and those of the user's own Conexões, which no other member of the account reads.
+// the account, and those of the user's own Connections, which no other member of the account reads.
 const ownMovement = "(connection_id IS NULL OR connection_id IN (SELECT id FROM connections WHERE user_id = ?))"
 
 // PendingMovements are the pending movements of the session's account the user may see, newest first.
@@ -77,7 +77,7 @@ func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, s
 	return s.importMovements(ctx, userID, accountID, "", statements)
 }
 
-// ImportConnectionMovements is ImportMovements for the movements a Conexão fetched, which it links to the Conexão.
+// ImportConnectionMovements is ImportMovements for the movements a Connection fetched, which it links to the Connection.
 func (s *Store) ImportConnectionMovements(ctx context.Context, userID, accountID, connectionID string, statements []importfile.Statement) (added, existing int, err error) {
 	return s.importMovements(ctx, userID, accountID, connectionID, statements)
 }

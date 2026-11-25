@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// budgetForm is the division sheet's form: the Receita mensal, the input mode and a limit per category name.
+// budgetForm is the division sheet's form: the monthly income, the input mode and a limit per category name.
 func (w *webClient) budgetForm(income, mode string, limits map[string]string) url.Values {
 	form := url.Values{"income": {income}, "mode": {mode}}
 	for name, limit := range limits {
@@ -118,7 +118,7 @@ func TestWebBudget_DivisionThatDoesNotCloseIs422AndSavesNothing(t *testing.T) {
 	}
 }
 
-// definedBudget saves a Receita mensal of R$ 1.000,00 divided 500, 200, 100 and 200, and drains the ops.
+// definedBudget saves a monthly income of R$ 1.000,00 divided 500, 200, 100 and 200, and drains the ops.
 func definedBudget(t *testing.T) *webClient {
 	t.Helper()
 	w := newWebClient(t)

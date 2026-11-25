@@ -1,4 +1,4 @@
-// Package budget is the division form of the Receita mensal, shared by the Categorias and the welcome pages.
+// Package budget is the division form of the monthly income, shared by the Categories and the welcome pages.
 package budget
 
 import (
@@ -14,10 +14,10 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// Form is the division on the Categorias screen: the Receita mensal as typed and in cents, the Mode the limits
+// Form is the division on the Categories screen: the monthly income as typed and in cents, the Mode the limits
 // are typed in ("value" or "percent"), each category's limit as the text of its value and percent fields and in
 // cents and hundredths of a percent, and an error message per field name ("income", "limit_<id>", and "form" for a
-// division that does not close the Receita mensal).
+// division that does not close the monthly income).
 type Form struct {
 	Income     string
 	income     int64
@@ -28,12 +28,12 @@ type Form struct {
 	Cents      map[string]int64
 	Points     map[string]int64
 	Errors     map[string]string
-	// Welcome is the form of the tela inicial: it posts to /welcome as a plain form, always shows the limit fields
+	// Welcome is the form of the welcome screen: it posts to /welcome as a plain form, always shows the limit fields
 	// and leaves the categories without a sheet.
 	Welcome bool
 }
 
-// The Form modes: limits typed in value or in percent of the Receita mensal.
+// The Form modes: limits typed in value or in percent of the monthly income.
 const (
 	InValue   = "value"
 	InPercent = "percent"
@@ -47,7 +47,7 @@ func NewForm(categories []store.Category, mode string) Form {
 
 func (f Form) percent() bool { return f.Mode == InPercent }
 
-// gap is what is missing to close the Receita mensal, negative when it exceeds, in cents and in hundredths of a
+// gap is what is missing to close the monthly income, negative when it exceeds, in cents and in hundredths of a
 // percent; the typed mode decides, and the other follows from it.
 func (f Form) gap() (cents, points int64) {
 	cents, points = f.income, store.HundredPercent
@@ -74,7 +74,7 @@ func (f Form) gapSign() int64 {
 	return utils.IfElse(f.percent(), sign(points), sign(cents))
 }
 
-// closed tells whether the division adds up exactly to a Receita mensal, in the typed mode.
+// closed tells whether the division adds up exactly to a monthly income, in the typed mode.
 func (f Form) closed() bool {
 	cents, points := f.gap()
 
@@ -127,7 +127,7 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 	return form, budget
 }
 
-// Stored fills the screen with the stored Receita mensal and division, typed in percent.
+// Stored fills the screen with the stored monthly income and division, typed in percent.
 func Stored(r *http.Request, categories []store.Category) Form {
 	form := NewForm(categories, InPercent)
 	if form.income = session.From(r.Context()).MonthlyIncome; form.income > 0 {

@@ -22,11 +22,11 @@ type Form struct {
 	Error         string
 	CanSignUp     bool
 	HasUsers      bool
-	// Choices are the configurações iniciais the signup carries in hidden fields, by field name.
+	// Choices are the initial settings the signup carries in hidden fields, by field name.
 	Choices map[string]string
 }
 
-// choiceNames are the fields of the configurações iniciais, in the order the screen shows them.
+// choiceNames are the fields of the initial settings, in the order the screen shows them.
 var choiceNames = []string{"language", "date_format", "number_format", "currency"}
 
 // figlet404 is 404 in the ANSI Shadow font.
@@ -57,7 +57,7 @@ templ SignupPage(form Form) {
 	}
 }
 
-// SetupPage is the configurações iniciais: the Idioma, Formato de data, Formato numérico and Moeda, asked before the
+// SetupPage is the initial settings: the language, date format, number format and currency, asked before the
 // signup and stored by it.
 templ SetupPage(form settingform.Form) {
 	@shell.Document(i18n.T(ctx, "setup.title")) {

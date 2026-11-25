@@ -10,7 +10,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// launchPanel is the Mês prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
+// launchPanel is the Month prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
 // on screen, which the answer morphs, so only what changed moves and the new row flashes, then clears the line; a 422
 // swaps only the preview. headScript focuses it on "/", completes "@" and "#" on tab and blurs it on esc.
 templ launchPanel(page month) {
@@ -51,13 +51,13 @@ templ launchPanel(page month) {
 	}
 }
 
-// launchKeys is the prompt panel's "/ focar · enter lançar".
+// launchKeys is the prompt panel's "/ focus · enter add".
 templ launchKeys() {
 	<span class={ monthKeys }><kbd>/</kbd> { i18n.T(ctx, "launch.focus") } · <kbd>enter</kbd> { i18n.T(ctx, "launch.submit") }</span>
 }
 
 // launchPreview is what line saves, as "[despesa] −R$ 45,90 "padaria" ■ Mercado #casa 19/11/2026", with each problem
-// as "! falta o valor" or "! @x não existe", over the "tab" completions; the syntax while line is empty.
+// as "! missing the amount" or "!  doesn't exist", over the "tab" completions; the syntax while line is empty.
 templ launchPreview(line string, l launchLine) {
 	if strings.TrimSpace(line) == "" {
 		<p class="text-muted-foreground">{ i18n.T(ctx, "launch.hint") }</p>

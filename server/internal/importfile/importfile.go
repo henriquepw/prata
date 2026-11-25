@@ -1,4 +1,4 @@
-// Package importfile reads the bank files the user imports into Movimentos.
+// Package importfile reads the bank files the user imports into Movements.
 package importfile
 
 import (
@@ -26,7 +26,7 @@ const (
 	Card     = "CARD"
 )
 
-// Statement is the lines of one Conta bancária declared by the file, with the Moeda it declares, empty when none.
+// Statement is the lines of one bank account declared by the file, with the currency it declares, empty when none.
 type Statement struct {
 	Institution string
 	Account     string
@@ -221,11 +221,11 @@ func parseCents(value string) (int64, error) {
 // nubank is the institution of the CSVs it exports.
 const nubank = "Nubank"
 
-// CurrencyBRL is the only Moeda of the statements and Conexões for now.
+// CurrencyBRL is the only currency of the statements and Connections for now.
 const CurrencyBRL = "BRL"
 
 // parseNubankCSV reads the Nubank card statement (date,title,amount) or account statement
-// (Data,Valor,Identificador,Descrição), told apart by the header. Amounts are BRL.
+// (Data,Valor,Identificador,Description), told apart by the header. Amounts are BRL.
 func parseNubankCSV(content []byte) ([]Statement, error) {
 	records, err := csv.NewReader(strings.NewReader(strings.TrimPrefix(decode(content), "\ufeff"))).ReadAll()
 	if err != nil || len(records) == 0 {

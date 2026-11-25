@@ -1,4 +1,4 @@
-// Package categorypage is the Categorias screen: the division of the Receita mensal and the category sheet.
+// Package categorypage is the Categories screen: the division of the monthly income and the category sheet.
 package categorypage
 
 import (
@@ -18,7 +18,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// Page is the categories' handlers: the Categorias screen, its sheet and the division.
+// Page is the categories' handlers: the Categories screen, its sheet and the division.
 type Page struct {
 	db    *store.Store
 	shell shell.Func
@@ -34,7 +34,7 @@ func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
 	session.Render(w, r, http.StatusOK, categorySheet(categoryForm{Color: "GRAY"}))
 }
 
-// Categories is the Categorias screen.
+// Categories is the Categories screen.
 func (p Page) Categories(w http.ResponseWriter, r *http.Request) {
 	categories, err := p.db.Categories(r.Context(), session.From(r.Context()).AccountID)
 	if err != nil {
@@ -132,8 +132,8 @@ func (p Page) category(w http.ResponseWriter, r *http.Request) (store.Category, 
 	return category, true
 }
 
-// SaveBudget stores the Receita mensal and the division, or answers 422 with the screen's form, from what was typed,
-// and stores nothing when a value is not an amount, the Receita mensal is not above zero or the division does not
+// SaveBudget stores the monthly income and the division, or answers 422 with the screen's form, from what was typed,
+// and stores nothing when a value is not an amount, the monthly income is not above zero or the division does not
 // close it.
 func (p Page) SaveBudget(w http.ResponseWriter, r *http.Request) {
 	categories, ok := form.LiveCategories(w, r, p.db)

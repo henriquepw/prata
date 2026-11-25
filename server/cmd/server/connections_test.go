@@ -51,7 +51,7 @@ func (w *webClient) withCredentials() {
 	w.mustSubmit(http.MethodPost, "/settings", withPluggy(settingsForm("DD/MM/YYYY", "1.234,56"), pluggyClientID, pluggyClientSecret))
 }
 
-// connect registers the item on the account, as the Conexões form does.
+// connect registers the item on the account, as the Connections form does.
 func (w *webClient) connect(itemID, accountID string) bool {
 	w.t.Helper()
 
@@ -71,7 +71,7 @@ func (w *webClient) connectionRows() int {
 	return n
 }
 
-// connectionID is the id of the only Conexão in the database.
+// connectionID is the id of the only Connection in the database.
 func (w *webClient) connectionID() string {
 	w.t.Helper()
 

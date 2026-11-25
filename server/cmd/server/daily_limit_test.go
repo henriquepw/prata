@@ -18,7 +18,7 @@ func (w *webClient) spend(category string, cents int, at time.Time) op {
 	})
 }
 
-// setDailyMode saves the user's Modo do limite diário through the Configurações sheet.
+// setDailyMode saves the user's daily limit mode through the Settings sheet.
 func (w *webClient) setDailyMode(mode string) {
 	w.t.Helper()
 	form := settingsForm("DD/MM/YYYY", "1.234,56")
@@ -39,7 +39,7 @@ func dayLimit(body, date string) string {
 	return limit
 }
 
-// dailyBudget is a Receita mensal of R$ 3.000,00, all of it on Livre, the only daily category, in mode; DYNAMIC is the
+// dailyBudget is a monthly income of R$ 3.000,00, all of it on Livre, the only daily category, in mode; DYNAMIC is the
 // default and is left untouched.
 func dailyBudget(t *testing.T, mode string) *webClient {
 	t.Helper()
@@ -53,7 +53,7 @@ func dailyBudget(t *testing.T, mode string) *webClient {
 	return w
 }
 
-// dayTone is the color of the day cell of date on the Mês of month, "" when there is no such cell.
+// dayTone is the color of the day cell of date on the Month of month, "" when there is no such cell.
 func dayTone(body, date string) string {
 	_, rest, found := strings.Cut(body, `data-date="`+date+`" data-tone="`)
 	if !found {
@@ -242,7 +242,7 @@ func TestWebSettings_DailyLimitModeIsOnlyTheUsersWhoChangedIt(t *testing.T) {
 	w.assertSelectedDailyMode("FIXED")
 }
 
-// assertSelectedDailyMode checks /settings shows mode as the selected Modo do limite diário.
+// assertSelectedDailyMode checks /settings shows mode as the selected daily limit mode.
 func (w *webClient) assertSelectedDailyMode(mode string) {
 	w.t.Helper()
 	body := w.submit(http.MethodGet, "/settings", nil).Body.String()

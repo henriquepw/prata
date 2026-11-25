@@ -17,7 +17,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 )
 
-// connectionsPage is the Conexões screen: the form that registers an Item over the list of Conexões.
+// connectionsPage is the Connections screen: the form that registers an Item over the list of Connections.
 templ connectionsPage(s shell.Shell, view connectionsView) {
 	@shell.Layout(s) {
 		@connectionFormPanel(view)
@@ -25,8 +25,8 @@ templ connectionsPage(s shell.Shell, view connectionsView) {
 	}
 }
 
-// connectionFormPanel registers a Conexão by the Item id, onto a BRL account; without Pluggy credentials it sends
-// the user to Configurações. A response, a 422 included, swaps the screen's main.
+// connectionFormPanel registers a Connection by the Item id, onto a BRL account; without Pluggy credentials it sends
+// the user to Settings. A response, a 422 included, swaps the screen's main.
 templ connectionFormPanel(view connectionsView) {
 	@console.Panel(i18n.T(ctx, "connections.add"), "", nil) {
 		if !view.HasCredentials {
@@ -60,7 +60,7 @@ templ connectionFormPanel(view connectionsView) {
 	}
 }
 
-// fetchAction is the "buscar agora" button of the panel head, shown once there is a Conexão to fetch. A failure,
+// fetchAction is the "fetch now" button of the panel head, shown once there is a Connection to fetch. A failure,
 // answered with the page, swaps the screen's main.
 templ fetchAction(show bool) {
 	if show {
@@ -72,7 +72,7 @@ templ fetchAction(show bool) {
 	}
 }
 
-// connectionState is the state chip of a Conexão: reconnect when its Item asks the user to, else Pluggy's status.
+// connectionState is the state chip of a Connection: reconnect when its Item asks the user to, else Pluggy's status.
 templ connectionState(c store.Connection) {
 	if pluggy.NeedsReconnect(c.Status, c.ExecutionStatus) {
 		@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
@@ -85,8 +85,8 @@ templ connectionState(c store.Connection) {
 	}
 }
 
-// connectionsPanel lists the Conexões, each with its state and its remove button, under the error of the last
-// "buscar agora".
+// connectionsPanel lists the Connections, each with its state and its remove button, under the error of the last
+// "fetch now".
 templ connectionsPanel(view connectionsView, loc *time.Location) {
 	@console.Panel(i18n.T(ctx, "nav.connections"), "", fetchAction(len(view.Connections) > 0)) {
 		if view.FetchError != "" {

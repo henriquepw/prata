@@ -22,7 +22,7 @@ type categoryForm struct {
 	Errors      map[string]string
 }
 
-// categoriesPage is the Categorias screen, which is the division of the Receita mensal (budget.Screen).
+// categoriesPage is the Categories screen, which is the division of the monthly income (budget.Screen).
 templ categoriesPage(s shell.Shell, form budget.Form) {
 	@shell.Layout(s) {
 		@budget.Screen(form, s.Flash)

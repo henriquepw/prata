@@ -42,7 +42,7 @@ func Commit(db *store.Store, w http.ResponseWriter, r *http.Request, fieldErrors
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// returnPath is the page a sheet submit returns to, which shows what it wrote: the Mês for a transaction, and otherwise
+// returnPath is the page a sheet submit returns to, which shows what it wrote: the Month for a transaction, and otherwise
 // its own list, as "/tags" for POST /tags/{id}.
 func returnPath(entity string, r *http.Request) string {
 	if entity == "TRANSACTION" {

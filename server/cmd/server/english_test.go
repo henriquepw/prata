@@ -10,7 +10,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// newEnglishClient is a web client whose user picked the Idioma en.
+// newEnglishClient is a web client whose user picked the language en.
 func newEnglishClient(t *testing.T) *webClient {
 	t.Helper()
 	w := newWebClient(t)

@@ -49,7 +49,7 @@ func assertInOrder(t *testing.T, body string, texts ...string) {
 	}
 }
 
-// boxes is the Mês's six boxes in order, each value before its label.
+// boxes is the Month's six boxes in order, each value before its label.
 func boxes(previous, income, outcome, realized, pending, projected string) []string {
 	return []string{previous, "Saldo anterior", income, "+ Entradas", outcome, "− Saídas", realized, "= Realizado", pending, "± A confirmar", projected, "= Projetado"}
 }

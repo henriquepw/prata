@@ -60,7 +60,7 @@ func percent(usage store.CategoryUsage) string {
 	return strconv.FormatInt((usage.Used*100+usage.MonthlyLimit/2)/usage.MonthlyLimit, 10) + "%"
 }
 
-// monthKeys is the month's hint in a panel slot, as "/ focar · enter lançar": muted caps with the keys in primary.
+// monthKeys is the month's hint in a panel slot, as "/ focus · enter add": muted caps with the keys in primary.
 const monthKeys = "text-2xs tracking-wider text-muted-foreground uppercase [&_kbd]:text-primary"
 
 // statementDay is a cell of a statement's day line: muted caps over a --line-soft border.
@@ -76,14 +76,14 @@ const dailyTipBox = "pointer-events-none absolute bottom-full left-1/2 z-10 mb-1
 // tightTable narrows a wide table's cell padding on mobile, spelled out here for Tailwind.
 const tightTable = "@max-2xl/console:[&_:is(td,th)]:px-1"
 
-// shortDay writes a pure "YYYY-MM-DD" date without the year in the request's Formato de data, as "19/11".
+// shortDay writes a pure "YYYY-MM-DD" date without the year in the request's date format, as "19/11".
 func shortDay(ctx context.Context, date string) string {
 	t, _ := time.Parse(time.DateOnly, date)
 
 	return t.Format(strings.Trim(strings.ReplaceAll(prefs.DateLayout(ctx), "2006", ""), "/-"))
 }
 
-// monthURL is the Mês of month, as YYYY-MM, with the statement narrowed to category when it is not empty.
+// monthURL is the Month of month, as YYYY-MM, with the statement narrowed to category when it is not empty.
 func monthURL(month, category string) string {
 	if category == "" {
 		return "/?month=" + month
@@ -97,7 +97,7 @@ func monthOffset(month time.Time, offset int) string {
 	return month.AddDate(0, offset, 0).Format(monthLayout)
 }
 
-// monthPage is the Mês: the month bar over the boxes and the statement, which a confirmation on a row swaps.
+// monthPage is the Month: the month bar over the boxes and the statement, which a confirmation on a row swaps.
 templ monthPage(s shell.Shell, page month) {
 	@shell.Layout(s) {
 		@monthBar(page)
@@ -112,7 +112,7 @@ templ monthSwap(s shell.Shell, page month) {
 	@shell.BalanceLine(s.Balance, true)
 }
 
-// monthBar is "‹ novembro de 2026 ›", with "[mês atual]" away from it and the [ ] keys on the right.
+// monthBar is "‹ November 2026 ›", with "[this month]" away from it and the [ ] keys on the right.
 templ monthBar(page month) {
 	<div class="mb-5 flex items-center justify-between gap-4">
 		<div class="flex items-center gap-2">
@@ -128,7 +128,7 @@ templ monthBar(page month) {
 
 var weekdays = []string{"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"}
 
-// dailyBudget is the slot of the daily limit panel: the Modo do limite diário and the budget it spreads over the month.
+// dailyBudget is the slot of the daily limit panel: the daily limit mode and the budget it spreads over the month.
 templ dailyBudget(d daily) {
 	if d.Defined {
 		<span class={ monthKeys }>{ i18n.T(ctx, "month.daily_budget", prefs.Money(ctx, d.Budget)) }</span>
@@ -173,7 +173,7 @@ templ dailyCalendar(page month) {
 }
 
 // dailyTip is the tooltip of a day: its date, spent and limit, what was left or went over with the share, nothing of
-// that for a day still to come, and how the Modo do limite diário makes the limit.
+// that for a day still to come, and how the daily limit mode makes the limit.
 templ dailyTip(page month, cell dailyCell) {
 	<span id={ "daily-tip-" + cell.Date } role="tooltip" class={ dailyTipBox }>
 		<strong>{ i18n.T(ctx, "weekday."+dayOf(cell.Date).Weekday().String()) } { shortDay(ctx, cell.Date) }</strong>
@@ -334,7 +334,7 @@ templ todayLine(page month) {
 }
 
 // pendingRow is a pending occurrence in the statement, with its date when withDate: muted, its [pendente] or
-// [atrasada] chip and "confirmar", which swaps the month in place. The row itself opens "confirmar ocorrência".
+// [overdue] chip and "confirmar", which swaps the month in place. The row itself opens "confirm occurrence".
 templ pendingRow(page month, p shell.Occurrence, withDate bool) {
 	{{ url := "/recurrences/" + p.Recurrence.ID + "/occurrences/" + p.Date }}
 	@table.Row(table.RowProps{Class: "*:text-muted-foreground", Attributes: console.SheetRow(url, false).Attributes}) {

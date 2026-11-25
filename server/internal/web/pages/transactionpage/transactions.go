@@ -1,4 +1,4 @@
-// Package transactionpage is the transaction sheet, and the old transactions list that sends to the Mês.
+// Package transactionpage is the transaction sheet, and the old transactions list that sends to the Month.
 package transactionpage
 
 import (
@@ -28,7 +28,7 @@ func New(db *store.Store) Page {
 	return Page{db: db}
 }
 
-// NewSheet is an empty transaction sheet for today, in the category the Mês it is opened from is filtered by.
+// NewSheet is an empty transaction sheet for today, in the category the Month it is opened from is filtered by.
 func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
 	fm, ok := entry.Load(w, r, p.db)
 	if !ok {
@@ -157,7 +157,7 @@ func (p Page) transaction(w http.ResponseWriter, r *http.Request) (store.Transac
 	return transaction, true
 }
 
-// Redirect sends the old transactions list to the Mês, keeping its month.
+// Redirect sends the old transactions list to the Month, keeping its month.
 func (p Page) Redirect(w http.ResponseWriter, r *http.Request) {
 	url := "/"
 	if month := r.URL.Query().Get("month"); month != "" {

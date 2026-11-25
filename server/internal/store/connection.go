@@ -12,7 +12,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// ErrCurrency means the account's Moeda is not BRL, the only one a Conexão accepts.
+// ErrCurrency means the account's currency is not BRL, the only one a Connection accepts.
 var ErrCurrency = errors.New("account currency is not BRL")
 
 // Connection is a user's Pluggy Item feeding movements into one of their accounts.
@@ -25,7 +25,7 @@ type Connection struct {
 	LastUpdatedAt   sql.NullString `db:"last_updated_at"`
 }
 
-// Connections are the user's Conexões, oldest first.
+// Connections are the user's Connections, oldest first.
 func (s *Store) Connections(ctx context.Context, userID string) ([]Connection, error) {
 	query := `
 		SELECT n.id, a.name AS account_name, n.institution, n.status, n.execution_status, n.last_updated_at
@@ -43,8 +43,8 @@ func (s *Store) Connections(ctx context.Context, userID string) ([]Connection, e
 	return connections, nil
 }
 
-// AddConnection stores the user's Conexão to the Pluggy Item with that id, feeding the account. It returns
-// ErrNotFound when the user does not belong to the account and ErrCurrency when the account's Moeda is not BRL.
+// AddConnection stores the user's Connection to the Pluggy Item with that id, feeding the account. It returns
+// ErrNotFound when the user does not belong to the account and ErrCurrency when the account's currency is not BRL.
 func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID string, item pluggy.Item) error {
 	query := `
 		SELECT c.currency
@@ -78,8 +78,8 @@ func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID str
 	return nil
 }
 
-// DeleteConnection removes the user's Conexão and its pending movements, keeping the confirmed and ignored ones. It
-// returns ErrNotFound when the user has no such Conexão.
+// DeleteConnection removes the user's Connection and its pending movements, keeping the confirmed and ignored ones. It
+// returns ErrNotFound when the user has no such Connection.
 func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
@@ -111,7 +111,7 @@ func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
 	return tx.Commit()
 }
 
-// FetchTarget is a Conexão to fetch movements for: its owner, the account it feeds and when it was last fetched.
+// FetchTarget is a Connection to fetch movements for: its owner, the account it feeds and when it was last fetched.
 type FetchTarget struct {
 	ID            string         `db:"id"`
 	UserID        string         `db:"user_id"`
@@ -121,7 +121,7 @@ type FetchTarget struct {
 	LastFetchedAt sql.NullString `db:"last_fetched_at"`
 }
 
-// FetchTargets are the Conexões of the user, or of every user when userID is empty.
+// FetchTargets are the Connections of the user, or of every user when userID is empty.
 func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget, error) {
 	query := `
 		SELECT id, user_id, account_id, item_id, institution, last_fetched_at
@@ -138,7 +138,7 @@ func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget,
 	return targets, nil
 }
 
-// UpdateConnectionItem records the state Pluggy reported for the Conexão's Item.
+// UpdateConnectionItem records the state Pluggy reported for the Connection's Item.
 func (s *Store) UpdateConnectionItem(ctx context.Context, id string, item pluggy.Item) error {
 	query := `
 		UPDATE connections
@@ -152,7 +152,7 @@ func (s *Store) UpdateConnectionItem(ctx context.Context, id string, item pluggy
 	return nil
 }
 
-// MarkFetched records when the Conexão's movements were last fetched in full.
+// MarkFetched records when the Connection's movements were last fetched in full.
 func (s *Store) MarkFetched(ctx context.Context, id string, fetchedAt time.Time) error {
 	query := "UPDATE connections SET last_fetched_at = ? WHERE id = ?"
 	if _, err := s.ExecContext(ctx, query, formatTime(fetchedAt), id); err != nil {

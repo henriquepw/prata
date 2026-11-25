@@ -19,19 +19,19 @@ const (
 // ErrInvalidSession means the session token is unknown, expired or deleted.
 var ErrInvalidSession = errors.New("invalid session")
 
-// Session is who a web session acts as, the user's Preferences, the account's Moeda and when it expires.
+// Session is who a web session acts as, the user's Preferences, the account's currency and when it expires.
 type Session struct {
 	UserID    string
 	Email     string
 	AccountID string
 	Preferences
 	Currency string
-	// MonthlyIncome is the account's Receita mensal in cents, 0 when not defined.
+	// MonthlyIncome is the account's monthly income in cents, 0 when not defined.
 	MonthlyIncome int64
 	ExpiresAt     time.Time
 }
 
-// Preferences are a user's Idioma, Formato de data, Formato numérico and Modo do limite diário, spelled as the schema
+// Preferences are a user's language, date format, number format and daily limit mode, spelled as the schema
 // stores them ("pt-BR", "DD/MM/YYYY", "1.234,56", "DYNAMIC").
 type Preferences struct {
 	Language       string `db:"language"`
@@ -148,7 +148,7 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	}, nil
 }
 
-// SaveSettings stores the user's Preferences, the account's Moeda, without converting any amount, and, when pluggy
+// SaveSettings stores the user's Preferences, the account's currency, without converting any amount, and, when pluggy
 // is not nil, the user's sealed Pluggy credentials in one transaction; the schema refuses values outside their
 // options and then nothing is stored.
 func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, preferences Preferences, currency string, pluggy []byte) error {

@@ -16,7 +16,7 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// launchLine is a line of the Mês prompt read as a transaction: Amount is 0 when the line has none, Date is
+// launchLine is a line of the Month prompt read as a transaction: Amount is 0 when the line has none, Date is
 // "YYYY-MM-DD", Category and Tag are zero when the line names none, Unknown holds every "@x" or "#x" that names
 // nothing, and Suggestions the completions of the "@" or "#" the line ends in.
 type launchLine struct {
@@ -36,7 +36,7 @@ func fold(s string) string {
 }
 
 // parseLaunch reads a prompt line, as "-45,90 padaria ontem @merc #casa": the first number in the request's Formato
-// numérico is the amount, an outcome unless signed "+"; "@x" is the first category and "#x" the first tag whose
+// number is the amount, an outcome unless signed "+"; "@x" is the first category and "#x" the first tag whose
 // folded name starts with x; "hoje", "ontem" and "dd/mm" in year are the date, today by default; the rest is the
 // description.
 func parseLaunch(ctx context.Context, line string, categories []store.Category, tags []store.Tag, today time.Time, year int) launchLine {

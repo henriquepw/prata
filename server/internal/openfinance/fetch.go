@@ -1,4 +1,4 @@
-// Package openfinance fetches the movements of the users' Conexões from Pluggy.
+// Package openfinance fetches the movements of the users' Connections from Pluggy.
 package openfinance
 
 import (
@@ -14,21 +14,21 @@ import (
 )
 
 // overlap is how far before the last fetch a later fetch reads again, since Pluggy can post a line dated in the
-// past; the unique external id keeps the lines it already gave from becoming second Movimentos.
+// past; the unique external id keeps the lines it already gave from becoming second Movements.
 const overlap = 7 * 24 * time.Hour
 
 // cardPayment is the operationType of the line that pays the card bill, which the bank account paying it shows too.
 const cardPayment = "PAGAMENTO_FATURA"
 
-// Fetcher reads the Conexões from Pluggy with the owners' saved credentials.
+// Fetcher reads the Connections from Pluggy with the owners' saved credentials.
 type Fetcher struct {
 	DB     *store.Store
 	Key    string
 	Pluggy pluggy.Client
 }
 
-// Fetch stores the posted lines of every Conta bancária of the user's Conexões as pending Movimentos, or of every
-// Conexão when userID is empty. A Conexão that fails does not stop the others: the error is returned, joined, after
+// Fetch stores the posted lines of every bank account of the user's Connections as pending Movements, or of every
+// Connection when userID is empty. A Connection that fails does not stop the others: the error is returned, joined, after
 // all were tried. It never makes a domain op.
 func (f Fetcher) Fetch(ctx context.Context, userID string, now time.Time) error {
 	targets, err := f.DB.FetchTargets(ctx, userID)

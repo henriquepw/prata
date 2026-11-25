@@ -32,7 +32,7 @@ var (
 )
 
 // Signup creates an account adopting the given ids; DeviceID, DeviceName are empty for a web signup. Language,
-// the Idioma of the signup page, DateFormat, NumberFormat and Currency only come from the web; empty is the default.
+// the language of the signup page, DateFormat, NumberFormat and Currency only come from the web; empty is the default.
 type Signup struct {
 	Email        string `json:"email"`
 	Password     string `json:"password"`

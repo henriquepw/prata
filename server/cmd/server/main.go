@@ -27,7 +27,7 @@ import (
 const (
 	defaultDBPath = "/data/prata.db"
 	defaultAddr   = ":8080"
-	// fetchInterval is how often the server fetches the movements of every Conexão.
+	// fetchInterval is how often the server fetches the movements of every Connection.
 	fetchInterval = 6 * time.Hour
 )
 
@@ -121,7 +121,7 @@ func run(args, env []string) int {
 	return 0
 }
 
-// fetchEvery fetches the movements of every Conexão each interval until ctx ends; a failure is logged and
+// fetchEvery fetches the movements of every Connection each interval until ctx ends; a failure is logged and
 // waits for the next round.
 func fetchEvery(ctx context.Context, fetcher openfinance.Fetcher, interval time.Duration) {
 	ticker := time.NewTicker(interval)

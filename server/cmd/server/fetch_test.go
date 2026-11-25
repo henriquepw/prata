@@ -74,7 +74,7 @@ func (f *fakePluggy) dateFroms() []string {
 	return slices.Clone(f.dates)
 }
 
-// fetchNow presses "buscar agora" on the Conexões screen.
+// fetchNow presses "fetch now" on the Connections screen.
 func (w *webClient) fetchNow() *http.Response {
 	w.t.Helper()
 	response := w.submit(http.MethodPost, "/connections/fetch", nil)
@@ -82,7 +82,7 @@ func (w *webClient) fetchNow() *http.Response {
 	return response.Result()
 }
 
-// connected is a web client with Pluggy credentials and a Conexão on its account, served by the returned fake.
+// connected is a web client with Pluggy credentials and a Connection on its account, served by the returned fake.
 func connected(t *testing.T) (*webClient, *fakePluggy) {
 	t.Helper()
 	fake := newFakePluggy(t)

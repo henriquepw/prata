@@ -163,7 +163,7 @@ func (h handler) isEmpty(w http.ResponseWriter, r *http.Request) (empty, ok bool
 	return empty, true
 }
 
-// signupForm shows the signup in the Idioma of the configurações iniciais it carries. With no user, it needs them and
+// signupForm shows the signup in the language of the initial settings it carries. With no user, it needs them and
 // otherwise goes back to /setup; with users, it goes to /login when signup is closed.
 func (h handler) signupForm(w http.ResponseWriter, r *http.Request) {
 	empty, ok := h.isEmpty(w, r)
@@ -278,7 +278,7 @@ func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, la
 }
 
 // requireSession derives the session only from the cookie, refreshes the cookie expiry and sends
-// visitors without a live session to /setup or /login, per redirectToEntrance. The session and its Idioma ride in the request context.
+// visitors without a live session to /setup or /login, per redirectToEntrance. The session and its language ride in the request context.
 func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie(sessionCookie)
@@ -320,7 +320,7 @@ func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
 	session.Redirect(w, r, "/login")
 }
 
-// visitor serves a page without a session in the browser's Idioma: en when its preferred language is English, and
+// visitor serves a page without a session in the browser's language: en when its preferred language is English, and
 // pt-BR otherwise.
 func visitor(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

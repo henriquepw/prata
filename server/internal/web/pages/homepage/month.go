@@ -1,4 +1,4 @@
-// Package homepage is the Mês screen and its launch prompt. A page package follows this pattern: New takes what the
+// Package homepage is the Month screen and its launch prompt. A page package follows this pattern: New takes what the
 // page depends on and returns a Page whose methods are http.HandlerFuncs; web wires them to routes and middleware.
 package homepage
 
@@ -19,7 +19,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/utils"
 )
 
-// Page is the homepage's handlers: the Mês screen and the launch prompt.
+// Page is the homepage's handlers: the Month screen and the launch prompt.
 type Page struct {
 	db    *store.Store
 	shell shell.Func
@@ -32,7 +32,7 @@ func New(db *store.Store, shell shell.Func) Page {
 
 const monthLayout = "2006-01"
 
-// month is the Mês screen: the boxes of the month shown, in cents, its statement by day, newest first, and the usage of
+// month is the Month screen: the boxes of the month shown, in cents, its statement by day, newest first, and the usage of
 // each category. Overdue holds, on the current month only, the occurrences of earlier months still pending, drawn under
 // the "hoje" line, which sits before Days[TodayAt] (after the last day when TodayAt is len(Days), nowhere when it is
 // -1). Filter is the category the statement is narrowed to, empty when it shows all; the boxes never are. Flash is the
@@ -65,8 +65,8 @@ type day struct {
 }
 
 // daily is the daily limit panel: a cell per day of the month, Lead blank cells before the first to line it up on its
-// weekday, the Modo do limite diário and the Budget of the daily categories it spreads, all empty (and Defined false)
-// while the account has no Receita mensal.
+// weekday, the daily limit mode and the Budget of the daily categories it spreads, all empty (and Defined false)
+// while the account has no monthly income.
 type daily struct {
 	Defined bool
 	Lead    int
@@ -84,8 +84,8 @@ type dailyCell struct {
 	Tone         string
 }
 
-// readDaily is the daily limit of each day of first's month in the session's Modo do limite diário, empty without a
-// Receita mensal: fixed, the monthly limits of the daily categories over the days of the month; dynamic, what is left
+// readDaily is the daily limit of each day of first's month in the session's daily limit mode, empty without a
+// monthly income: fixed, the monthly limits of the daily categories over the days of the month; dynamic, what is left
 // of them after the spending before the day over the days left counting it, never below zero, kept from today on. Each is set against what transactions spent on the
 // daily categories on that day in the location of first. A day is gray when it is after today or spent nothing, else
 // green up to 80% of the limit, yellow up to 100% and red above it.
@@ -292,7 +292,7 @@ func shownMonth(r *http.Request, now time.Time) time.Time {
 	return shown
 }
 
-// Home is the Mês screen of ?month=YYYY-MM, the current month in the user's time zone by default, with the statement
+// Home is the Month screen of ?month=YYYY-MM, the current month in the user's time zone by default, with the statement
 // narrowed to ?category=<id>.
 func (p Page) Home(w http.ResponseWriter, r *http.Request) {
 	s, ok := p.shell(w, r, "nav.month")
