@@ -5,6 +5,7 @@
 @import "./shadcn-tailwind.css";
 
 @source "../**/*.templ";
+@source "../components/console/category.go";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -470,8 +471,23 @@ main {
   animation: vt-in var(--swap) var(--ease) both;
 }
 
-dialog.sheet[open] {
-  animation: sheet-in var(--swap) var(--ease);
+/* The sheet slides in from the right and back out: display and overlay are discrete, so the closing dialog stays on
+   screen (and on the top layer) until the slide ends. */
+dialog.sheet {
+  transition:
+    transform var(--swap) var(--ease),
+    display var(--swap) allow-discrete,
+    overlay var(--swap) allow-discrete;
+}
+
+dialog.sheet:not([open]) {
+  transform: translateX(100%);
+}
+
+@starting-style {
+  dialog.sheet[open] {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes grain {
@@ -552,12 +568,6 @@ dialog.sheet[open] {
   from {
     opacity: 0;
     transform: translateY(--spacing(1));
-  }
-}
-
-@keyframes sheet-in {
-  from {
-    transform: translateX(100%);
   }
 }
 

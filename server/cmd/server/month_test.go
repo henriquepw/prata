@@ -433,8 +433,8 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 func TestWebDecode_ReadsTheRealValueAndHidesTheScramble(t *testing.T) {
 	w := newWebClient(t)
 	body := get(w.handler, "/", w.cookie).Body.String()
-	for _, value := range []string{"Extrato", "Categorias", "R$ 0,00"} {
-		if want := `<span class="sr-only">` + value + `</span><span aria-hidden="true" data-decode>` + value + `</span>`; !strings.Contains(body, want) {
+	for value, kind := range map[string]string{"Extrato": "title", "Categorias": "title", "R$ 0,00": "value"} {
+		if want := `<span class="sr-only">` + value + `</span><span aria-hidden="true" data-decode="` + kind + `">` + value + `</span>`; !strings.Contains(body, want) {
 			t.Errorf("month lacks %q: %s", want, body)
 		}
 	}

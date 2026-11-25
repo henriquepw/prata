@@ -91,7 +91,8 @@ func (s Shell) newURL() string {
 }
 
 // HeadScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
-// the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it and ticks every
+// the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it, closes it on a click
+// outside its content (the backdrop) and ticks every
 // [data-clock] (status bar and login footer) in the date format its value holds, with the time in 24h. It also
 // runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
 // which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
@@ -143,7 +144,8 @@ templ HeadScript() {
 		    filter('')
 		  }, true)
 		  addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
-		  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
+		  addEventListener('click', e => e.target.id === 'sheet' && e.clientX < e.target.getBoundingClientRect().left && e.target.close())
+			  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
 		  addEventListener('keydown', e => {
 		    const launcher = document.getElementById('launcher')
 		    if (!launcher) return
@@ -280,7 +282,7 @@ templ Layout(s Shell) {
 			</div>
 		</div>
 		@launcher(s.Nav())
-		<dialog id="sheet" aria-label={ s.Title } onclose="this.replaceChildren()" class="sheet m-0 ml-auto h-dvh max-h-none w-full max-w-110 border-0 bg-background p-0 text-xs text-foreground backdrop:bg-(--scrim)"></dialog>
+		<dialog id="sheet" aria-label={ s.Title } onclose="Promise.allSettled(this.getAnimations().map(a => a.finished)).then(() => this.open || this.replaceChildren())" class="sheet m-0 ml-auto h-dvh max-h-none w-full max-w-110 border-0 bg-background p-0 text-xs text-foreground backdrop:bg-(--scrim)"></dialog>
 	}
 }
 
