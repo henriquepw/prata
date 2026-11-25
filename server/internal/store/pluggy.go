@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // PluggyCredentials are a user's own client id and secret of the Pluggy API.
@@ -18,7 +20,7 @@ type PluggyCredentials struct {
 }
 
 // SealPluggyCredentials encrypts the user's credentials with the instance key, for SaveSettings to store.
-func SealPluggyCredentials(key, userID string, credentials PluggyCredentials) ([]byte, error) {
+func SealPluggyCredentials(key string, userID id.ID, credentials PluggyCredentials) ([]byte, error) {
 	plain, err := json.Marshal(credentials)
 	if err != nil {
 		return nil, fmt.Errorf("encoding pluggy credentials: %w", err)
@@ -34,7 +36,7 @@ func SealPluggyCredentials(key, userID string, credentials PluggyCredentials) ([
 
 // PluggyCredentials returns the user's credentials, or ErrNotFound when there are none or the instance key can no
 // longer decrypt them.
-func (s *Store) PluggyCredentials(ctx context.Context, key, userID string) (PluggyCredentials, error) {
+func (s *Store) PluggyCredentials(ctx context.Context, key string, userID id.ID) (PluggyCredentials, error) {
 	query := "SELECT credentials FROM pluggy_credentials WHERE user_id = ?"
 
 	var sealed []byte
@@ -66,7 +68,7 @@ func (s *Store) PluggyCredentials(ctx context.Context, key, userID string) (Plug
 }
 
 // DeletePluggyCredentials removes the user's credentials, if any.
-func (s *Store) DeletePluggyCredentials(ctx context.Context, userID string) error {
+func (s *Store) DeletePluggyCredentials(ctx context.Context, userID id.ID) error {
 	query := "DELETE FROM pluggy_credentials WHERE user_id = ?"
 
 	_, err := s.ExecContext(ctx, query, userID)

@@ -394,7 +394,7 @@ func devicesPanel(devices []store.Device, loc *time.Location) templ.Component {
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}
-									templ_7745c5c3_Err = confirm.Inline(l10n.T(ctx, "devices.confirm_revoke", device.Name), l10n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID}).Render(ctx, templ_7745c5c3_Buffer)
+									templ_7745c5c3_Err = confirm.Inline(l10n.T(ctx, "devices.confirm_revoke", device.Name), l10n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID.String()}).Render(ctx, templ_7745c5c3_Buffer)
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}

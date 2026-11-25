@@ -147,7 +147,7 @@ templ movementsPanel(view movementsView) {
 // reviewForm confirms a movement as a transaction, editing only its description and, for an expense, its category
 // (the default one is preselected), or ignores it. A response swaps the screen's main.
 templ reviewForm(m store.Movement, categories []store.Category) {
-	<form hx-post={ "/movements/" + m.ID + "/confirm" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="flex flex-wrap items-center gap-2">
+	<form hx-post={ "/movements/" + m.ID.String() + "/confirm" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="flex flex-wrap items-center gap-2">
 		@input.Input(input.Props{Name: "description", Value: m.Description, Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "field.description")}})
 		if m.Kind == "OUTCOME" {
 			@categorySelect(categories)
@@ -155,7 +155,7 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 		@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "form.confirming")}}) {
 			<span>{ l10n.T(ctx, "movements.confirm") }</span>
 		}
-		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
+		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID.String() + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
 			<span>{ l10n.T(ctx, "movements.ignore") }</span>
 		}
 	</form>
@@ -165,7 +165,7 @@ templ reviewForm(m store.Movement, categories []store.Category) {
 templ categorySelect(categories []store.Category) {
 	@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "field.category")}}) {
 		for _, category := range categories {
-			@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
+			@nativeselect.Option(nativeselect.OptionProps{Value: category.ID.String(), Selected: category.IsDefault}) {
 				{ category.Name }
 			}
 		}
@@ -192,10 +192,10 @@ templ batchForm(categories []store.Category) {
 // first. A response swaps the screen's main.
 templ occurrenceConfirm(m store.Movement, occurrences []layout.Occurrence) {
 	if len(occurrences) > 0 {
-		<form hx-post={ "/movements/" + m.ID + "/occurrence" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mt-1 flex flex-wrap items-center gap-2">
+		<form hx-post={ "/movements/" + m.ID.String() + "/occurrence" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mt-1 flex flex-wrap items-center gap-2">
 			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "movements.occurrence")}}) {
 				for _, o := range occurrences {
-					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
+					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID.String() + ":" + o.Date}) {
 						{ movementDate(ctx, o.Date) } { cmp.Or(form.OrEmpty(o.Recurrence.Description), l10n.T(ctx, "field.no_description")) } { prefs.Money(ctx, form.Signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
 					}
 				}

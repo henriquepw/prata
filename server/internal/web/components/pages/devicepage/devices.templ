@@ -62,7 +62,7 @@ templ devicesPanel(devices []store.Device, loc *time.Location) {
 								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(confirm.Toggle), "data-focus": true}}) {
 									{ l10n.T(ctx, "devices.revoke") }
 								}
-								@confirm.Inline(l10n.T(ctx, "devices.confirm_revoke", device.Name), l10n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID})
+								@confirm.Inline(l10n.T(ctx, "devices.confirm_revoke", device.Name), l10n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID.String()})
 							}
 						}
 					}

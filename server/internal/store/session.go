@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 const (
@@ -21,9 +21,9 @@ var ErrInvalidSession = errors.New("invalid session")
 
 // Session is who a web session acts as, the user's Preferences, the account's currency and when it expires.
 type Session struct {
-	UserID    string
+	UserID    id.ID
 	Email     string
-	AccountID string
+	AccountID id.ID
 	Preferences
 	Currency string
 	// MonthlyIncome is the account's monthly income in cents, 0 when not defined.
@@ -41,11 +41,11 @@ type Preferences struct {
 }
 
 // Authenticate returns the id of the user with this email and password.
-func (s *Store) Authenticate(ctx context.Context, email, password string) (string, error) {
+func (s *Store) Authenticate(ctx context.Context, email, password string) (id.ID, error) {
 	query := "SELECT id, secret FROM users WHERE email = ? AND deleted_at IS NULL"
 
 	var user struct {
-		ID     string `db:"id"`
+		ID     id.ID  `db:"id"`
 		Secret string `db:"secret"`
 	}
 	err := s.GetContext(ctx, &user, query, email)
@@ -65,14 +65,14 @@ func (s *Store) Authenticate(ctx context.Context, email, password string) (strin
 }
 
 // CreateSession stores a new session for the user, valid for 30 days from now, and returns its token.
-func (s *Store) CreateSession(ctx context.Context, userID string, now time.Time) (string, error) {
+func (s *Store) CreateSession(ctx context.Context, userID id.ID, now time.Time) (string, error) {
 	query := `
 		INSERT INTO sessions (id, user_id, token_hash, expires_at, created_at)
 		VALUES (?, ?, ?, ?, ?)
 	`
 
 	token := newToken()
-	_, err := s.ExecContext(ctx, query, ulid.Make().String(), userID, hashToken(token), formatTime(now.Add(SessionTTL)), formatTime(now))
+	_, err := s.ExecContext(ctx, query, id.New(), userID, hashToken(token), formatTime(now.Add(SessionTTL)), formatTime(now))
 	if err != nil {
 		return "", fmt.Errorf("creating session: %w", err)
 	}
@@ -97,11 +97,11 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 	`
 
 	var row struct {
-		ID     string `db:"id"`
-		UserID string `db:"user_id"`
+		ID     id.ID  `db:"id"`
+		UserID id.ID  `db:"user_id"`
 		Email  string `db:"email"`
 		Preferences
-		AccountID     string `db:"account_id"`
+		AccountID     id.ID  `db:"account_id"`
 		Currency      string `db:"currency"`
 		MonthlyIncome int64  `db:"monthly_income"`
 		ExpiresAt     string `db:"expires_at"`
@@ -151,7 +151,7 @@ func (s *Store) SessionByToken(ctx context.Context, token string, now time.Time)
 // SaveSettings stores the user's Preferences, the account's currency, without converting any amount, and, when pluggy
 // is not nil, the user's sealed Pluggy credentials in one transaction; the schema refuses values outside their
 // options and then nothing is stored.
-func (s *Store) SaveSettings(ctx context.Context, userID, accountID string, preferences Preferences, currency string, pluggy []byte) error {
+func (s *Store) SaveSettings(ctx context.Context, userID, accountID id.ID, preferences Preferences, currency string, pluggy []byte) error {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting settings: %w", err)

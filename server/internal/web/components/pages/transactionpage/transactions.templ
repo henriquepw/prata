@@ -10,8 +10,8 @@ import (
 templ transactionSheet(form entry.Form) {
 	@sheet.Form(sheet.Props{
 		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
-		Action:    style.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
-		DeleteURL: style.IfElse(form.ID == "", "", "/transactions/"+form.ID),
+		Action:    style.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID.String()),
+		DeleteURL: style.IfElse(form.ID == "", "", "/transactions/"+form.ID.String()),
 		Confirm:   l10n.T(ctx, "transactions.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {

@@ -1,6 +1,7 @@
 package category
 
 import (
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
@@ -14,12 +15,12 @@ templ Name(name, color string) {
 
 // Field is the category of an entry, picked from categories with selected picked; the sheet hides it while
 // [receita] is checked, since an income has none.
-templ Field(categories []store.Category, selected, message string) {
+templ Field(categories []store.Category, selected id.ID, message string) {
 	<div class="group-has-[[name=kind][value=INCOME]:checked]/sheet:hidden">
 		@formfield.Field("category_id", l10n.T(ctx, "field.category"), message) {
 			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: formfield.AriaInvalid(message)}) {
 				for _, c := range categories {
-					@nativeselect.Option(nativeselect.OptionProps{Value: c.ID, Selected: c.ID == selected || (selected == "" && c.IsDefault)}) {
+					@nativeselect.Option(nativeselect.OptionProps{Value: c.ID.String(), Selected: c.ID == selected || (selected == "" && c.IsDefault)}) {
 						{ c.Name }
 					}
 				}

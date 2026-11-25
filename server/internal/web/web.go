@@ -28,7 +28,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
 	"github.com/henriquepw/prata/server/internal/web/components/view/settingform"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 //go:generate go tool templ generate -path ../..
@@ -224,7 +224,7 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if fm.EmailError == "" && fm.PasswordError == "" {
-		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: l10n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
+		signup := store.Signup{Email: email, Password: password, AccountID: id.New(), OwnerID: id.New(), Language: l10n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
 		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 		switch {
 		case errors.Is(err, store.ErrSignupClosed):
@@ -261,7 +261,7 @@ func (h handler) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // startSession opens the user's session and redirects to the page they land on.
-func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID, landing string) {
+func (h handler) startSession(w http.ResponseWriter, r *http.Request, userID id.ID, landing string) {
 	now := time.Now()
 	token, err := h.db.CreateSession(r.Context(), userID, now)
 	if err != nil {

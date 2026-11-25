@@ -11,8 +11,8 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/shared/recurrence"
-	"github.com/oklog/ulid/v2"
 )
 
 // occurrenceForm is the "confirm occurrence" sheet: the transaction sheet filled from the recurrence and the
@@ -83,12 +83,12 @@ func (p Page) ConfirmOccurrence(w http.ResponseWriter, r *http.Request) {
 		fm.Amount = strings.TrimSpace(r.PostFormValue("amount"))
 		fm.Description = strings.TrimSpace(r.PostFormValue("description"))
 		fm.OccurredAt = r.PostFormValue("occurred_at")
-		fm.CategoryID = r.PostFormValue("category_id")
+		fm.CategoryID = id.ID(r.PostFormValue("category_id"))
 	}
 
 	cents, occurredAt := fm.Parse(r)
 
-	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
+	change := store.Change{Entity: "TRANSACTION", EntityID: id.New(), Kind: store.KindCreate, Fields: map[string]any{
 		"kind": fm.Kind, "amount": cents, "category_id": form.OrNil(fm.CategoryID), "description": form.OrNil(fm.Description),
 		"recurrence_id": fm.Recurrence.ID, "occurrence_date": fm.Date, "occurred_at": occurredAt,
 	}}

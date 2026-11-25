@@ -1,6 +1,7 @@
 package tagpage
 
 import (
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
@@ -17,7 +18,7 @@ import (
 // tagForm is the tag sheet: what the user typed, dates as YYYY-MM-DD, and an error message per field name,
 // "form" holding a rejected commit.
 type tagForm struct {
-	ID      string
+	ID      id.ID
 	Name    string
 	StartAt string
 	EndAt   string
@@ -44,7 +45,7 @@ templ tagsPage(s layout.Props, tags []store.Tag) {
 					}
 					@table.Body() {
 						for _, tag := range tags {
-							@table.Row(sheet.Row("/tags/"+tag.ID, tag.ID == s.Flash)) {
+							@table.Row(sheet.Row("/tags/"+tag.ID.String(), tag.ID.String() == s.Flash)) {
 								@table.Cell() {
 									{ "#" + tag.Name }
 								}
@@ -67,8 +68,8 @@ templ tagsPage(s layout.Props, tags []store.Tag) {
 templ tagSheet(form tagForm) {
 	@sheet.Form(sheet.Props{
 		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "tags.new", "tags.edit")),
-		Action:    style.IfElse(form.ID == "", "/tags", "/tags/"+form.ID),
-		DeleteURL: style.IfElse(form.ID == "", "", "/tags/"+form.ID),
+		Action:    style.IfElse(form.ID == "", "/tags", "/tags/"+form.ID.String()),
+		DeleteURL: style.IfElse(form.ID == "", "", "/tags/"+form.ID.String()),
 		Confirm:   l10n.T(ctx, "tags.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {

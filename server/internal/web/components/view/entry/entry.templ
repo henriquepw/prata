@@ -27,7 +27,7 @@ templ Fields(form Form, amountHint string, withTag bool) {
 					{ l10n.T(ctx, "field.no_tag") }
 				}
 				for _, tag := range form.Tags {
-					@nativeselect.Option(nativeselect.OptionProps{Value: tag.ID, Selected: tag.ID == form.TagID}) {
+					@nativeselect.Option(nativeselect.OptionProps{Value: tag.ID.String(), Selected: tag.ID == form.TagID}) {
 						{ tag.Name }
 					}
 				}

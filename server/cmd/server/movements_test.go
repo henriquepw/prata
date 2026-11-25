@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 	"golang.org/x/text/encoding/charmap"
 )
 
@@ -211,7 +211,7 @@ func TestMovements_NotAMemberCannotSeeNorImportIntoTheAccount(t *testing.T) {
 	w := newWebClient(t)
 	w.upload(ofxCard)
 
-	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
+	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: id.New(), OwnerID: id.New()}
 	if _, err := w.db.CreateAccount(context.Background(), signup, true); err != nil {
 		t.Fatal(err)
 	}
@@ -325,24 +325,24 @@ func TestMovements_IgnoreHidesItForGood(t *testing.T) {
 func TestMovements_ReviewRoutesRequireSessionAndMembership(t *testing.T) {
 	w := newWebClient(t)
 	w.upload(windows1252(ofxBank))
-	id := w.movementID("Padaria Pão Quente")
+	movementID := w.movementID("Padaria Pão Quente")
 
 	for _, action := range []string{"confirm", "ignore"} {
-		req := httptest.NewRequest(http.MethodPost, "/movements/"+id+"/"+action, nil)
+		req := httptest.NewRequest(http.MethodPost, "/movements/"+movementID+"/"+action, nil)
 		response := httptest.NewRecorder()
 		w.handler.ServeHTTP(response, req)
 		assertRedirectsToLogin(t, response)
 	}
 
-	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: ulid.Make().String(), OwnerID: ulid.Make().String()}
+	signup := store.Signup{Email: "bia@example.com", Password: "another secret", AccountID: id.New(), OwnerID: id.New()}
 	if _, err := w.db.CreateAccount(context.Background(), signup, true); err != nil {
 		t.Fatal(err)
 	}
 
 	stranger := *w
 	stranger.cookie = sessionCookie(t, postForm(w.handler, "/login", url.Values{"email": {signup.Email}, "password": {signup.Password}}))
-	stranger.submit(http.MethodPost, "/movements/"+id+"/confirm", url.Values{})
-	stranger.submit(http.MethodPost, "/movements/"+id+"/ignore", url.Values{})
+	stranger.submit(http.MethodPost, "/movements/"+movementID+"/confirm", url.Values{})
+	stranger.submit(http.MethodPost, "/movements/"+movementID+"/ignore", url.Values{})
 
 	if body := get(w.handler, "/movements", w.cookie).Body.String(); !strings.Contains(body, "Padaria") {
 		t.Errorf("stranger reviewed the movement: %s", body)
@@ -395,7 +395,7 @@ func TestMovements_NubankCSVIsBRLAndAsksConfirmationOnAnotherCurrencyAccount(t *
 // expenseRecurrences pushes two monthly expense recurrences on day 5 from 2024-01 (Padaria for the movement's amount,
 // Internet for another) and an income one, returning their ids.
 func expenseRecurrences(w *webClient) (padaria, internet, salary string) {
-	padaria, internet, salary = ulid.Make().String(), ulid.Make().String(), ulid.Make().String()
+	padaria, internet, salary = id.New().String(), id.New().String(), id.New().String()
 	start := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
 	w.push(
 		monthlyRecurrence(w.client, padaria, "OUTCOME", 4590, "Padaria mensal", "5", start, ""),
@@ -563,7 +563,7 @@ func TestMovements_BatchRoutesRequireSessionAndSelectAllIsOffered(t *testing.T) 
 func (w *webClient) addAccount(name, currency string) string {
 	w.t.Helper()
 
-	id, now := ulid.Make().String(), time.Now().UTC().Add(time.Second).Format(time.RFC3339)
+	id, now := id.New().String(), time.Now().UTC().Add(time.Second).Format(time.RFC3339)
 	for _, query := range []string{
 		"INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at) VALUES (?1, ?3, ?4, 'x', ?2, ?2)",
 		"INSERT INTO account_users (id, account_id, user_id, role, created_at) SELECT ?1 || 'u', ?1, id, 'OWNER', ?2 FROM users",

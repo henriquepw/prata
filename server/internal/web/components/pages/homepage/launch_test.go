@@ -37,7 +37,7 @@ func TestParseLaunch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := parseLaunch(context.Background(), tt.line, categories, tags, today, tt.year)
 			if got.Kind != tt.kind || got.Amount != tt.amount || got.Description != tt.description || got.Date != tt.date ||
-				got.Category.ID != tt.category || got.Tag.ID != tt.tag || !slices.Equal(got.Unknown, tt.unknown) {
+				got.Category.ID.String() != tt.category || got.Tag.ID.String() != tt.tag || !slices.Equal(got.Unknown, tt.unknown) {
 				t.Errorf("parseLaunch(%q) = %s %d %q %s @%s #%s %v, want %s %d %q %s @%s #%s %v", tt.line,
 					got.Kind, got.Amount, got.Description, got.Date, got.Category.ID, got.Tag.ID, got.Unknown,
 					tt.kind, tt.amount, tt.description, tt.date, tt.category, tt.tag, tt.unknown)

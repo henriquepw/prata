@@ -20,12 +20,13 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/view/category"
 	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
 	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // categoryForm is the category sheet: what the user typed and an error message per field name,
 // "form" holding a rejected commit.
 type categoryForm struct {
-	ID          string
+	ID          id.ID
 	Name        string
 	Color       string
 	IsDaily     bool
@@ -179,7 +180,7 @@ func categorySheet(form categoryForm) templ.Component {
 						var templ_7745c5c3_Var9 string
 						templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(strings.ToLower(l10n.T(ctx, "color."+color.Value)))
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 47, Col: 115}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 48, Col: 115}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 						if templ_7745c5c3_Err != nil {
@@ -225,7 +226,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var12 string
 					templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "categories.yes"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 53, Col: 35}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 54, Col: 35}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 					if templ_7745c5c3_Err != nil {
@@ -252,7 +253,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var14 string
 					templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "categories.no"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 56, Col: 34}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 57, Col: 34}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 					if templ_7745c5c3_Err != nil {
@@ -311,7 +312,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var17 string
 					templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "categories.yes"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 62, Col: 36}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 63, Col: 36}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 					if templ_7745c5c3_Err != nil {
@@ -338,7 +339,7 @@ func categorySheet(form categoryForm) templ.Component {
 					var templ_7745c5c3_Var19 string
 					templ_7745c5c3_Var19, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "categories.no"))
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 65, Col: 35}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/categorypage/categories.templ`, Line: 66, Col: 35}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var19))
 					if templ_7745c5c3_Err != nil {
@@ -364,8 +365,8 @@ func categorySheet(form categoryForm) templ.Component {
 		})
 		templ_7745c5c3_Err = sheet.Form(sheet.Props{
 			Title:     l10n.T(ctx, style.IfElse(form.ID == "", "categories.new", "categories.edit")),
-			Action:    style.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
-			DeleteURL: style.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID),
+			Action:    style.IfElse(form.ID == "", "/categories", "/categories/"+form.ID.String()),
+			DeleteURL: style.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID.String()),
 			Confirm:   l10n.T(ctx, "categories.confirm_delete"),
 			Error:     form.Errors["form"],
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)

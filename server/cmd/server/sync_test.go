@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // seededOps is how many ops the first account's signup leaves in the oplog: its initial categories.
@@ -68,7 +68,7 @@ func newClient(t *testing.T, handler http.Handler, body signup) *client {
 
 // op builds an op from this device with a fresh ULID.
 func (c *client) op(entity, entityID, kind string, payload map[string]any) op {
-	return op{ID: ulid.Make().String(), Entity: entity, EntityID: entityID, Kind: kind, Payload: payload, ProtocolVersion: 1,
+	return op{ID: id.New().String(), Entity: entity, EntityID: entityID, Kind: kind, Payload: payload, ProtocolVersion: 1,
 		DeviceID: c.deviceID, OwnerID: c.ownerID, CreatedAt: "2026-08-23T14:02:11Z"}
 }
 

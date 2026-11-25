@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Recurrence is a live recurrence as the web shows it; Amount is in cents and Rule is "MONTHLY:<day>".
 type Recurrence struct {
-	ID          string  `db:"id"`
-	CategoryID  *string `db:"category_id"`
+	ID          id.ID   `db:"id"`
+	CategoryID  *id.ID  `db:"category_id"`
 	Kind        string  `db:"kind"`
 	Amount      int64   `db:"amount"`
 	Description *string `db:"description"`
@@ -26,7 +28,7 @@ const recurrenceSelect = `
 `
 
 // Recurrences returns the account's live recurrences by start date.
-func (s *Store) Recurrences(ctx context.Context, accountID string) ([]Recurrence, error) {
+func (s *Store) Recurrences(ctx context.Context, accountID id.ID) ([]Recurrence, error) {
 	query := recurrenceSelect + "ORDER BY start_at, id"
 
 	recurrences := []Recurrence{}
@@ -36,7 +38,7 @@ func (s *Store) Recurrences(ctx context.Context, accountID string) ([]Recurrence
 }
 
 // Recurrence returns one live recurrence of the account.
-func (s *Store) Recurrence(ctx context.Context, accountID, id string) (Recurrence, error) {
+func (s *Store) Recurrence(ctx context.Context, accountID, id id.ID) (Recurrence, error) {
 	query := recurrenceSelect + "AND id = ?"
 
 	var recurrence Recurrence

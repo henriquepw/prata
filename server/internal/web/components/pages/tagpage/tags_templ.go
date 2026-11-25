@@ -21,12 +21,13 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
 	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // tagForm is the tag sheet: what the user typed, dates as YYYY-MM-DD, and an error message per field name,
 // "form" holding a rejected commit.
 type tagForm struct {
-	ID      string
+	ID      id.ID
 	Name    string
 	StartAt string
 	EndAt   string
@@ -132,7 +133,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 									var templ_7745c5c3_Var8 string
 									templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "field.name"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 38, Col: 35}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 39, Col: 35}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 									if templ_7745c5c3_Err != nil {
@@ -159,7 +160,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 									var templ_7745c5c3_Var10 string
 									templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "tags.period"))
 									if templ_7745c5c3_Err != nil {
-										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 41, Col: 36}
+										return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 42, Col: 36}
 									}
 									_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 									if templ_7745c5c3_Err != nil {
@@ -223,7 +224,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 										var templ_7745c5c3_Var14 string
 										templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs("#" + tag.Name)
 										if templ_7745c5c3_Err != nil {
-											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 49, Col: 25}
+											return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 50, Col: 25}
 										}
 										_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 										if templ_7745c5c3_Err != nil {
@@ -251,7 +252,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 											var templ_7745c5c3_Var16 string
 											templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "tags.since", prefs.FormatDate(tag.StartAt, loc, prefs.DateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 53, Col: 96}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 54, Col: 96}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 											if templ_7745c5c3_Err != nil {
@@ -261,7 +262,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 											var templ_7745c5c3_Var17 string
 											templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinStringErrs(l10n.T(ctx, "tags.between", prefs.FormatDate(tag.StartAt, loc, prefs.DateLayout(ctx)), prefs.FormatDate(*tag.EndAt, loc, prefs.DateLayout(ctx))))
 											if templ_7745c5c3_Err != nil {
-												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 55, Col: 156}
+												return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/pages/tagpage/tags.templ`, Line: 56, Col: 156}
 											}
 											_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 											if templ_7745c5c3_Err != nil {
@@ -276,7 +277,7 @@ func tagsPage(s layout.Props, tags []store.Tag) templ.Component {
 									}
 									return nil
 								})
-								templ_7745c5c3_Err = table.Row(sheet.Row("/tags/"+tag.ID, tag.ID == s.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
+								templ_7745c5c3_Err = table.Row(sheet.Row("/tags/"+tag.ID.String(), tag.ID.String() == s.Flash)).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
 								if templ_7745c5c3_Err != nil {
 									return templ_7745c5c3_Err
 								}
@@ -363,8 +364,8 @@ func tagSheet(form tagForm) templ.Component {
 		})
 		templ_7745c5c3_Err = sheet.Form(sheet.Props{
 			Title:     l10n.T(ctx, style.IfElse(form.ID == "", "tags.new", "tags.edit")),
-			Action:    style.IfElse(form.ID == "", "/tags", "/tags/"+form.ID),
-			DeleteURL: style.IfElse(form.ID == "", "", "/tags/"+form.ID),
+			Action:    style.IfElse(form.ID == "", "/tags", "/tags/"+form.ID.String()),
+			DeleteURL: style.IfElse(form.ID == "", "", "/tags/"+form.ID.String()),
 			Confirm:   l10n.T(ctx, "tags.confirm_delete"),
 			Error:     form.Errors["form"],
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var19), templ_7745c5c3_Buffer)

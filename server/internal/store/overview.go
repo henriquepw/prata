@@ -1,6 +1,10 @@
 package store
 
-import "context"
+import (
+	"context"
+
+	"github.com/henriquepw/prata/server/pkg/id"
+)
 
 // CategoryUsage is a live category with its OUTCOME total in cents over a period.
 type CategoryUsage struct {
@@ -9,7 +13,7 @@ type CategoryUsage struct {
 }
 
 // RealizedBalance is v_balance_realized scoped to the account: INCOME minus OUTCOME of its live transactions, in cents.
-func (s *Store) RealizedBalance(ctx context.Context, accountID string) (int64, error) {
+func (s *Store) RealizedBalance(ctx context.Context, accountID id.ID) (int64, error) {
 	query := `
 		SELECT COALESCE(SUM(CASE kind WHEN 'INCOME' THEN amount ELSE -amount END), 0)
 		FROM transactions
@@ -24,7 +28,7 @@ func (s *Store) RealizedBalance(ctx context.Context, accountID string) (int64, e
 
 // BalanceBefore is INCOME minus OUTCOME of the account's live transactions with occurred_at before before, RFC 3339
 // in UTC, in cents.
-func (s *Store) BalanceBefore(ctx context.Context, accountID, before string) (int64, error) {
+func (s *Store) BalanceBefore(ctx context.Context, accountID id.ID, before string) (int64, error) {
 	query := `
 		SELECT COALESCE(SUM(CASE kind WHEN 'INCOME' THEN amount ELSE -amount END), 0)
 		FROM transactions
@@ -39,7 +43,7 @@ func (s *Store) BalanceBefore(ctx context.Context, accountID, before string) (in
 
 // CategoryUsages returns the account's live categories by name with their OUTCOME total over occurred_at in
 // [from, to), RFC 3339 in UTC.
-func (s *Store) CategoryUsages(ctx context.Context, accountID, from, to string) ([]CategoryUsage, error) {
+func (s *Store) CategoryUsages(ctx context.Context, accountID id.ID, from, to string) ([]CategoryUsage, error) {
 	query := `
 		SELECT c.id, c.name, c.color, c.monthly_limit, c.is_daily,
 			COALESCE(SUM(t.amount), 0) AS used
@@ -61,7 +65,7 @@ func (s *Store) CategoryUsages(ctx context.Context, accountID, from, to string) 
 
 // ConfirmedOccurrences returns the account's confirmed occurrence dates by recurrence id, deleted transactions
 // included since they still hold the unique (recurrence_id, occurrence_date).
-func (s *Store) ConfirmedOccurrences(ctx context.Context, accountID string) (map[string][]string, error) {
+func (s *Store) ConfirmedOccurrences(ctx context.Context, accountID id.ID) (map[id.ID][]string, error) {
 	query := `
 		SELECT recurrence_id, occurrence_date
 		FROM transactions
@@ -69,7 +73,7 @@ func (s *Store) ConfirmedOccurrences(ctx context.Context, accountID string) (map
 	`
 
 	var rows []struct {
-		RecurrenceID   string `db:"recurrence_id"`
+		RecurrenceID   id.ID  `db:"recurrence_id"`
 		OccurrenceDate string `db:"occurrence_date"`
 	}
 	err := s.SelectContext(ctx, &rows, query, accountID)
@@ -77,7 +81,7 @@ func (s *Store) ConfirmedOccurrences(ctx context.Context, accountID string) (map
 		return nil, err
 	}
 
-	confirmed := map[string][]string{}
+	confirmed := map[id.ID][]string{}
 	for _, row := range rows {
 		confirmed[row.RecurrenceID] = append(confirmed[row.RecurrenceID], row.OccurrenceDate)
 	}

@@ -17,6 +17,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Page is the homepage's handlers: the Month screen and the launch prompt.
@@ -94,7 +95,7 @@ func readDaily(sess store.Session, first time.Time, today string, usages []store
 		return daily{}
 	}
 
-	isDaily, dailyBudget := map[string]bool{}, int64(0)
+	isDaily, dailyBudget := map[id.ID]bool{}, int64(0)
 
 	for _, usage := range usages {
 		if usage.IsDaily {
@@ -154,14 +155,14 @@ func (m month) isCurrent() bool { return m.yearMonth() == m.Today[:len(monthLayo
 func (m month) realized() int64 { return m.Previous + m.Income - m.Outcome }
 
 // shows reports whether the statement lists an entry of categoryID under the month's filter.
-func (m month) shows(categoryID *string) bool {
+func (m month) shows(categoryID *id.ID) bool {
 	return m.Filter.ID == "" || form.OrEmpty(categoryID) == m.Filter.ID
 }
 
 // readMonth reads the month of shown in now's location: the balance before it, its transactions and usage, and the
 // occurrences pending in it plus, on the current month, the overdue ones of earlier months. The statement lists only
 // the entries of category when it is one of the live categories.
-func (p Page) readMonth(ctx context.Context, accountID string, now, shown time.Time, category string, limit int) (month, error) {
+func (p Page) readMonth(ctx context.Context, accountID id.ID, now, shown time.Time, category id.ID, limit int) (month, error) {
 	first, from, to := form.MonthWindow(shown)
 	last := first.AddDate(0, 1, -1)
 	page := month{Month: first, Today: now.Format(time.DateOnly), Limit: limit}
@@ -300,7 +301,7 @@ func (p Page) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, err := p.readMonth(r.Context(), session.From(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), r.FormValue("category"), statementLimit(r))
+	page, err := p.readMonth(r.Context(), session.From(r.Context()).AccountID, s.Now, shownMonth(r, s.Now), id.ID(r.FormValue("category")), statementLimit(r))
 	if err != nil {
 		session.InternalError(w, "reading month", err)
 		return
@@ -328,14 +329,14 @@ func (p Page) CreateInMonth(w http.ResponseWriter, r *http.Request, change store
 		return
 	}
 
-	p.renderMonth(w, r, style.IfElse(message == "", http.StatusOK, http.StatusConflict), change.EntityID, message)
+	p.renderMonth(w, r, style.IfElse(message == "", http.StatusOK, http.StatusConflict), change.EntityID.String(), message)
 }
 
 // renderMonth answers the month on screen, which a write in place swaps, with the row flash flashing and message as
 // its error, along with the ticker it changed.
 func (p Page) renderMonth(w http.ResponseWriter, r *http.Request, status int, flash, message string) {
 	sess, now := session.From(r.Context()), time.Now().In(session.Location(r))
-	page, err := p.readMonth(r.Context(), sess.AccountID, now, shownMonth(r, now), r.FormValue("category"), statementLimit(r))
+	page, err := p.readMonth(r.Context(), sess.AccountID, now, shownMonth(r, now), id.ID(r.FormValue("category")), statementLimit(r))
 	if err != nil {
 		session.InternalError(w, "reading month", err)
 		return

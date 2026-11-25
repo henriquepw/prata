@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 // ProtocolVersion is the only sync protocol version this server understands.
@@ -42,14 +42,14 @@ const (
 // Op is one oplog operation in wire format. Payload keeps the client's original JSON, unknown fields included.
 type Op struct {
 	Seq             int64           `db:"seq" json:"server_seq,omitempty"`
-	ID              string          `db:"id" json:"id"`
+	ID              id.ID           `db:"id" json:"id"`
 	Entity          string          `db:"entity" json:"entity"`
-	EntityID        string          `db:"entity_id" json:"entity_id"`
+	EntityID        id.ID           `db:"entity_id" json:"entity_id"`
 	Kind            Kind            `db:"kind" json:"kind"`
 	Payload         json.RawMessage `db:"payload" json:"payload"`
 	ProtocolVersion int             `db:"protocol_version" json:"protocol_version"`
-	DeviceID        string          `db:"device_id" json:"device_id"`
-	OwnerID         string          `db:"owner_id" json:"owner_id"`
+	DeviceID        id.ID           `db:"device_id" json:"device_id"`
+	OwnerID         id.ID           `db:"owner_id" json:"owner_id"`
 	CreatedAt       string          `db:"created_at" json:"created_at"`
 }
 
@@ -189,11 +189,11 @@ func commitOp(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Result, err
 }
 
 // defaultCategoryID is the id of the account's live default category, empty when it has none.
-func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID string) (string, error) {
+func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID id.ID) (id.ID, error) {
 	query := "SELECT id FROM categories WHERE account_id = ? AND is_default = 1 AND deleted_at IS NULL"
 
-	var id string
-	err := tx.GetContext(ctx, &id, query, accountID)
+	var categoryID id.ID
+	err := tx.GetContext(ctx, &categoryID, query, accountID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", nil
 	}
@@ -202,7 +202,7 @@ func defaultCategoryID(ctx context.Context, tx *sqlx.Tx, accountID string) (stri
 		return "", fmt.Errorf("reading default category: %w", err)
 	}
 
-	return id, nil
+	return categoryID, nil
 }
 
 // withEntryCategory puts the account's default category in an OUTCOME transaction or recurrence left without a
@@ -248,14 +248,15 @@ func withEntryCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, val
 		return op, nil
 	}
 
-	id, err := defaultCategoryID(ctx, tx, actor.AccountID)
-	if err != nil || id == "" {
+	categoryID, err := defaultCategoryID(ctx, tx, actor.AccountID)
+	if err != nil || categoryID == "" {
 		return op, err
 	}
 
-	values["category_id"] = &id
+	value := categoryID.String()
+	values["category_id"] = &value
 
-	return withField(op, "category_id", id)
+	return withField(op, "category_id", categoryID)
 }
 
 // withField sets field to value in the op's payload, so every device pulls the value the server stored.
@@ -300,14 +301,14 @@ func checkDefault(ctx context.Context, tx *sqlx.Tx, op Op, values map[string]any
 // demoteDefault takes the default mark from the account's current default category when op marks another one, as an
 // UPDATE from the same device.
 func demoteDefault(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) error {
-	id, err := defaultCategoryID(ctx, tx, actor.AccountID)
-	if err != nil || id == "" || id == op.EntityID {
+	categoryID, err := defaultCategoryID(ctx, tx, actor.AccountID)
+	if err != nil || categoryID == "" || categoryID == op.EntityID {
 		return err
 	}
 
 	values := map[string]any{"is_default": 0, "updated_at": op.CreatedAt}
-	if err := recordUpdate(ctx, tx, actor, op, "CATEGORY", id, values); err != nil {
-		return fmt.Errorf("taking the default mark from category %s: %w", id, err)
+	if err := recordUpdate(ctx, tx, actor, op, "CATEGORY", categoryID, values); err != nil {
+		return fmt.Errorf("taking the default mark from category %s: %w", categoryID, err)
 	}
 
 	return nil
@@ -383,15 +384,15 @@ func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op)
 			WHERE account_id = ? AND category_id = ? AND deleted_at IS NULL
 		`, tables[entity].name)
 
-		var ids []string
+		var ids []id.ID
 		if err := tx.SelectContext(ctx, &ids, query, actor.AccountID, op.EntityID); err != nil {
 			return fmt.Errorf("listing %s rows of the category: %w", entity, err)
 		}
 
-		for _, id := range ids {
-			values := map[string]any{"category_id": defaultID, "updated_at": op.CreatedAt}
-			if err := recordUpdate(ctx, tx, actor, op, entity, id, values); err != nil {
-				return fmt.Errorf("moving %s %s: %w", entity, id, err)
+		for _, rowID := range ids {
+			values := map[string]any{"category_id": defaultID.String(), "updated_at": op.CreatedAt}
+			if err := recordUpdate(ctx, tx, actor, op, entity, rowID, values); err != nil {
+				return fmt.Errorf("moving %s %s: %w", entity, rowID, err)
 			}
 		}
 	}
@@ -400,13 +401,13 @@ func moveToDefaultCategory(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op)
 }
 
 // recordUpdate records an UPDATE of the row, as the server's own consequence of op, from the same device.
-func recordUpdate(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, entity, id string, values map[string]any) error {
+func recordUpdate(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op, entity string, entityID id.ID, values map[string]any) error {
 	payload, err := json.Marshal(values)
 	if err != nil {
 		return fmt.Errorf("encoding %s update: %w", entity, err)
 	}
 
-	update := Op{ID: ulid.Make().String(), Entity: entity, EntityID: id, Kind: KindUpdate, Payload: payload,
+	update := Op{ID: id.New(), Entity: entity, EntityID: entityID, Kind: KindUpdate, Payload: payload,
 		ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: op.OwnerID, CreatedAt: op.CreatedAt}
 	_, err = record(ctx, tx, actor, update, values)
 
@@ -426,7 +427,7 @@ func validate(actor Actor, op Op) (map[string]any, Reason) {
 	}
 
 	table, ok := tables[op.Entity]
-	if !ok || !isULID(op.ID) || !isULID(op.EntityID) || op.DeviceID != actor.DeviceID || !isRFC3339(op.CreatedAt) {
+	if !ok || !op.ID.IsValid() || !op.EntityID.IsValid() || op.DeviceID != actor.DeviceID || !isRFC3339(op.CreatedAt) {
 		return nil, ReasonInvalidOperation
 	}
 
@@ -466,8 +467,8 @@ func checkRow(ctx context.Context, tx *sqlx.Tx, actor Actor, op Op) (Reason, err
 	query := "SELECT account_id, owner_id FROM " + tables[op.Entity].name + " WHERE id = ?"
 
 	var row struct {
-		AccountID string `db:"account_id"`
-		OwnerID   string `db:"owner_id"`
+		AccountID id.ID `db:"account_id"`
+		OwnerID   id.ID `db:"owner_id"`
 	}
 	err := tx.GetContext(ctx, &row, query, op.EntityID)
 	switch {
@@ -587,12 +588,6 @@ func decodeField(raw json.RawMessage, isInteger bool) (any, error) {
 	return s, err
 }
 
-func isULID(id string) bool {
-	_, err := ulid.ParseStrict(id)
-
-	return err == nil
-}
-
 func isRFC3339(value string) bool {
 	_, err := time.Parse(time.RFC3339, value)
 
@@ -660,7 +655,7 @@ func selectRows(ctx context.Context, tx *sqlx.Tx, query string, args ...any) ([]
 // or nil); DELETE takes none.
 type Change struct {
 	Entity   string
-	EntityID string
+	EntityID id.ID
 	Kind     Kind
 	Fields   map[string]any
 }
@@ -762,6 +757,6 @@ func changeOp(ctx context.Context, tx *sqlx.Tx, actor Actor, change Change, now 
 		return nil, fmt.Errorf("encoding %s payload: %w", change.Entity, err)
 	}
 
-	return &Op{ID: ulid.Make().String(), Entity: change.Entity, EntityID: change.EntityID, Kind: change.Kind, Payload: payload,
+	return &Op{ID: id.New(), Entity: change.Entity, EntityID: change.EntityID, Kind: change.Kind, Payload: payload,
 		ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: actor.UserID, CreatedAt: now}, nil
 }

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/pkg/id"
 	_ "modernc.org/sqlite"
 )
 
@@ -38,7 +39,7 @@ func newActor(t *testing.T) (*store.Store, store.Actor) {
 	return db, actor
 }
 
-func commit(t *testing.T, db *store.Store, actor store.Actor, id string, kind store.Kind, payload string) {
+func commit(t *testing.T, db *store.Store, actor store.Actor, id id.ID, kind store.Kind, payload string) {
 	t.Helper()
 	results, err := db.CommitOps(context.Background(), actor, []store.Op{{
 		ID: id, Entity: "CATEGORY", EntityID: "01JXQ8Z7000000000000000000", Kind: kind, Payload: json.RawMessage(payload),
@@ -55,7 +56,7 @@ func TestCommitOps_OverlaysDomainRow(t *testing.T) {
 		Name         string  `db:"name"`
 		Color        string  `db:"color"`
 		MonthlyLimit int64   `db:"monthly_limit"`
-		AccountID    string  `db:"account_id"`
+		AccountID    id.ID   `db:"account_id"`
 		DeletedAt    *string `db:"deleted_at"`
 		ServerSeq    int64   `db:"server_seq"`
 	}

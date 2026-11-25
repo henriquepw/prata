@@ -5,18 +5,20 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Tag is a live tag as the web shows it; StartAt and EndAt are RFC 3339 in UTC, EndAt nil when open-ended.
 type Tag struct {
-	ID      string  `db:"id"`
+	ID      id.ID   `db:"id"`
 	Name    string  `db:"name"`
 	StartAt string  `db:"start_at"`
 	EndAt   *string `db:"end_at"`
 }
 
 // Tags returns the account's live tags, newest start first.
-func (s *Store) Tags(ctx context.Context, accountID string) ([]Tag, error) {
+func (s *Store) Tags(ctx context.Context, accountID id.ID) ([]Tag, error) {
 	query := `
 		SELECT id, name, start_at, end_at
 		FROM tags
@@ -31,7 +33,7 @@ func (s *Store) Tags(ctx context.Context, accountID string) ([]Tag, error) {
 }
 
 // Tag returns one live tag of the account.
-func (s *Store) Tag(ctx context.Context, accountID, id string) (Tag, error) {
+func (s *Store) Tag(ctx context.Context, accountID, id id.ID) (Tag, error) {
 	query := `
 		SELECT id, name, start_at, end_at
 		FROM tags

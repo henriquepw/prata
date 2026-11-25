@@ -8,11 +8,12 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 type actorKey struct{}
@@ -102,7 +103,7 @@ func (h handler) signin(w http.ResponseWriter, r *http.Request) {
 	case err != nil:
 		internalError(w, "signing in", err)
 	default:
-		writeJSON(w, http.StatusOK, map[string]string{"account_id": actor.AccountID, "owner_id": actor.UserID, "api_key": key})
+		writeJSON(w, http.StatusOK, map[string]string{"account_id": actor.AccountID.String(), "owner_id": actor.UserID.String(), "api_key": key})
 	}
 }
 
@@ -130,7 +131,7 @@ type rejection struct {
 func (h handler) push(w http.ResponseWriter, r *http.Request) {
 	actor := actorFrom(r.Context())
 	var body struct {
-		DeviceID string            `json:"device_id"`
+		DeviceID id.ID             `json:"device_id"`
 		Ops      []json.RawMessage `json:"ops"`
 	}
 	err := json.NewDecoder(r.Body).Decode(&body)
@@ -169,9 +170,9 @@ func (h handler) push(w http.ResponseWriter, r *http.Request) {
 	}{Acks: []ack{}, Rejected: []rejection{}}
 	for i, result := range results {
 		if result.Reason != "" {
-			response.Rejected = append(response.Rejected, rejection{ops[i].ID, result.Reason})
+			response.Rejected = append(response.Rejected, rejection{ops[i].ID.String(), result.Reason})
 		} else {
-			response.Acks = append(response.Acks, ack{ops[i].ID, result.Seq})
+			response.Acks = append(response.Acks, ack{ops[i].ID.String(), result.Seq})
 		}
 	}
 
@@ -185,7 +186,7 @@ func (h handler) pull(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	cursor, cursorErr := strconv.ParseInt(cmp.Or(query.Get("cursor"), "0"), 10, 64)
 	limit, limitErr := strconv.Atoi(cmp.Or(query.Get("limit"), strconv.Itoa(maxLimit)))
-	if cursorErr != nil || limitErr != nil || cursor < 0 || limit < 1 || query.Get("device_id") != actor.DeviceID {
+	if cursorErr != nil || limitErr != nil || cursor < 0 || limit < 1 || id.ID(query.Get("device_id")) != actor.DeviceID {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
@@ -202,7 +203,7 @@ func (h handler) pull(w http.ResponseWriter, r *http.Request) {
 // snapshot returns the account's domain state; device_id must match the API key's device.
 func (h handler) snapshot(w http.ResponseWriter, r *http.Request) {
 	actor := actorFrom(r.Context())
-	if r.URL.Query().Get("device_id") != actor.DeviceID {
+	if id.ID(r.URL.Query().Get("device_id")) != actor.DeviceID {
 		writeReason(w, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
@@ -216,18 +217,8 @@ func (h handler) snapshot(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, snapshot)
 }
 
-func isValidAuth(email, password string, ids ...string) bool {
-	if !strings.Contains(email, "@") || password == "" {
-		return false
-	}
-
-	for _, id := range ids {
-		if _, err := ulid.ParseStrict(id); err != nil {
-			return false
-		}
-	}
-
-	return true
+func isValidAuth(email, password string, ids ...id.ID) bool {
+	return strings.Contains(email, "@") && password != "" && !slices.ContainsFunc(ids, func(id id.ID) bool { return !id.IsValid() })
 }
 
 func writeReason(w http.ResponseWriter, status int, reason string) {

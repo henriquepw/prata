@@ -1,6 +1,7 @@
 package recurrencepage
 
 import (
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
@@ -20,11 +21,11 @@ import (
 // recurrenceForm is the recurrence sheet: what the user typed, the categories to pick from and an error
 // message per field name, "form" holding a rejected commit.
 type recurrenceForm struct {
-	ID          string
+	ID          id.ID
 	Description string
 	Kind        string
 	Amount      string
-	CategoryID  string
+	CategoryID  id.ID
 	Day         string
 	StartAt     string
 	EndAt       string
@@ -54,7 +55,7 @@ templ recurrencesPage(s layout.Props, recurrences []store.Recurrence) {
 					}
 					@table.Body() {
 						for _, recurrence := range recurrences {
-							@table.Row(sheet.Row("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
+							@table.Row(sheet.Row("/recurrences/"+recurrence.ID.String(), recurrence.ID.String() == s.Flash)) {
 								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
 									@entry.Description(recurrence.Description)
 								}
@@ -76,8 +77,8 @@ templ recurrencesPage(s layout.Props, recurrences []store.Recurrence) {
 templ recurrenceSheet(form recurrenceForm) {
 	@sheet.Form(sheet.Props{
 		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "recurrences.new", "recurrences.edit")),
-		Action:    style.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
-		DeleteURL: style.IfElse(form.ID == "", "", "/recurrences/"+form.ID),
+		Action:    style.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID.String()),
+		DeleteURL: style.IfElse(form.ID == "", "", "/recurrences/"+form.ID.String()),
 		Confirm:   l10n.T(ctx, "recurrences.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {

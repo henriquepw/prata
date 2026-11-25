@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/pkg/importfile"
 	"github.com/henriquepw/prata/server/pkg/pluggy"
 )
@@ -41,7 +42,7 @@ type Fetcher struct {
 // Fetch stores the posted lines of every bank account of the user's Connections as pending Movements, or of every
 // Connection when userID is empty. A Connection that fails does not stop the others: the error is returned, joined, after
 // all were tried. It never makes a domain op.
-func (f Fetcher) Fetch(ctx context.Context, userID string, now time.Time) error {
+func (f Fetcher) Fetch(ctx context.Context, userID id.ID, now time.Time) error {
 	targets, err := f.DB.FetchTargets(ctx, userID)
 	if err != nil {
 		return err

@@ -7,21 +7,21 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/pkg/importfile"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 // AccountRef is an account a user can reach.
 type AccountRef struct {
-	ID       string `db:"id"`
+	ID       id.ID  `db:"id"`
 	Name     string `db:"name"`
 	Currency string `db:"currency"`
 }
 
 // Movement is a line read from a bank account that waits for review.
 type Movement struct {
-	ID              string `db:"id"`
+	ID              id.ID  `db:"id"`
 	Institution     string `db:"institution"`
 	BankAccount     string `db:"bank_account"`
 	BankAccountKind string `db:"bank_account_kind"`
@@ -32,7 +32,7 @@ type Movement struct {
 }
 
 // UserAccounts are the accounts the user belongs to.
-func (s *Store) UserAccounts(ctx context.Context, userID string) ([]AccountRef, error) {
+func (s *Store) UserAccounts(ctx context.Context, userID id.ID) ([]AccountRef, error) {
 	query := `
 		SELECT c.id, c.name, c.currency
 		FROM account_users a
@@ -73,16 +73,16 @@ func (s *Store) PendingMovements(ctx context.Context, session Session) ([]Moveme
 // ImportMovements stores every line of the statements as a pending movement of the account, all or none, and
 // returns how many were new and how many were already there, in any status. It returns ErrNotFound when the user
 // does not belong to the account.
-func (s *Store) ImportMovements(ctx context.Context, userID, accountID string, statements []importfile.Statement) (added, existing int, err error) {
+func (s *Store) ImportMovements(ctx context.Context, userID, accountID id.ID, statements []importfile.Statement) (added, existing int, err error) {
 	return s.importMovements(ctx, userID, accountID, "", statements)
 }
 
 // ImportConnectionMovements is ImportMovements for the movements a Connection fetched, which it links to the Connection.
-func (s *Store) ImportConnectionMovements(ctx context.Context, userID, accountID, connectionID string, statements []importfile.Statement) (added, existing int, err error) {
+func (s *Store) ImportConnectionMovements(ctx context.Context, userID, accountID, connectionID id.ID, statements []importfile.Statement) (added, existing int, err error) {
 	return s.importMovements(ctx, userID, accountID, connectionID, statements)
 }
 
-func (s *Store) importMovements(ctx context.Context, userID, accountID, connectionID string, statements []importfile.Statement) (added, existing int, err error) {
+func (s *Store) importMovements(ctx context.Context, userID, accountID, connectionID id.ID, statements []importfile.Statement) (added, existing int, err error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return 0, 0, fmt.Errorf("starting import: %w", err)
@@ -112,7 +112,7 @@ func (s *Store) importMovements(ctx context.Context, userID, accountID, connecti
 	now := formatTime(time.Now())
 	for _, statement := range statements {
 		for _, row := range statement.Rows {
-			result, err := tx.ExecContext(ctx, query, ulid.Make().String(), accountID, connectionID, statement.Institution, statement.Account,
+			result, err := tx.ExecContext(ctx, query, id.New(), accountID, connectionID, statement.Institution, statement.Account,
 				statement.Kind, row.ID, row.Description, row.Kind, row.Amount, row.Date, now)
 			if err != nil {
 				return 0, 0, fmt.Errorf("importing movement: %w", err)
@@ -133,24 +133,24 @@ func (s *Store) importMovements(ctx context.Context, userID, accountID, connecti
 // the movement's kind, amount and date (local midnight in loc) and the given description and category, and marks it
 // confirmed in the same transaction. An income keeps no category and an expense without one gets the default. It
 // returns ErrNotFound when the movement is not pending in the account, so a second confirm creates nothing.
-func (s *Store) ConfirmMovement(ctx context.Context, session Session, id, description, categoryID string, loc *time.Location) (Reason, error) {
+func (s *Store) ConfirmMovement(ctx context.Context, session Session, id id.ID, description string, categoryID id.ID, loc *time.Location) (Reason, error) {
 	return s.confirmMovement(ctx, session, id, description, categoryID, nil, loc)
 }
 
 // ConfirmMovementAsOccurrence is ConfirmMovement for the occurrence of the recurrence on date (YYYY-MM-DD): the
 // transaction confirms it, with the movement's amount and date. An occurrence already confirmed is rejected by the
 // unique (recurrence_id, occurrence_date), so no second transaction is made.
-func (s *Store) ConfirmMovementAsOccurrence(ctx context.Context, session Session, id, recurrenceID, date, description, categoryID string, loc *time.Location) (Reason, error) {
+func (s *Store) ConfirmMovementAsOccurrence(ctx context.Context, session Session, id, recurrenceID id.ID, date, description string, categoryID id.ID, loc *time.Location) (Reason, error) {
 	return s.confirmMovement(ctx, session, id, description, categoryID, &occurrenceRef{RecurrenceID: recurrenceID, Date: date}, loc)
 }
 
 // occurrenceRef is the occurrence of a recurrence a movement confirms.
 type occurrenceRef struct {
-	RecurrenceID string
+	RecurrenceID id.ID
 	Date         string
 }
 
-func (s *Store) confirmMovement(ctx context.Context, session Session, id, description, categoryID string, occurrence *occurrenceRef, loc *time.Location) (Reason, error) {
+func (s *Store) confirmMovement(ctx context.Context, session Session, movementID id.ID, description string, categoryID id.ID, occurrence *occurrenceRef, loc *time.Location) (Reason, error) {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return "", fmt.Errorf("starting confirm: %w", err)
@@ -164,7 +164,7 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 	`
 
 	var movement Movement
-	if err := tx.GetContext(ctx, &movement, query, id, session.AccountID, session.UserID); errors.Is(err, sql.ErrNoRows) {
+	if err := tx.GetContext(ctx, &movement, query, movementID, session.AccountID, session.UserID); errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNotFound
 	} else if err != nil {
 		return "", fmt.Errorf("reading movement: %w", err)
@@ -203,13 +203,13 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 
 	setExpenseCategory(fields, movement, categoryID)
 
-	reason, err := commitChanges(ctx, tx, session, []Change{{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields}})
+	reason, err := commitChanges(ctx, tx, session, []Change{{Entity: "TRANSACTION", EntityID: id.New(), Kind: KindCreate, Fields: fields}})
 	if err != nil || reason != "" {
 		return reason, err
 	}
 
 	query = "UPDATE movements SET status = 'CONFIRMED' WHERE id = ?"
-	if _, err := tx.ExecContext(ctx, query, id); err != nil {
+	if _, err := tx.ExecContext(ctx, query, movementID); err != nil {
 		return "", fmt.Errorf("confirming movement: %w", err)
 	}
 
@@ -218,7 +218,7 @@ func (s *Store) confirmMovement(ctx context.Context, session Session, id, descri
 
 // IgnoreMovement marks a pending movement of the session's account as ignored, for good: importing the file again
 // does not bring it back. It returns ErrNotFound when the movement is not pending in the account.
-func (s *Store) IgnoreMovement(ctx context.Context, session Session, id string) error {
+func (s *Store) IgnoreMovement(ctx context.Context, session Session, id id.ID) error {
 	query := "UPDATE movements SET status = 'IGNORED' WHERE id = ? AND account_id = ? AND status = 'PENDING' AND " + ownMovement
 
 	result, err := s.ExecContext(ctx, query, id, session.AccountID, session.UserID)
@@ -237,7 +237,7 @@ func (s *Store) IgnoreMovement(ctx context.Context, session Session, id string) 
 // device, with the bank's description, kind, amount and date (local midnight in loc) and, on an expense, the given
 // category (the default one when empty), as one commit marking them confirmed in the same SQL transaction. Movements
 // not pending in the account are skipped, so repeating the batch creates nothing.
-func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []string, categoryID string, loc *time.Location) (Reason, error) {
+func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []id.ID, categoryID id.ID, loc *time.Location) (Reason, error) {
 	if len(ids) == 0 {
 		return "", nil
 	}
@@ -280,7 +280,7 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 		fields["description"] = movement.Description
 		setExpenseCategory(fields, movement, categoryID)
 
-		changes = append(changes, Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: KindCreate, Fields: fields})
+		changes = append(changes, Change{Entity: "TRANSACTION", EntityID: id.New(), Kind: KindCreate, Fields: fields})
 	}
 
 	reason, err := commitChanges(ctx, tx, session, changes)
@@ -304,7 +304,7 @@ func (s *Store) ConfirmMovements(ctx context.Context, session Session, ids []str
 
 // IgnoreMovements marks every pending movement of the session's account among ids as ignored, for good. Movements
 // not pending in the account are skipped.
-func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []string) error {
+func (s *Store) IgnoreMovements(ctx context.Context, session Session, ids []id.ID) error {
 	if len(ids) == 0 {
 		return nil
 	}
@@ -329,14 +329,14 @@ func transactionFields(movement Movement, day time.Time) map[string]any {
 }
 
 // setExpenseCategory gives an expense its category; an income keeps none.
-func setExpenseCategory(fields map[string]any, movement Movement, categoryID string) {
+func setExpenseCategory(fields map[string]any, movement Movement, categoryID id.ID) {
 	if categoryID != "" && movement.Kind == "OUTCOME" {
-		fields["category_id"] = categoryID
+		fields["category_id"] = categoryID.String()
 	}
 }
 
-func movementIDs(movements []Movement) []string {
-	ids := make([]string, len(movements))
+func movementIDs(movements []Movement) []id.ID {
+	ids := make([]id.ID, len(movements))
 	for i, movement := range movements {
 		ids[i] = movement.ID
 	}

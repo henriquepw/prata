@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 const monthlyPrefix = "MONTHLY:"
@@ -100,11 +100,11 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fm := recurrenceForm{
-		ID:          r.PathValue("id"),
+		ID:          id.ID(r.PathValue("id")),
 		Description: strings.TrimSpace(r.PostFormValue("description")),
 		Kind:        r.PostFormValue("kind"),
 		Amount:      strings.TrimSpace(r.PostFormValue("amount")),
-		CategoryID:  r.PostFormValue("category_id"),
+		CategoryID:  id.ID(r.PostFormValue("category_id")),
 		Day:         strings.TrimSpace(r.PostFormValue("day")),
 		StartAt:     r.PostFormValue("start_at"),
 		EndAt:       r.PostFormValue("end_at"),
@@ -134,7 +134,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		"rule": monthlyRule(day), "start_at": fm.StartAt, "end_at": form.OrNil(fm.EndAt),
 	}}
 	if fm.ID == "" {
-		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
+		change.EntityID, change.Kind = id.New(), store.KindCreate
 	} else {
 		stored, ok := p.recurrence(w, r)
 		if !ok {
@@ -188,7 +188,7 @@ func storedRecurrenceForm(ctx context.Context, recurrence store.Recurrence, cate
 
 // recurrence reads the live recurrence in the path, answering 404 when the account has none.
 func (p Page) recurrence(w http.ResponseWriter, r *http.Request) (store.Recurrence, bool) {
-	recurrence, err := p.db.Recurrence(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
+	recurrence, err := p.db.Recurrence(r.Context(), session.From(r.Context()).AccountID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Recurrence{}, false

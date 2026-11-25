@@ -8,6 +8,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Page is the Dispositivos handlers.
@@ -45,7 +46,7 @@ func (p Page) Devices(w http.ResponseWriter, r *http.Request) {
 
 // Revoke revokes the account's device.
 func (p Page) Revoke(w http.ResponseWriter, r *http.Request) {
-	err := p.db.RevokeDevice(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
+	err := p.db.RevokeDevice(r.Context(), session.From(r.Context()).AccountID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/badge"
@@ -88,12 +89,12 @@ func shortDay(ctx context.Context, date string) string {
 }
 
 // monthURL is the Month of month, as YYYY-MM, with the statement narrowed to category when it is not empty.
-func monthURL(month, category string) string {
+func monthURL(month string, category id.ID) string {
 	if category == "" {
 		return "/?month=" + month
 	}
 
-	return "/?month=" + month + "&category=" + category
+	return "/?month=" + month + "&category=" + category.String()
 }
 
 // narrow is the attributes of a link that changes the category filter in place: it fetches url and swaps only the
@@ -246,7 +247,7 @@ templ monthContent(page month) {
 									@pendingRow(page, p, false)
 								}
 								for _, t := range d.Transactions {
-									@table.Row(sheet.Row("/transactions/"+t.ID, t.ID == page.Flash)) {
+									@table.Row(sheet.Row("/transactions/"+t.ID.String(), t.ID.String() == page.Flash)) {
 										@table.Cell(table.CellProps{Class: "w-full whitespace-normal"}) {
 											@entry.Description(t.Description)
 										}
@@ -347,7 +348,7 @@ templ todayLine(page month) {
 // pendingRow is a pending occurrence in the statement, with its date when withDate: muted, its [pendente] or
 // [overdue] chip and "confirmar", which swaps the month in place. The row itself opens "confirm occurrence".
 templ pendingRow(page month, p layout.Occurrence, withDate bool) {
-	{{ url := "/recurrences/" + p.Recurrence.ID + "/occurrences/" + p.Date }}
+	{{ url := "/recurrences/" + p.Recurrence.ID.String() + "/occurrences/" + p.Date }}
 	@table.Row(table.RowProps{Class: "*:text-muted-foreground", Attributes: sheet.Row(url, false).Attributes}) {
 		@table.Cell(table.CellProps{Class: "w-full whitespace-normal"}) {
 			if withDate {

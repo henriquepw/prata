@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // spend is a device expense of the named category at the given instant.
 func (w *webClient) spend(category string, cents int, at time.Time) op {
-	return w.op("TRANSACTION", ulid.Make().String(), "CREATE", map[string]any{
+	return w.op("TRANSACTION", id.New().String(), "CREATE", map[string]any{
 		"category_id": w.categories[category], "kind": "OUTCOME", "amount": cents, "occurred_at": at.UTC().Format(time.RFC3339),
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 	})
@@ -255,7 +255,7 @@ func (w *webClient) assertSelectedDailyMode(mode string) {
 func (w *webClient) newAccountMate() *webClient {
 	w.t.Helper()
 	ctx := context.Background()
-	id, now := ulid.Make().String(), time.Now().UTC().Format(time.RFC3339)
+	userID, now := id.New(), time.Now().UTC().Format(time.RFC3339)
 
 	query := "SELECT id FROM accounts"
 
@@ -268,7 +268,7 @@ func (w *webClient) newAccountMate() *webClient {
 		INSERT INTO users (id, email, secret, created_at, updated_at)
 		VALUES (?, 'bia@example.com', '', ?, ?)
 	`
-	if _, err := w.db.ExecContext(ctx, query, id, now, now); err != nil {
+	if _, err := w.db.ExecContext(ctx, query, userID, now, now); err != nil {
 		w.t.Fatal(err)
 	}
 
@@ -276,11 +276,11 @@ func (w *webClient) newAccountMate() *webClient {
 		INSERT INTO account_users (id, account_id, user_id, role, created_at)
 		VALUES (?, ?, ?, 'MEMBER', '2999-01-01T00:00:00Z')
 	`
-	if _, err := w.db.ExecContext(ctx, query, ulid.Make().String(), accountID, id); err != nil {
+	if _, err := w.db.ExecContext(ctx, query, id.New().String(), accountID, userID); err != nil {
 		w.t.Fatal(err)
 	}
 
-	token, err := w.db.CreateSession(ctx, id, time.Now())
+	token, err := w.db.CreateSession(ctx, userID, time.Now())
 	if err != nil {
 		w.t.Fatal(err)
 	}

@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // transactionAt is a device transaction of Mercado happening at the given instant.
 func transactionAt(c *client, kind string, amount int, at time.Time) op {
-	return c.op("TRANSACTION", ulid.Make().String(), "CREATE", map[string]any{
+	return c.op("TRANSACTION", id.New().String(), "CREATE", map[string]any{
 		"category_id": categoryID, "kind": kind, "amount": amount, "occurred_at": at.UTC().Format(time.RFC3339),
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 	})
@@ -69,7 +69,7 @@ func TestWebMonth_AddsUpThePastTheCurrentAndAFutureMonth(t *testing.T) {
 		transactionAt(w.client, "OUTCOME", 10000, month.AddDate(0, -1, 4)),
 		transactionAt(w.client, "INCOME", 100000, month),
 		transactionAt(w.client, "OUTCOME", 3000, month.AddDate(0, 1, 0)),
-		monthlyRecurrence(w.client, ulid.Make().String(), "OUTCOME", 5000, "Internet", "1", month.AddDate(0, -1, 0), ""),
+		monthlyRecurrence(w.client, id.New().String(), "OUTCOME", 5000, "Internet", "1", month.AddDate(0, -1, 0), ""),
 	)
 
 	tests := []struct {
@@ -134,7 +134,7 @@ func TestWebMonth_StatementPutsPendingOnTheirDayAndOverdueUnderToday(t *testing.
 	now := time.Now().In(loc)
 	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, loc)
 	lastDay, overdue := month.AddDate(0, 1, -1), month.AddDate(0, -1, 0)
-	rent, salary := ulid.Make().String(), ulid.Make().String()
+	rent, salary := id.New().String(), id.New().String()
 	w.push(newCategory(w.client),
 		monthlyRecurrence(w.client, rent, "OUTCOME", 10000, "Aluguel", "1", overdue, month.AddDate(0, 0, -1).Format(time.DateOnly)),
 		monthlyRecurrence(w.client, salary, "INCOME", 100000, "Salário", "31", month, ""),
@@ -200,7 +200,7 @@ func TestWebMonth_StatementPutsPendingOnTheirDayAndOverdueUnderToday(t *testing.
 
 func TestWebMonth_InvalidOccurrenceSheetIs422(t *testing.T) {
 	w := newWebClient(t)
-	id := ulid.Make().String()
+	id := id.New().String()
 	w.push(monthlyRecurrence(w.client, id, "OUTCOME", 10000, "Aluguel", "5", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), ""))
 	w.newOps()
 
@@ -243,9 +243,9 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 	w := newWebClient(t)
 	now := time.Now().UTC()
 	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	leisure := ulid.Make().String()
+	leisure := id.New().String()
 	spent := func(category, description string, amount int) op {
-		return w.op("TRANSACTION", ulid.Make().String(), "CREATE", map[string]any{
+		return w.op("TRANSACTION", id.New().String(), "CREATE", map[string]any{
 			"category_id": category, "kind": "OUTCOME", "amount": amount, "description": description, "occurred_at": month.Format(time.RFC3339),
 			"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 		})
@@ -255,7 +255,7 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 		w.op("CATEGORY", leisure, "CREATE", map[string]any{"name": "Lazer", "color": "BLUE", "created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z"}),
 		spent(categoryID, "padaria", 4590),
 		spent(leisure, "cinema", 3000),
-		monthlyRecurrence(w.client, ulid.Make().String(), "OUTCOME", 5000, "Internet", "28", month, ""),
+		monthlyRecurrence(w.client, id.New().String(), "OUTCOME", 5000, "Internet", "28", month, ""),
 	)
 
 	shown := "/?month=" + month.Format("2006-01")
@@ -296,7 +296,7 @@ func TestWebMonth_CategoryFilterNarrowsTheStatementAndKeepsTheBoxes(t *testing.T
 
 func TestWebMonth_ConfirmUsesTheDefaultCategoryOfDeletedCategory(t *testing.T) {
 	w := newWebClient(t)
-	recurrenceID := ulid.Make().String()
+	recurrenceID := id.New().String()
 	w.push(newCategory(w.client), w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
 		"category_id": categoryID, "kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:5", "start_at": "2026-01-01",
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
@@ -317,7 +317,7 @@ func TestWebMonth_ConfirmRejectedForOtherReasonIsServerError(t *testing.T) {
 	db := openStore(t)
 	handler := newHandler(db, config{})
 	w := &webClient{client: newClient(t, handler, newSignup()), cookie: login(t, handler)}
-	recurrenceID := ulid.Make().String()
+	recurrenceID := id.New().String()
 	w.push(w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
 		"kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:5", "start_at": "2026-01-01",
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
@@ -336,7 +336,7 @@ func TestWebMonth_ConfirmRejectedForOtherReasonIsServerError(t *testing.T) {
 
 func TestWebMonth_ConfirmAlreadyConfirmed(t *testing.T) {
 	w := newWebClient(t)
-	recurrenceID := ulid.Make().String()
+	recurrenceID := id.New().String()
 	confirmed := newTransaction(w.client)
 	confirmed.Payload["recurrence_id"], confirmed.Payload["occurrence_date"] = recurrenceID, "2026-01-05"
 	w.push(w.op("RECURRENCE", recurrenceID, "CREATE", map[string]any{
@@ -369,7 +369,7 @@ func TestWebTicker_ConfirmAndLaunchSwapTheTickerAndTheBalanceLine(t *testing.T) 
 	w := newWebClient(t)
 	now := time.Now().UTC()
 	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	salary := ulid.Make().String()
+	salary := id.New().String()
 	w.push(monthlyRecurrence(w.client, salary, "INCOME", 100000, "Salário", "1", month, ""))
 	shown := url.Values{"month": {month.Format("2006-01")}}
 
@@ -397,11 +397,11 @@ func TestWebTicker_ShowsBalancesAndPendingOnEveryPage(t *testing.T) {
 	month := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	w.push(newCategory(w.client),
 		transactionAt(w.client, "INCOME", 500000, month.AddDate(0, -1, 0)),
-		w.op("RECURRENCE", ulid.Make().String(), "CREATE", map[string]any{
+		w.op("RECURRENCE", id.New().String(), "CREATE", map[string]any{
 			"kind": "OUTCOME", "amount": 10000, "rule": "MONTHLY:1", "start_at": month.AddDate(0, -2, 0).Format(time.DateOnly),
 			"end_at": month.AddDate(0, 0, -1).Format(time.DateOnly), "created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 		}),
-		w.op("RECURRENCE", ulid.Make().String(), "CREATE", map[string]any{
+		w.op("RECURRENCE", id.New().String(), "CREATE", map[string]any{
 			"kind": "INCOME", "amount": 100000, "rule": "MONTHLY:31", "start_at": month.Format(time.DateOnly),
 			"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 		}),

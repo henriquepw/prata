@@ -10,6 +10,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Form helpers shared by the sheets: entries, dates, optional fields and the live options of a select.
@@ -50,16 +51,16 @@ func ParseDate(s string, loc *time.Location) (string, bool) {
 }
 
 // OrNil is the value of an optional field: nil (SQL NULL) when empty.
-func OrNil(s string) any {
+func OrNil[T ~string](s T) any {
 	if s == "" {
 		return nil
 	}
 
-	return s
+	return string(s)
 }
 
 // OrEmpty shows an optional stored field, empty when NULL.
-func OrEmpty(s *string) string {
+func OrEmpty[T ~string](s *T) T {
 	if s == nil {
 		return ""
 	}
@@ -67,8 +68,8 @@ func OrEmpty(s *string) string {
 	return *s
 }
 
-func HasCategory(categories []store.Category, id string) bool {
-	return slices.ContainsFunc(categories, func(c store.Category) bool { return c.ID == id })
+func HasCategory(categories []store.Category, categoryID id.ID) bool {
+	return slices.ContainsFunc(categories, func(c store.Category) bool { return c.ID == categoryID })
 }
 
 // DefaultCategory is the default one of categories, the zero Category when none is.
@@ -80,8 +81,8 @@ func DefaultCategory(categories []store.Category) store.Category {
 	return store.Category{}
 }
 
-func HasTag(tags []store.Tag, id string) bool {
-	return slices.ContainsFunc(tags, func(t store.Tag) bool { return t.ID == id })
+func HasTag(tags []store.Tag, tagID id.ID) bool {
+	return slices.ContainsFunc(tags, func(t store.Tag) bool { return t.ID == tagID })
 }
 
 // LiveCategories reads the categories a sheet can pick from, answering 500 when it cannot.

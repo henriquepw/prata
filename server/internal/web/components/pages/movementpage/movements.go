@@ -19,6 +19,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/pkg/importfile"
 )
 
@@ -178,7 +179,7 @@ func (p Page) Confirm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	description := strings.TrimSpace(r.PostFormValue("description"))
-	reason, err := p.db.ConfirmMovement(r.Context(), session.From(r.Context()), r.PathValue("id"), description, categoryID, session.Location(r))
+	reason, err := p.db.ConfirmMovement(r.Context(), session.From(r.Context()), id.ID(r.PathValue("id")), description, categoryID, session.Location(r))
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		session.InternalError(w, "confirming movement", err)
 		return
@@ -194,13 +195,13 @@ func (p Page) Confirm(w http.ResponseWriter, r *http.Request) {
 }
 
 // formCategory is the category_id of the form, empty or one of the account's live categories; any other answers 422.
-func (p Page) formCategory(w http.ResponseWriter, r *http.Request) (string, bool) {
+func (p Page) formCategory(w http.ResponseWriter, r *http.Request) (id.ID, bool) {
 	categories, ok := form.LiveCategories(w, r, p.db)
 	if !ok {
 		return "", false
 	}
 
-	categoryID := r.PostFormValue("category_id")
+	categoryID := id.ID(r.PostFormValue("category_id"))
 	if categoryID != "" && !form.HasCategory(categories, categoryID) {
 		http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 		return "", false
@@ -211,7 +212,7 @@ func (p Page) formCategory(w http.ResponseWriter, r *http.Request) (string, bool
 
 // Ignore drops the pending movement in the path from review for good, then answers the screen.
 func (p Page) Ignore(w http.ResponseWriter, r *http.Request) {
-	if err := p.db.IgnoreMovement(r.Context(), session.From(r.Context()), r.PathValue("id")); err != nil && !errors.Is(err, store.ErrNotFound) {
+	if err := p.db.IgnoreMovement(r.Context(), session.From(r.Context()), id.ID(r.PathValue("id"))); err != nil && !errors.Is(err, store.ErrNotFound) {
 		session.InternalError(w, "ignoring movement", err)
 		return
 	}
@@ -227,7 +228,7 @@ func (p Page) ConfirmAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	reason, err := p.db.ConfirmMovements(r.Context(), session.From(r.Context()), r.PostForm["id"], categoryID, session.Location(r))
+	reason, err := p.db.ConfirmMovements(r.Context(), session.From(r.Context()), postedIDs(r), categoryID, session.Location(r))
 	if err != nil {
 		session.InternalError(w, "confirming movements", err)
 		return
@@ -246,7 +247,7 @@ func (p Page) ConfirmAll(w http.ResponseWriter, r *http.Request) {
 func (p Page) IgnoreAll(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 
-	if err := p.db.IgnoreMovements(r.Context(), session.From(r.Context()), r.PostForm["id"]); err != nil {
+	if err := p.db.IgnoreMovements(r.Context(), session.From(r.Context()), postedIDs(r)); err != nil {
 		session.InternalError(w, "ignoring movements", err)
 		return
 	}
@@ -293,7 +294,8 @@ func (p Page) ConfirmAsOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recurrenceID, date, _ := strings.Cut(r.PostFormValue("occurrence"), ":")
+	occurrence, date, _ := strings.Cut(r.PostFormValue("occurrence"), ":")
+	recurrenceID := id.ID(occurrence)
 	pending, err := p.pendingThisMonth(r)
 	if err != nil {
 		session.InternalError(w, "listing pending occurrences", err)
@@ -311,7 +313,7 @@ func (p Page) ConfirmAsOccurrence(w http.ResponseWriter, r *http.Request) {
 		categoryID = ""
 	}
 
-	reason, err := p.db.ConfirmMovementAsOccurrence(r.Context(), session.From(r.Context()), r.PathValue("id"), recurrenceID, date, "", categoryID, session.Location(r))
+	reason, err := p.db.ConfirmMovementAsOccurrence(r.Context(), session.From(r.Context()), id.ID(r.PathValue("id")), recurrenceID, date, "", categoryID, session.Location(r))
 	if err != nil && !errors.Is(err, store.ErrNotFound) {
 		session.InternalError(w, "confirming movement as occurrence", err)
 		return
@@ -323,4 +325,14 @@ func (p Page) ConfirmAsOccurrence(w http.ResponseWriter, r *http.Request) {
 	}
 
 	p.renderMovements(w, r, http.StatusOK, movementsView{})
+}
+
+// postedIDs are the ids the form checked.
+func postedIDs(r *http.Request) []id.ID {
+	ids := make([]id.ID, len(r.PostForm["id"]))
+	for i, value := range r.PostForm["id"] {
+		ids[i] = id.ID(value)
+	}
+
+	return ids
 }

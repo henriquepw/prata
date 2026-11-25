@@ -5,17 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Transaction is a live transaction as the web shows it, with its live category (empty and GRAY
 // when it has none, as an income) and the name of its live tag (empty without one); Amount is in cents and
 // OccurredAt is RFC 3339 in UTC.
 type Transaction struct {
-	ID            string  `db:"id"`
-	CategoryID    *string `db:"category_id"`
+	ID            id.ID   `db:"id"`
+	CategoryID    *id.ID  `db:"category_id"`
 	CategoryName  string  `db:"category_name"`
 	CategoryColor string  `db:"category_color"`
-	TagID         *string `db:"tag_id"`
+	TagID         *id.ID  `db:"tag_id"`
 	TagName       string  `db:"tag_name"`
 	Kind          string  `db:"kind"`
 	Amount        int64   `db:"amount"`
@@ -42,7 +44,7 @@ const transactionSelect = `
 `
 
 // Transactions returns the account's live transactions with occurred_at in [from, to), RFC 3339 in UTC, newest first.
-func (s *Store) Transactions(ctx context.Context, accountID, from, to string) ([]Transaction, error) {
+func (s *Store) Transactions(ctx context.Context, accountID id.ID, from, to string) ([]Transaction, error) {
 	query := transactionSelect + `
 		AND t.occurred_at >= ? AND t.occurred_at < ?
 		ORDER BY t.occurred_at DESC, t.id DESC
@@ -55,7 +57,7 @@ func (s *Store) Transactions(ctx context.Context, accountID, from, to string) ([
 }
 
 // Transaction returns one live transaction of the account.
-func (s *Store) Transaction(ctx context.Context, accountID, id string) (Transaction, error) {
+func (s *Store) Transaction(ctx context.Context, accountID, id id.ID) (Transaction, error) {
 	query := transactionSelect + "AND t.id = ?"
 
 	var transaction Transaction

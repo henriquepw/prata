@@ -7,8 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 )
 
 // ErrNotFound means the row does not exist in the account or is deleted.
@@ -16,7 +16,7 @@ var ErrNotFound = errors.New("not found")
 
 // Category is a live category as the web shows it; MonthlyLimit is in cents, 0 meaning no limit.
 type Category struct {
-	ID           string `db:"id"`
+	ID           id.ID  `db:"id"`
 	Name         string `db:"name"`
 	Color        string `db:"color"`
 	MonthlyLimit int64  `db:"monthly_limit"`
@@ -25,7 +25,7 @@ type Category struct {
 }
 
 // Categories returns the account's live categories by name.
-func (s *Store) Categories(ctx context.Context, accountID string) ([]Category, error) {
+func (s *Store) Categories(ctx context.Context, accountID id.ID) ([]Category, error) {
 	query := `
 		SELECT id, name, color, monthly_limit, is_daily, is_default
 		FROM categories
@@ -40,7 +40,7 @@ func (s *Store) Categories(ctx context.Context, accountID string) ([]Category, e
 }
 
 // Category returns one live category of the account.
-func (s *Store) Category(ctx context.Context, accountID, id string) (Category, error) {
+func (s *Store) Category(ctx context.Context, accountID, id id.ID) (Category, error) {
 	query := `
 		SELECT id, name, color, monthly_limit, is_daily, is_default
 		FROM categories
@@ -82,8 +82,8 @@ func seedCategories(ctx context.Context, tx *sqlx.Tx, actor Actor, now string) e
 			return fmt.Errorf("encoding initial category: %w", err)
 		}
 
-		id := ulid.Make().String()
-		op := Op{ID: ulid.Make().String(), Entity: "CATEGORY", EntityID: id, Kind: KindCreate, Payload: payload,
+		categoryID := id.New()
+		op := Op{ID: id.New(), Entity: "CATEGORY", EntityID: categoryID, Kind: KindCreate, Payload: payload,
 			ProtocolVersion: ProtocolVersion, DeviceID: actor.DeviceID, OwnerID: actor.UserID, CreatedAt: now}
 
 		result, err := commitOp(ctx, tx, actor, op)

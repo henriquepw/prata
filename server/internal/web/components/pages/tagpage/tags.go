@@ -13,7 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Page is the tags' handlers: the Tags screen and its sheet.
@@ -62,7 +62,7 @@ func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
 // in the user's time zone, stored in UTC.
 func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	fm := tagForm{
-		ID:      r.PathValue("id"),
+		ID:      id.ID(r.PathValue("id")),
 		Name:    strings.TrimSpace(r.PostFormValue("name")),
 		StartAt: r.PostFormValue("start_at"),
 		EndAt:   r.PostFormValue("end_at"),
@@ -91,7 +91,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	change := store.Change{Entity: "TAG", EntityID: fm.ID, Kind: store.KindUpdate,
 		Fields: map[string]any{"name": fm.Name, "start_at": startAt, "end_at": endAt}}
 	if fm.ID == "" {
-		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
+		change.EntityID, change.Kind = id.New(), store.KindCreate
 	} else if _, ok := p.tag(w, r); !ok {
 		return
 	}
@@ -122,7 +122,7 @@ func storedTagForm(tag store.Tag, loc *time.Location) tagForm {
 
 // tag reads the live tag in the path, answering 404 when the account has none.
 func (p Page) tag(w http.ResponseWriter, r *http.Request) (store.Tag, bool) {
-	tag, err := p.db.Tag(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
+	tag, err := p.db.Tag(r.Context(), session.From(r.Context()).AccountID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Tag{}, false

@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Page is the transactions' handlers: the transaction sheet.
@@ -36,8 +36,8 @@ func (p Page) NewSheet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fm.Kind, fm.OccurredAt = "OUTCOME", time.Now().In(session.Location(r)).Format(time.DateOnly)
-	if current, err := url.Parse(r.Header.Get("HX-Current-URL")); err == nil && form.HasCategory(fm.Categories, current.Query().Get("category")) {
-		fm.CategoryID = current.Query().Get("category")
+	if current, err := url.Parse(r.Header.Get("HX-Current-URL")); err == nil && form.HasCategory(fm.Categories, id.ID(current.Query().Get("category"))) {
+		fm.CategoryID = id.ID(current.Query().Get("category"))
 	}
 
 	session.Render(w, r, http.StatusOK, transactionSheet(fm))
@@ -67,13 +67,13 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fm.ID = r.PathValue("id")
+	fm.ID = id.ID(r.PathValue("id"))
 	fm.Description = strings.TrimSpace(r.PostFormValue("description"))
 	fm.Kind = r.PostFormValue("kind")
 	fm.Amount = strings.TrimSpace(r.PostFormValue("amount"))
 	fm.OccurredAt = r.PostFormValue("occurred_at")
-	fm.CategoryID = r.PostFormValue("category_id")
-	fm.TagID = r.PostFormValue("tag_id")
+	fm.CategoryID = id.ID(r.PostFormValue("category_id"))
+	fm.TagID = id.ID(r.PostFormValue("tag_id"))
 
 	amount, occurredAt := fm.Parse(r)
 	if fm.TagID != "" && !form.HasTag(fm.Tags, fm.TagID) {
@@ -85,7 +85,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 		"category_id": form.OrNil(fm.CategoryID), "tag_id": form.OrNil(fm.TagID),
 	}}
 	if fm.ID == "" {
-		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
+		change.EntityID, change.Kind = id.New(), store.KindCreate
 	} else {
 		stored, ok := p.transaction(w, r)
 		if !ok {
@@ -143,7 +143,7 @@ func storedTransactionForm(ctx context.Context, fm entry.Form, transaction store
 
 // transaction reads the live transaction in the path, answering 404 when the account has none.
 func (p Page) transaction(w http.ResponseWriter, r *http.Request) (store.Transaction, bool) {
-	transaction, err := p.db.Transaction(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
+	transaction, err := p.db.Transaction(r.Context(), session.From(r.Context()).AccountID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Transaction{}, false

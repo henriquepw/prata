@@ -301,7 +301,7 @@ func connectionFormPanel(view connectionsView) templ.Component {
 								}
 								return nil
 							})
-							templ_7745c5c3_Err = nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
+							templ_7745c5c3_Err = nativeselect.Option(nativeselect.OptionProps{Value: account.ID.String(), Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var12), templ_7745c5c3_Buffer)
 							if templ_7745c5c3_Err != nil {
 								return templ_7745c5c3_Err
 							}
@@ -902,7 +902,7 @@ func connectionsPanel(view connectionsView, loc *time.Location) templ.Component 
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}
-									templ_7745c5c3_Err = confirm.Inline(l10n.T(ctx, "connections.confirm_remove", c.Institution), l10n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID}).Render(ctx, templ_7745c5c3_Buffer)
+									templ_7745c5c3_Err = confirm.Inline(l10n.T(ctx, "connections.confirm_remove", c.Institution), l10n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID.String()}).Render(ctx, templ_7745c5c3_Buffer)
 									if templ_7745c5c3_Err != nil {
 										return templ_7745c5c3_Err
 									}

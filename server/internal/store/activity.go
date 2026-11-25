@@ -1,6 +1,10 @@
 package store
 
-import "context"
+import (
+	"context"
+
+	"github.com/henriquepw/prata/server/pkg/id"
+)
 
 // Activity is one sync operation as the activity log shows it: the device's name, the entity, the kind, the name
 // or description in the payload ("" when it has neither, as a DELETE) and the op's created_at, RFC 3339 in UTC.
@@ -14,7 +18,7 @@ type Activity struct {
 
 // Activity returns the account's 12 latest sync operations by created_at, read as a time since devices may send
 // offsets, newest first, so a late sync still lands in time order; seq breaks ties.
-func (s *Store) Activity(ctx context.Context, accountID string) ([]Activity, error) {
+func (s *Store) Activity(ctx context.Context, accountID id.ID) ([]Activity, error) {
 	query := `
 		SELECT
 			COALESCE(d.name, '') AS device,

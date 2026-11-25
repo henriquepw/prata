@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // at is the op with created_at moved to the given UTC instant.
@@ -20,12 +20,12 @@ func at(o op, instant string) op {
 func TestWebDevices_ActivityLogListsLatestOpsOfEveryDeviceByTime(t *testing.T) {
 	w := newWebClient(t)
 	phone := signinClient(t, w.client, newSignin().DeviceID)
-	ops := []op{at(w.op("TAG", ulid.Make().String(), "CREATE", map[string]any{
+	ops := []op{at(w.op("TAG", id.New().String(), "CREATE", map[string]any{
 		"name": "Viagem", "created_at": "2026-08-23T12:00:00Z", "updated_at": "2026-08-23T12:00:00Z",
 	}), "2026-08-23T12:00:00Z")}
 	for i := 1; i <= 10; i++ {
 		created := fmt.Sprintf("2026-08-23T13:%02d:00Z", i)
-		ops = append(ops, at(w.op("TRANSACTION", ulid.Make().String(), "CREATE", map[string]any{
+		ops = append(ops, at(w.op("TRANSACTION", id.New().String(), "CREATE", map[string]any{
 			"kind": "OUTCOME", "amount": 1000, "description": fmt.Sprintf("Compra %d", i), "occurred_at": created,
 			"created_at": created, "updated_at": created,
 		}), created))

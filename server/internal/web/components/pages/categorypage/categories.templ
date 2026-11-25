@@ -3,6 +3,7 @@ package categorypage
 import (
 	"strings"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/choice"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
@@ -16,7 +17,7 @@ import (
 // categoryForm is the category sheet: what the user typed and an error message per field name,
 // "form" holding a rejected commit.
 type categoryForm struct {
-	ID          string
+	ID          id.ID
 	Name        string
 	Color       string
 	IsDaily     bool
@@ -35,8 +36,8 @@ templ categoriesPage(s layout.Props, form budget.Form) {
 templ categorySheet(form categoryForm) {
 	@sheet.Form(sheet.Props{
 		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "categories.new", "categories.edit")),
-		Action:    style.IfElse(form.ID == "", "/categories", "/categories/"+form.ID),
-		DeleteURL: style.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID),
+		Action:    style.IfElse(form.ID == "", "/categories", "/categories/"+form.ID.String()),
+		DeleteURL: style.IfElse(form.ID == "" || form.IsDefault, "", "/categories/"+form.ID.String()),
 		Confirm:   l10n.T(ctx, "categories.confirm_delete"),
 		Error:     form.Errors["form"],
 	}) {

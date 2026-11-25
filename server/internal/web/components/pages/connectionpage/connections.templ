@@ -48,7 +48,7 @@ templ connectionFormPanel(view connectionsView) {
 				@formfield.Field("account_id", l10n.T(ctx, "movements.account"), view.Errors["account_id"]) {
 					@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
 						for _, account := range view.Accounts {
-							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID, Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}) {
+							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID.String(), Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}) {
 								if account.Currency != importfile.CurrencyBRL {
 									{ account.Name } ({ account.Currency }): { l10n.T(ctx, "connections.only_brl") }
 								} else {
@@ -138,7 +138,7 @@ templ connectionsPanel(view connectionsView, loc *time.Location) {
 								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(confirm.Toggle), "data-focus": true}}) {
 									{ l10n.T(ctx, "connections.remove") }
 								}
-								@confirm.Inline(l10n.T(ctx, "connections.confirm_remove", c.Institution), l10n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID})
+								@confirm.Inline(l10n.T(ctx, "connections.confirm_remove", c.Institution), l10n.T(ctx, "connections.remove_yes"), templ.Attributes{"hx-delete": "/connections/" + c.ID.String()})
 							}
 						}
 					}

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // newEnglishClient is a web client whose user picked the language en.
@@ -72,17 +72,17 @@ func TestWebEnglish_Month(t *testing.T) {
 	w.mustSubmit(http.MethodPost, "/categories", categoryForm("Mercado", "GREEN", "0"))
 	w.mustSubmit(http.MethodPost, "/transactions", transactionForm("Feira", "OUTCOME", "10", "2026-07-15", "", ""), tz)
 	ops := w.newOps()
-	id := ops[1].EntityID
+	transactionID := ops[1].EntityID
 	w.assertBody("/?month=2026-07", "Feira", "wed 15/07", "Mercado", "∞")
 	w.assertBody("/?month=2026-08&category="+ops[0].EntityID, "[all]", "no transactions in this category")
-	w.assertBody("/transactions/"+id, "Edit transaction", "Description", "Amount", "Date", "Category", "Tag", "No tag", "[today]", "[yesterday]",
+	w.assertBody("/transactions/"+transactionID, "Edit transaction", "Description", "Amount", "Date", "Category", "Tag", "No tag", "[today]", "[yesterday]",
 		"delete this transaction? It disappears from the lists and balances on every device.")
 	w.assertBody("/transactions/new", "New transaction")
 
 	now := time.Now().UTC()
 	first := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
-	recurrenceID := ulid.Make().String()
-	w.push(w.overdueRecurrence(recurrenceID, first), w.op("RECURRENCE", ulid.Make().String(), "CREATE", map[string]any{
+	recurrenceID := id.New().String()
+	w.push(w.overdueRecurrence(recurrenceID, first), w.op("RECURRENCE", id.New().String(), "CREATE", map[string]any{
 		"kind": "INCOME", "amount": 10000, "rule": "MONTHLY:31", "start_at": first.Format(time.DateOnly),
 		"created_at": "2026-08-23T14:02:11Z", "updated_at": "2026-08-23T14:02:11Z",
 	}))

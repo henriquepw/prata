@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 	"time"
+
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // ErrDivisionNotClosed means the division does not add up to the monthly income.
@@ -16,7 +18,7 @@ var ErrDivisionNotClosed = errors.New("division does not close the monthly incom
 type Budget struct {
 	Income         int64
 	Percent        bool
-	Limits         map[string]int64
+	Limits         map[id.ID]int64
 	DailyLimitMode string
 }
 
@@ -34,13 +36,13 @@ func BasisPoints(limit, total int64) int64 {
 
 // Division is the stored monthly limit of each of categories in hundredths of a percent of what they add up to, the
 // rounding on the default category so that it closes 100%; all 0 while they add up to 0.
-func Division(categories []Category) map[string]int64 {
+func Division(categories []Category) map[id.ID]int64 {
 	var stored, shared int64
 	for _, category := range categories {
 		stored += category.MonthlyLimit
 	}
 
-	shares := map[string]int64{}
+	shares := map[id.ID]int64{}
 	for _, category := range categories {
 		shares[category.ID] = BasisPoints(category.MonthlyLimit, stored)
 		shared += shares[category.ID]
@@ -112,7 +114,7 @@ func (s *Store) SaveBudget(ctx context.Context, session Session, budget Budget) 
 // typed limits equal to the stored ones mean the monthly income alone changed: the stored limits are rescaled to it in
 // proportion. Otherwise the typed limits are the division, converted from percent when Percent, and must add up to
 // the monthly income, or 100%. The cents lost to rounding go to the default category.
-func divide(categories []Category, budget Budget) (map[string]int64, error) {
+func divide(categories []Category, budget Budget) (map[id.ID]int64, error) {
 	var stored, typed int64
 	for _, category := range categories {
 		stored += category.MonthlyLimit
@@ -120,7 +122,7 @@ func divide(categories []Category, budget Budget) (map[string]int64, error) {
 
 	current := Division(categories)
 	untouched := true
-	limits := map[string]int64{}
+	limits := map[id.ID]int64{}
 	for _, category := range categories {
 		limits[category.ID] = budget.Limits[category.ID]
 		typed += limits[category.ID]

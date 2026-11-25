@@ -9,18 +9,19 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Form is what the user typed in the transaction's fields, the date as YYYY-MM-DD, the live categories and tags to
 // pick from and an error message per field name, "form" holding a rejected commit.
 type Form struct {
-	ID          string
+	ID          id.ID
 	Description string
 	Kind        string
 	Amount      string
 	OccurredAt  string
-	CategoryID  string
-	TagID       string
+	CategoryID  id.ID
+	TagID       id.ID
 	Categories  []store.Category
 	Tags        []store.Tag
 	Errors      map[string]string

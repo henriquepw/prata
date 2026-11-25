@@ -13,7 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // launchLine is a line of the Month prompt read as a transaction: Amount is 0 when the line has none, Date is
@@ -164,7 +164,7 @@ func (p Page) Launch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	occurredAt, _ := form.ParseDate(l.Date, session.Location(r))
-	change := store.Change{Entity: "TRANSACTION", EntityID: ulid.Make().String(), Kind: store.KindCreate, Fields: map[string]any{
+	change := store.Change{Entity: "TRANSACTION", EntityID: id.New(), Kind: store.KindCreate, Fields: map[string]any{
 		"kind": l.Kind, "amount": l.Amount, "description": form.OrNil(l.Description), "occurred_at": occurredAt,
 		"category_id": form.OrNil(l.Category.ID), "tag_id": form.OrNil(l.Tag.ID),
 	}}

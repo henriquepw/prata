@@ -35,7 +35,7 @@ func Commit(db *store.Store, w http.ResponseWriter, r *http.Request, fieldErrors
 	}
 
 	if changes[0].Kind != store.KindDelete {
-		http.SetCookie(w, &http.Cookie{Name: FlashCookie, Value: changes[0].EntityID, Path: returnPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+		http.SetCookie(w, &http.Cookie{Name: FlashCookie, Value: changes[0].EntityID.String(), Path: returnPath(changes[0].Entity, r), MaxAge: 60, HttpOnly: true, SameSite: http.SameSiteLaxMode})
 	}
 
 	w.Header().Set("HX-Refresh", "true")

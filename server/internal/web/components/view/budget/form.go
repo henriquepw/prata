@@ -12,6 +12,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Form is the division on the Categories screen: the monthly income as typed and in cents, the Mode the limits
@@ -23,10 +24,10 @@ type Form struct {
 	income     int64
 	Mode       string
 	Categories []store.Category
-	Values     map[string]string
-	Percents   map[string]string
-	Cents      map[string]int64
-	Points     map[string]int64
+	Values     map[id.ID]string
+	Percents   map[id.ID]string
+	Cents      map[id.ID]int64
+	Points     map[id.ID]int64
 	Errors     map[string]string
 	// Welcome is the form of the welcome screen: it posts to /welcome as a plain form, always shows the limit fields
 	// and leaves the categories without a sheet.
@@ -41,8 +42,8 @@ const (
 
 // NewForm is an empty form in mode over categories.
 func NewForm(categories []store.Category, mode string) Form {
-	return Form{Mode: mode, Categories: categories, Values: map[string]string{}, Percents: map[string]string{},
-		Cents: map[string]int64{}, Points: map[string]int64{}, Errors: map[string]string{}}
+	return Form{Mode: mode, Categories: categories, Values: map[id.ID]string{}, Percents: map[id.ID]string{},
+		Cents: map[id.ID]int64{}, Points: map[id.ID]int64{}, Errors: map[string]string{}}
 }
 
 func (f Form) percent() bool { return f.Mode == InPercent }
@@ -99,7 +100,7 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 	}
 
 	form.Income = r.PostFormValue("income")
-	budget := store.Budget{Percent: form.percent(), Limits: map[string]int64{}}
+	budget := store.Budget{Percent: form.percent(), Limits: map[id.ID]int64{}}
 
 	var incomeOK bool
 	if form.income, incomeOK = prefs.ParseAmount(r.Context(), form.Income); !incomeOK || form.income <= 0 {
@@ -108,10 +109,10 @@ func Parse(r *http.Request, categories []store.Category) (Form, store.Budget) {
 
 	budget.Income = form.income
 	for _, category := range categories {
-		typed := r.PostFormValue("limit_" + category.ID)
+		typed := r.PostFormValue("limit_" + category.ID.String())
 		limit, ok := prefs.ParseAmount(r.Context(), typed)
 		if !ok || limit < 0 {
-			form.Errors["limit_"+category.ID] = l10n.T(r.Context(), "budget.error.limit")
+			form.Errors["limit_"+category.ID.String()] = l10n.T(r.Context(), "budget.error.limit")
 		}
 
 		budget.Limits[category.ID] = limit

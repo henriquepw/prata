@@ -13,21 +13,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/jmoiron/sqlx"
-	"github.com/oklog/ulid/v2"
 	"golang.org/x/crypto/argon2"
 	"modernc.org/sqlite"
 	sqlite3 "modernc.org/sqlite/lib"
 )
 
 var (
-	// ErrSignupClosed means the installation already has a user and signup is not allowed.
-	ErrSignupClosed = errors.New("signup closed")
-	// ErrDuplicateID means an account, user, email or device already exists.
-	ErrDuplicateID = errors.New("duplicate id")
-	// ErrInvalidAPIKey means the API key is unknown or revoked.
-	ErrInvalidAPIKey = errors.New("invalid api key")
-	// ErrInvalidCredentials means the email is unknown or the password is wrong.
+	ErrSignupClosed       = errors.New("signup closed")
+	ErrDuplicateID        = errors.New("duplicate id")
+	ErrInvalidAPIKey      = errors.New("invalid api key")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
@@ -37,9 +33,9 @@ type Signup struct {
 	Email        string `json:"email"`
 	Password     string `json:"password"`
 	DeviceName   string `json:"device_name"`
-	AccountID    string `json:"account_id"`
-	OwnerID      string `json:"owner_id"`
-	DeviceID     string `json:"device_id"`
+	AccountID    id.ID  `json:"account_id"`
+	OwnerID      id.ID  `json:"owner_id"`
+	DeviceID     id.ID  `json:"device_id"`
 	Language     string `json:"-"`
 	DateFormat   string `json:"-"`
 	NumberFormat string `json:"-"`
@@ -49,15 +45,15 @@ type Signup struct {
 type Signin struct {
 	Email      string `json:"email"`
 	Password   string `json:"password"`
-	DeviceID   string `json:"device_id"`
+	DeviceID   id.ID  `json:"device_id"`
 	DeviceName string `json:"device_name"`
 }
 
 // Actor is who an API key acts as.
 type Actor struct {
-	AccountID string `db:"account_id"`
-	UserID    string `db:"user_id"`
-	DeviceID  string `db:"id"`
+	AccountID id.ID `db:"account_id"`
+	UserID    id.ID `db:"user_id"`
+	DeviceID  id.ID `db:"id"`
 }
 
 // hasUsers is the check that tells an empty installation, the only one where signup is always open.
@@ -102,7 +98,7 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		args  []any
 	}
 	now := formatTime(time.Now())
-	webDeviceID := ulid.Make().String()
+	webDeviceID := id.New()
 	insertUser := `
 		INSERT INTO users (id, email, secret, language, date_format, number_format, created_at, updated_at)
 		VALUES (
@@ -117,6 +113,17 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 		INSERT INTO accounts (id, name, currency, created_by, created_at, updated_at)
 		VALUES (?, ?, COALESCE(NULLIF(?, ''), 'BRL'), ?, ?, ?)
 	`
+
+	insertAccountUserLink := `
+		INSERT INTO account_users (id, account_id, user_id, role, created_at)
+		VALUES (?, ?, ?, 'OWNER', ?)
+	`
+
+	insertDevice := `
+		INSERT INTO devices (id, user_id, account_id, name, created_at)
+		VALUES (?, ?, ?, 'web', ?)
+	`
+
 	statements := []statement{
 		{
 			insertUser,
@@ -127,17 +134,17 @@ func (s *Store) CreateAccount(ctx context.Context, signup Signup, isSignupAllowe
 			[]any{signup.AccountID, signup.Email, signup.Currency, signup.OwnerID, now, now},
 		},
 		{
-			"INSERT INTO account_users (id, account_id, user_id, role, created_at) VALUES (?, ?, ?, 'OWNER', ?)",
-			[]any{ulid.Make().String(), signup.AccountID, signup.OwnerID, now},
+			insertAccountUserLink,
+			[]any{id.New(), signup.AccountID, signup.OwnerID, now},
 		},
 		{
-			"INSERT INTO devices (id, user_id, account_id, name, created_at) VALUES (?, ?, ?, 'web', ?)",
+			insertDevice,
 			[]any{webDeviceID, signup.OwnerID, signup.AccountID, now},
 		},
 	}
 
 	var key string
-	if signup.DeviceID != "" {
+	if signup.DeviceID.IsValid() {
 		key = newToken()
 		statements = append(statements, statement{
 			"INSERT INTO devices (id, user_id, account_id, name, api_key_hash, created_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -218,7 +225,7 @@ func (s *Store) ActorByAPIKey(ctx context.Context, key string) (Actor, error) {
 }
 
 // RevokeAPIKey deletes the device's API key hash.
-func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
+func (s *Store) RevokeAPIKey(ctx context.Context, deviceID id.ID) error {
 	query := "UPDATE devices SET api_key_hash = NULL WHERE id = ?"
 
 	_, err := s.ExecContext(ctx, query, deviceID)
@@ -229,14 +236,14 @@ func (s *Store) RevokeAPIKey(ctx context.Context, deviceID string) error {
 // Device is a device of the account with a live API key; times are RFC3339 UTC, LastSeenAt empty before
 // its first sync.
 type Device struct {
-	ID         string `db:"id"`
+	ID         id.ID  `db:"id"`
 	Name       string `db:"name"`
 	LastSeenAt string `db:"last_seen_at"`
 	CreatedAt  string `db:"created_at"`
 }
 
 // Devices returns the account's devices with a live API key, newest first; the hidden web device has none.
-func (s *Store) Devices(ctx context.Context, accountID string) ([]Device, error) {
+func (s *Store) Devices(ctx context.Context, accountID id.ID) ([]Device, error) {
 	query := `
 		SELECT id, COALESCE(name, '') AS name, COALESCE(last_seen_at, '') AS last_seen_at, created_at
 		FROM devices
@@ -251,7 +258,7 @@ func (s *Store) Devices(ctx context.Context, accountID string) ([]Device, error)
 }
 
 // RevokeDevice deletes the API key hash of the account's device, or returns ErrNotFound when it has no live key.
-func (s *Store) RevokeDevice(ctx context.Context, accountID, deviceID string) error {
+func (s *Store) RevokeDevice(ctx context.Context, accountID, deviceID id.ID) error {
 	query := `
 		UPDATE devices
 		SET api_key_hash = NULL

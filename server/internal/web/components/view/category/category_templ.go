@@ -14,6 +14,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Name is a category's name after its "■" in the category color.
@@ -81,7 +82,7 @@ func Name(name, color string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/view/category/category.templ`, Line: 12, Col: 108}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/view/category/category.templ`, Line: 13, Col: 108}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -97,7 +98,7 @@ func Name(name, color string) templ.Component {
 
 // Field is the category of an entry, picked from categories with selected picked; the sheet hides it while
 // [receita] is checked, since an income has none.
-func Field(categories []store.Category, selected, message string) templ.Component {
+func Field(categories []store.Category, selected id.ID, message string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -158,7 +159,7 @@ func Field(categories []store.Category, selected, message string) templ.Componen
 						var templ_7745c5c3_Var9 string
 						templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(c.Name)
 						if templ_7745c5c3_Err != nil {
-							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/view/category/category.templ`, Line: 23, Col: 14}
+							return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/view/category/category.templ`, Line: 24, Col: 14}
 						}
 						_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 						if templ_7745c5c3_Err != nil {
@@ -166,7 +167,7 @@ func Field(categories []store.Category, selected, message string) templ.Componen
 						}
 						return nil
 					})
-					templ_7745c5c3_Err = nativeselect.Option(nativeselect.OptionProps{Value: c.ID, Selected: c.ID == selected || (selected == "" && c.IsDefault)}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = nativeselect.Option(nativeselect.OptionProps{Value: c.ID.String(), Selected: c.ID == selected || (selected == "" && c.IsDefault)}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var8), templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

@@ -13,6 +13,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/pkg/pluggy"
 )
 
@@ -35,7 +36,7 @@ type connectionsView struct {
 	Accounts       []store.AccountRef
 	HasCredentials bool
 	ItemID         string
-	AccountID      string
+	AccountID      id.ID
 	Errors         map[string]string
 	FetchError     string
 }
@@ -90,7 +91,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sess := session.From(r.Context())
-	view := connectionsView{ItemID: strings.TrimSpace(r.PostFormValue("item_id")), AccountID: r.PostFormValue("account_id"), Errors: map[string]string{}}
+	view := connectionsView{ItemID: strings.TrimSpace(r.PostFormValue("item_id")), AccountID: id.ID(r.PostFormValue("account_id")), Errors: map[string]string{}}
 
 	item, err := p.fetchItem(r, sess.UserID, view.ItemID)
 	switch {
@@ -127,7 +128,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 }
 
 // fetchItem reads the Pluggy Item with the user's saved credentials, or store.ErrNotFound when there are none.
-func (p Page) fetchItem(r *http.Request, userID, itemID string) (pluggy.Item, error) {
+func (p Page) fetchItem(r *http.Request, userID id.ID, itemID string) (pluggy.Item, error) {
 	credentials, err := p.db.PluggyCredentials(r.Context(), p.openFinance.Key, userID)
 	if err != nil {
 		return pluggy.Item{}, err
@@ -148,7 +149,7 @@ func (p Page) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := p.db.DeleteConnection(r.Context(), session.From(r.Context()).UserID, r.PathValue("id"))
+	err := p.db.DeleteConnection(r.Context(), session.From(r.Context()).UserID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return

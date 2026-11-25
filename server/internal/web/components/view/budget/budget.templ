@@ -3,6 +3,7 @@ package budget
 import (
 	"fmt"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/choice"
@@ -77,7 +78,7 @@ templ Screen(form Form, flash string) {
 				<p class="mt-1 text-2xs text-muted-foreground" data-hint>{ l10n.T(ctx, style.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
 				<div class="mt-5 flex h-6 gap-0.5 bg-line-faint" aria-hidden="true">
 					for _, c := range form.Categories {
-						<i class={ budgetSlice, category.ColorClass(c.Color) } data-slice={ c.ID } title={ c.Name } style={ width(form.Points[c.ID]) }></i>
+						<i class={ budgetSlice, category.ColorClass(c.Color) } data-slice={ c.ID.String() } title={ c.Name } style={ width(form.Points[c.ID]) }></i>
 					}
 					{{ _, free := form.gap() }}
 					<i class={ budgetSlice, "budget-free" } data-slice="free" title={ l10n.T(ctx, "budget.free") } style={ width(free) }></i>
@@ -98,12 +99,12 @@ templ Screen(form Form, flash string) {
 			<div class="grid grid-cols-[auto_1fr_auto_--spacing(30)] items-center gap-x-4 gap-y-3 text-sm @max-2xl/console:grid-flow-row-dense @max-2xl/console:grid-cols-[1fr_auto_auto] @max-2xl/console:gap-x-2 @max-2xl/console:gap-y-1.5">
 				for _, c := range form.Categories {
 					if hasIncome {
-						@budgetRow(form, c.ID, c.Name, c.Color, c.ID == flash)
+						@budgetRow(form, c.ID, c.Name, c.Color, c.ID.String() == flash)
 					} else {
-						<button type="button" class={ budgetName } hx-get={ "/categories/" + c.ID } hx-target="#sheet" data-flash?={ c.ID == flash }>
+						<button type="button" class={ budgetName } hx-get={ "/categories/" + c.ID.String() } hx-target="#sheet" data-flash?={ c.ID.String() == flash }>
 							@category.Name(c.Name, c.Color)
 						</button>
-						<input type="hidden" name={ "limit_" + c.ID } value={ form.Percents[c.ID] }/>
+						<input type="hidden" name={ "limit_" + c.ID.String() } value={ form.Percents[c.ID] }/>
 					}
 				}
 			</div>
@@ -123,14 +124,14 @@ templ Screen(form Form, flash string) {
 
 // budgetRow is a category's row in the division: its name, the slider, the field in each mode (the inactive one
 // hidden and disabled, so only the typed mode is sent) and the value in the other mode.
-templ budgetRow(form Form, id, name, color string, flash bool) {
-	<div class="contents" data-row={ id }>
+templ budgetRow(form Form, categoryID id.ID, name, color string, flash bool) {
+	<div class="contents" data-row={ categoryID.String() }>
 		if form.Welcome {
 			<span class="px-0.5">
 				@category.Name(name, color)
 			</span>
 		} else {
-			<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
+			<button type="button" class={ budgetName } hx-get={ "/categories/" + categoryID.String() } hx-target="#sheet" data-flash?={ flash }>
 				@category.Name(name, color)
 			</button>
 		}
@@ -139,16 +140,16 @@ templ budgetRow(form Form, id, name, color string, flash bool) {
 			min="0"
 			max="100"
 			step="0.5"
-			value={ fmt.Sprintf("%.2f", float64(form.Points[id])/100) }
+			value={ fmt.Sprintf("%.2f", float64(form.Points[categoryID])/100) }
 			aria-label={ l10n.T(ctx, "budget.in_percent", name) }
 			class={ "budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", category.ColorClass(color) }
-			style={ templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[id])/100)))) }
+			style={ templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[categoryID])/100)))) }
 		/>
 		<span class="flex justify-end">
 			<span class="in-data-[mode=value]:hidden">
 				<input
-					name={ "limit_" + id }
-					value={ form.Percents[id] }
+					name={ "limit_" + categoryID.String() }
+					value={ form.Percents[categoryID] }
 					placeholder={ prefs.Amount(ctx, 0) }
 					aria-label={ l10n.T(ctx, "budget.in_percent", name) }
 					inputmode="decimal"
@@ -156,14 +157,14 @@ templ budgetRow(form Form, id, name, color string, flash bool) {
 					disabled?={ !form.percent() }
 					class={ budgetInput, budgetField, "w-15" }
 					data-percent
-					{ formfield.AriaInvalid(style.IfElse(form.percent(), form.Errors["limit_"+id], ""))... }
+					{ formfield.AriaInvalid(style.IfElse(form.percent(), form.Errors["limit_"+categoryID.String()], ""))... }
 				/>
 				<span aria-hidden="true">%</span>
 			</span>
 			<span class="in-data-[mode=percent]:hidden">
 				<input
-					name={ "limit_" + id }
-					value={ form.Values[id] }
+					name={ "limit_" + categoryID.String() }
+					value={ form.Values[categoryID] }
 					placeholder={ prefs.Amount(ctx, 0) }
 					aria-label={ l10n.T(ctx, "budget.in_value", name) }
 					inputmode="numeric"
@@ -172,18 +173,18 @@ templ budgetRow(form Form, id, name, color string, flash bool) {
 					disabled?={ form.percent() }
 					class={ budgetInput, budgetField, "w-25" }
 					data-value
-					{ formfield.AriaInvalid(style.IfElse(form.percent(), "", form.Errors["limit_"+id]))... }
+					{ formfield.AriaInvalid(style.IfElse(form.percent(), "", form.Errors["limit_"+categoryID.String()]))... }
 				/>
 			</span>
 		</span>
 		<span class="text-right text-muted-foreground tabular-nums" data-derived>
 			if form.percent() {
-				{ prefs.Money(ctx, form.Cents[id]) }
+				{ prefs.Money(ctx, form.Cents[categoryID]) }
 			} else {
-				{ prefs.Amount(ctx, form.Points[id]) }%
+				{ prefs.Amount(ctx, form.Points[categoryID]) }%
 			}
 		</span>
-		if message := form.Errors["limit_"+id]; message != "" {
+		if message := form.Errors["limit_"+categoryID.String()]; message != "" {
 			<div class="col-span-full">
 				@formfield.Note("", message)
 			</div>

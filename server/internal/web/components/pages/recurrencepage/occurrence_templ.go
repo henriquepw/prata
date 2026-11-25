@@ -97,7 +97,7 @@ func occurrenceSheet(fm occurrenceForm) templ.Component {
 		})
 		templ_7745c5c3_Err = sheet.Form(sheet.Props{
 			Title:  l10n.T(ctx, "occurrence.title"),
-			Action: "/recurrences/" + fm.Recurrence.ID + "/occurrences/" + fm.Date,
+			Action: "/recurrences/" + fm.Recurrence.ID.String() + "/occurrences/" + fm.Date,
 			Submit: l10n.T(ctx, "month.confirm"),
 			Busy:   l10n.T(ctx, "form.confirming"),
 			Error:  fm.Errors["form"],

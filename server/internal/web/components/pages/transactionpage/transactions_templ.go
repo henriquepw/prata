@@ -53,8 +53,8 @@ func transactionSheet(form entry.Form) templ.Component {
 		})
 		templ_7745c5c3_Err = sheet.Form(sheet.Props{
 			Title:     l10n.T(ctx, style.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
-			Action:    style.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
-			DeleteURL: style.IfElse(form.ID == "", "", "/transactions/"+form.ID),
+			Action:    style.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID.String()),
+			DeleteURL: style.IfElse(form.ID == "", "", "/transactions/"+form.ID.String()),
 			Confirm:   l10n.T(ctx, "transactions.confirm_delete"),
 			Error:     form.Errors["form"],
 		}).Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)

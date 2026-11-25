@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/henriquepw/prata/server/pkg/id"
 	"github.com/henriquepw/prata/server/pkg/importfile"
 	"github.com/henriquepw/prata/server/pkg/pluggy"
-	"github.com/oklog/ulid/v2"
 )
 
 // ErrCurrency means the account's currency is not BRL, the only one a Connection accepts.
@@ -17,7 +17,7 @@ var ErrCurrency = errors.New("account currency is not BRL")
 
 // Connection is a user's Pluggy Item feeding movements into one of their accounts.
 type Connection struct {
-	ID              string         `db:"id"`
+	ID              id.ID          `db:"id"`
 	AccountName     string         `db:"account_name"`
 	Institution     string         `db:"institution"`
 	Status          string         `db:"status"`
@@ -26,7 +26,7 @@ type Connection struct {
 }
 
 // Connections are the user's Connections, oldest first.
-func (s *Store) Connections(ctx context.Context, userID string) ([]Connection, error) {
+func (s *Store) Connections(ctx context.Context, userID id.ID) ([]Connection, error) {
 	query := `
 		SELECT n.id, a.name AS account_name, n.institution, n.status, n.execution_status, n.last_updated_at
 		FROM connections n
@@ -45,7 +45,7 @@ func (s *Store) Connections(ctx context.Context, userID string) ([]Connection, e
 
 // AddConnection stores the user's Connection to the Pluggy Item with that id, feeding the account. It returns
 // ErrNotFound when the user does not belong to the account and ErrCurrency when the account's currency is not BRL.
-func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID string, item pluggy.Item) error {
+func (s *Store) AddConnection(ctx context.Context, userID, accountID id.ID, itemID string, item pluggy.Item) error {
 	query := `
 		SELECT c.currency
 		FROM account_users a
@@ -71,7 +71,7 @@ func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID str
 		INSERT INTO connections (id, user_id, account_id, item_id, institution, status, execution_status, last_updated_at, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
 	`
-	if _, err := s.ExecContext(ctx, query, ulid.Make().String(), userID, accountID, itemID, item.Connector.Name, item.Status, item.ExecutionStatus, item.LastUpdatedAt, formatTime(time.Now())); err != nil {
+	if _, err := s.ExecContext(ctx, query, id.New(), userID, accountID, itemID, item.Connector.Name, item.Status, item.ExecutionStatus, item.LastUpdatedAt, formatTime(time.Now())); err != nil {
 		return fmt.Errorf("adding connection: %w", err)
 	}
 
@@ -80,7 +80,7 @@ func (s *Store) AddConnection(ctx context.Context, userID, accountID, itemID str
 
 // DeleteConnection removes the user's Connection and its pending movements, keeping the confirmed and ignored ones. It
 // returns ErrNotFound when the user has no such Connection.
-func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
+func (s *Store) DeleteConnection(ctx context.Context, userID, id id.ID) error {
 	tx, err := s.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("starting connection removal: %w", err)
@@ -113,16 +113,16 @@ func (s *Store) DeleteConnection(ctx context.Context, userID, id string) error {
 
 // FetchTarget is a Connection to fetch movements for: its owner, the account it feeds and when it was last fetched.
 type FetchTarget struct {
-	ID            string         `db:"id"`
-	UserID        string         `db:"user_id"`
-	AccountID     string         `db:"account_id"`
+	ID            id.ID          `db:"id"`
+	UserID        id.ID          `db:"user_id"`
+	AccountID     id.ID          `db:"account_id"`
 	ItemID        string         `db:"item_id"`
 	Institution   string         `db:"institution"`
 	LastFetchedAt sql.NullString `db:"last_fetched_at"`
 }
 
 // FetchTargets are the Connections of the user, or of every user when userID is empty.
-func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget, error) {
+func (s *Store) FetchTargets(ctx context.Context, userID id.ID) ([]FetchTarget, error) {
 	query := `
 		SELECT id, user_id, account_id, item_id, institution, last_fetched_at
 		FROM connections
@@ -139,7 +139,7 @@ func (s *Store) FetchTargets(ctx context.Context, userID string) ([]FetchTarget,
 }
 
 // UpdateConnectionItem records the state Pluggy reported for the Connection's Item.
-func (s *Store) UpdateConnectionItem(ctx context.Context, id string, item pluggy.Item) error {
+func (s *Store) UpdateConnectionItem(ctx context.Context, id id.ID, item pluggy.Item) error {
 	query := `
 		UPDATE connections
 		SET status = ?, execution_status = ?, last_updated_at = NULLIF(?, '')
@@ -153,7 +153,7 @@ func (s *Store) UpdateConnectionItem(ctx context.Context, id string, item pluggy
 }
 
 // MarkFetched records when the Connection's movements were last fetched in full.
-func (s *Store) MarkFetched(ctx context.Context, id string, fetchedAt time.Time) error {
+func (s *Store) MarkFetched(ctx context.Context, id id.ID, fetchedAt time.Time) error {
 	query := "UPDATE connections SET last_fetched_at = ? WHERE id = ?"
 	if _, err := s.ExecContext(ctx, query, formatTime(fetchedAt), id); err != nil {
 		return fmt.Errorf("marking connection fetched: %w", err)

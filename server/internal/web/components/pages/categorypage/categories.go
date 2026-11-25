@@ -15,7 +15,7 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/form"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
-	"github.com/oklog/ulid/v2"
+	"github.com/henriquepw/prata/server/pkg/id"
 )
 
 // Page is the categories' handlers: the Categories screen, its sheet and the division.
@@ -63,7 +63,7 @@ func (p Page) Edit(w http.ResponseWriter, r *http.Request) {
 // Save creates the category, or updates the one in the path, from the sheet's form.
 func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	form := categoryForm{
-		ID:          r.PathValue("id"),
+		ID:          id.ID(r.PathValue("id")),
 		Name:        strings.TrimSpace(r.PostFormValue("name")),
 		Color:       r.PostFormValue("color"),
 		IsDaily:     r.PostFormValue("is_daily") == "1",
@@ -83,7 +83,7 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 
 	// The limits belong to the division (POST /budget): a new category enters with 0 and an edit leaves it.
 	if form.ID == "" {
-		change.EntityID, change.Kind = ulid.Make().String(), store.KindCreate
+		change.EntityID, change.Kind = id.New(), store.KindCreate
 		change.Fields["monthly_limit"] = int64(0)
 	} else if stored, ok := p.category(w, r); ok {
 		form.IsDefault = stored.IsDefault
@@ -118,7 +118,7 @@ func storedCategoryForm(category store.Category) categoryForm {
 
 // category reads the live category in the path, answering 404 when the account has none.
 func (p Page) category(w http.ResponseWriter, r *http.Request) (store.Category, bool) {
-	category, err := p.db.Category(r.Context(), session.From(r.Context()).AccountID, r.PathValue("id"))
+	category, err := p.db.Category(r.Context(), session.From(r.Context()).AccountID, id.ID(r.PathValue("id")))
 	if errors.Is(err, store.ErrNotFound) {
 		http.NotFound(w, r)
 		return store.Category{}, false
