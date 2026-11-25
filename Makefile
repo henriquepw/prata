@@ -1,4 +1,5 @@
 TAILWIND_VERSION := v4.3.4
+GREMLINS_VERSION := v0.6.0
 
 export PATH := $(CURDIR)/.bin:$(PATH)
 
@@ -17,10 +18,11 @@ help: Makefile
 	@echo
 
 
-## setup: install air and the tailwind standalone cli into .bin
+## setup: install air, gremlins and the tailwind standalone cli into .bin
 .PHONY: setup
 setup:
 	@GOBIN=$(CURDIR)/.bin go install github.com/air-verse/air@latest
+	@GOBIN=$(CURDIR)/.bin go install github.com/go-gremlins/gremlins/cmd/gremlins@$(GREMLINS_VERSION)
 	@curl -sSfL -o .bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/$(TAILWIND_VERSION)/tailwindcss-linux-x64
 	@chmod +x .bin/tailwindcss
 
@@ -87,3 +89,9 @@ test/server:
 .PHONY: test/tui
 test/tui:
 	go test ./tui/...
+
+## test/mutation: mutation test server and shared, only changed lines with DIFF=<ref>
+.PHONY: test/mutation
+test/mutation:
+	cd server && gremlins unleash --integration --coverpkg ./... -S lc $(if $(DIFF),--diff $(DIFF)) -E '_templ\.go$$' -E 'components/' -E 'i18n/'
+	cd shared && gremlins unleash -S lc $(if $(DIFF),--diff $(DIFF))
