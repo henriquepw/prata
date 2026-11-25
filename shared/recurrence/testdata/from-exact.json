@@ -1,0 +1,9 @@
+{
+  "name": "occurrence exactly on window from, after start_at",
+  "rule": "MONTHLY:15",
+  "start_at": "2026-01-15",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2026-03-15", "to": "2026-04-30" },
+  "expected": ["2026-03-15", "2026-04-15"]
+}

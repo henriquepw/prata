@@ -1,0 +1,9 @@
+{
+  "name": "century year divisible by 400 has a 29-day february",
+  "rule": "MONTHLY:29",
+  "start_at": "2000-01-29",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2000-02-01", "to": "2000-02-29" },
+  "expected": ["2000-02-29"]
+}

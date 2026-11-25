@@ -94,4 +94,4 @@ test/tui:
 .PHONY: test/mutation
 test/mutation:
 	cd server && gremlins unleash --integration --coverpkg ./... -S lc $(if $(DIFF),--diff $(DIFF)) -E '_templ\.go$$' -E 'components/' -E 'i18n/'
-	cd shared && gremlins unleash -S lc $(if $(DIFF),--diff $(DIFF))
+	cd shared && gremlins unleash -S lc --timeout-coefficient 50 $(if $(DIFF),--diff $(DIFF))

@@ -1,0 +1,9 @@
+{
+  "name": "expansion starting in december",
+  "rule": "MONTHLY:10",
+  "start_at": "2025-12-10",
+  "end_at": null,
+  "deleted_at": null,
+  "window": { "from": "2025-12-01", "to": "2026-01-31" },
+  "expected": ["2025-12-10", "2026-01-10"]
+}
