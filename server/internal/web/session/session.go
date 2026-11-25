@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/a-h/templ"
-	"github.com/henriquepw/prata/server/internal/importfile"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/pkg/importfile"
 )
 
 // FlashCookie holds the id of the row a sheet just saved, scoped to the path of the list that shows it for that page

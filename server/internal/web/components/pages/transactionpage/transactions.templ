@@ -1,0 +1,20 @@
+package transactionpage
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+)
+
+templ transactionSheet(form entry.Form) {
+	@sheet.Form(sheet.Props{
+		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "transactions.new", "transactions.edit")),
+		Action:    style.IfElse(form.ID == "", "/transactions", "/transactions/"+form.ID),
+		DeleteURL: style.IfElse(form.ID == "", "", "/transactions/"+form.ID),
+		Confirm:   l10n.T(ctx, "transactions.confirm_delete"),
+		Error:     form.Errors["form"],
+	}) {
+		@entry.Fields(form, "", true)
+	}
+}

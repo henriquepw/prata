@@ -18,9 +18,9 @@ import (
 
 	"github.com/henriquepw/prata/server/internal/api"
 	"github.com/henriquepw/prata/server/internal/openfinance"
-	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web"
+	"github.com/henriquepw/prata/server/pkg/pluggy"
 	_ "modernc.org/sqlite"
 )
 
@@ -38,6 +38,11 @@ type config struct {
 	// encryptionKey encrypts the users' Pluggy credentials; empty turns Open Finance off.
 	encryptionKey string
 	pluggyURL     string
+}
+
+// openFinance is the instance's Open Finance setup, shared by the web routes and the fetch job.
+func (c config) openFinance() openfinance.Config {
+	return openfinance.Config{Key: c.encryptionKey, Pluggy: pluggy.Client{URL: c.pluggyURL}}
 }
 
 func main() {
@@ -86,8 +91,8 @@ func run(args, env []string) int {
 		}
 	}()
 
-	if cfg.encryptionKey != "" {
-		fetcher := openfinance.Fetcher{DB: db, Key: cfg.encryptionKey, Pluggy: pluggy.Client{URL: cfg.pluggyURL}}
+	if cfg.openFinance().Enabled() {
+		fetcher := openfinance.Fetcher{DB: db, Config: cfg.openFinance()}
 		jobDone := make(chan struct{})
 		defer func() {
 			cancelJob()
@@ -158,7 +163,7 @@ func configFromEnv(env []string) config {
 func newHandler(db *store.Store, cfg config) http.Handler {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", api.New(db, cfg.isSignupAllowed))
-	mux.Handle("/", web.New(db, cfg.isSignupAllowed, web.OpenFinance{Key: cfg.encryptionKey, Pluggy: pluggy.Client{URL: cfg.pluggyURL}}))
+	mux.Handle("/", web.New(db, cfg.isSignupAllowed, cfg.openFinance()))
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), time.Second)
 		defer cancel()

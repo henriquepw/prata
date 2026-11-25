@@ -8,9 +8,9 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/henriquepw/prata/server/internal/importfile"
-	"github.com/henriquepw/prata/server/internal/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/pkg/importfile"
+	"github.com/henriquepw/prata/server/pkg/pluggy"
 )
 
 // overlap is how far before the last fetch a later fetch reads again, since Pluggy can post a line dated in the
@@ -20,11 +20,22 @@ const overlap = 7 * 24 * time.Hour
 // cardPayment is the operationType of the line that pays the card bill, which the bank account paying it shows too.
 const cardPayment = "PAGAMENTO_FATURA"
 
-// Fetcher reads the Connections from Pluggy with the owners' saved credentials.
-type Fetcher struct {
-	DB     *store.Store
+// Config is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key turns
+// the feature off.
+type Config struct {
 	Key    string
 	Pluggy pluggy.Client
+}
+
+// Enabled reports whether Open Finance is on, that is, whether the instance has a Key.
+func (c Config) Enabled() bool {
+	return c.Key != ""
+}
+
+// Fetcher reads the Connections from Pluggy with the owners' saved credentials.
+type Fetcher struct {
+	DB *store.Store
+	Config
 }
 
 // Fetch stores the posted lines of every bank account of the user's Connections as pending Movements, or of every

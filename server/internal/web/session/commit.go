@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/a-h/templ"
-	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -29,7 +29,7 @@ func Commit(db *store.Store, w http.ResponseWriter, r *http.Request, fieldErrors
 
 	if reason != "" {
 		slog.Warn("web changes rejected", "reason", reason)
-		fieldErrors["form"] = i18n.T(r.Context(), "form.error.rejected")
+		fieldErrors["form"] = l10n.T(r.Context(), "form.error.rejected")
 		Render(w, r, http.StatusUnprocessableEntity, sheet)
 		return
 	}

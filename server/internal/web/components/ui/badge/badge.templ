@@ -1,0 +1,86 @@
+package badge
+
+import "github.com/henriquepw/prata/server/internal/web/components/ui/style"
+
+type Variant string
+
+const (
+	VariantDefault     Variant = "default"
+	VariantSecondary   Variant = "secondary"
+	VariantDestructive Variant = "destructive"
+	VariantOutline     Variant = "outline"
+	VariantGhost       Variant = "ghost"
+	VariantLink        Variant = "link"
+)
+
+type Props struct {
+	ID         string
+	Class      string
+	Attributes templ.Attributes
+	Variant    Variant
+	Href       string
+}
+
+templ Badge(props ...Props) {
+	{{ var p Props }}
+	if len(props) > 0 {
+		{{ p = props[0] }}
+	}
+	if p.Href != "" {
+		<a
+			href={ templ.SafeURL(p.Href) }
+			if p.ID != "" {
+				id={ p.ID }
+			}
+			data-slot="badge"
+			data-variant={ string(p.variant()) }
+			class={ badgeClasses(p) }
+			{ p.Attributes... }
+		>
+			{ children... }
+		</a>
+	} else {
+		<span
+			if p.ID != "" {
+				id={ p.ID }
+			}
+			data-slot="badge"
+			data-variant={ string(p.variant()) }
+			class={ badgeClasses(p) }
+			{ p.Attributes... }
+		>
+			{ children... }
+		</span>
+	}
+}
+
+// Structure from base/ui/badge.tsx, look of the prata-web-ui [status] chip: solid, 11px caps with tracking.
+const baseClasses = "h-5 gap-1 rounded-none border border-transparent px-1 text-2xs font-normal uppercase tracking-wider has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:size-3! group/badge inline-flex w-fit shrink-0 items-center justify-center overflow-hidden whitespace-nowrap aria-invalid:border-destructive [&>svg]:pointer-events-none"
+
+func badgeClasses(p Props) string {
+	return style.CN(baseClasses, p.variantClasses(), p.Class)
+}
+
+func (p Props) variant() Variant {
+	if p.Variant == "" {
+		return VariantDefault
+	}
+	return p.Variant
+}
+
+func (p Props) variantClasses() string {
+	switch p.variant() {
+	case VariantSecondary:
+		return "bg-line-soft text-muted-foreground"
+	case VariantDestructive:
+		return "bg-destructive text-background"
+	case VariantOutline:
+		return "border-line text-foreground"
+	case VariantGhost:
+		return "text-muted-foreground"
+	case VariantLink:
+		return "text-primary normal-case tracking-normal underline-offset-4 hover:underline"
+	default:
+		return "bg-primary text-primary-foreground"
+	}
+}

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/henriquepw/prata/server/internal/importfile"
-	"github.com/henriquepw/prata/server/internal/pluggy"
+	"github.com/henriquepw/prata/server/pkg/importfile"
+	"github.com/henriquepw/prata/server/pkg/pluggy"
 	"github.com/oklog/ulid/v2"
 )
 

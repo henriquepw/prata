@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/importfile"
+	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/web/session"
+	"github.com/henriquepw/prata/server/pkg/importfile"
 )
 
 // Option is a choice of a settings or form field: its schema value.
@@ -35,7 +35,10 @@ type Language struct {
 	Label string
 }
 
-var Languages = []Language{{Option{i18n.PortugueseBR}, "Português (Brasil)"}, {Option{i18n.English}, "English"}}
+var Languages = []Language{
+	{Option{l10n.PortugueseBR}, "Português (Brasil)"},
+	{Option{l10n.English}, "English"},
+}
 
 // DateFormat is a date format: its schema value, whose label is the i18n key "date_format." + Value, and its Go
 // layout.
@@ -44,7 +47,11 @@ type DateFormat struct {
 	Layout string
 }
 
-var DateFormats = []DateFormat{{Option{"DD/MM/YYYY"}, "02/01/2006"}, {Option{"MM/DD/YYYY"}, "01/02/2006"}, {Option{"YYYY-MM-DD"}, "2006-01-02"}}
+var DateFormats = []DateFormat{
+	{Option{"DD/MM/YYYY"}, "02/01/2006"},
+	{Option{"MM/DD/YYYY"}, "01/02/2006"},
+	{Option{"YYYY-MM-DD"}, "2006-01-02"},
+}
 
 // NumberFormat is a number format: its schema value, which is also its label, and its separators.
 type NumberFormat struct {
@@ -52,7 +59,10 @@ type NumberFormat struct {
 	Thousands, Decimal string
 }
 
-var NumberFormats = []NumberFormat{{Option{"1.234,56"}, ".", ","}, {Option{"1,234.56"}, ",", "."}}
+var NumberFormats = []NumberFormat{
+	{Option{"1.234,56"}, ".", ","},
+	{Option{"1,234.56"}, ",", "."},
+}
 
 // The daily limit modes: fixed, the same limit every day; dynamic, what is left over the days left.
 const (
@@ -69,7 +79,11 @@ type Currency struct {
 	Symbol string
 }
 
-var Currencies = []Currency{{Option{importfile.CurrencyBRL}, "R$"}, {Option{"USD"}, "$"}, {Option{"EUR"}, "€"}}
+var Currencies = []Currency{
+	{Option{importfile.CurrencyBRL}, "R$"},
+	{Option{"USD"}, "$"},
+	{Option{"EUR"}, "€"},
+}
 
 // CurrencySymbol is the symbol of the request's currency, as "R$".
 func CurrencySymbol(ctx context.Context) string {
@@ -140,7 +154,7 @@ func FormatDate(stored string, loc *time.Location, layout string) string {
 // "nunca" when it is empty.
 func LocalTime(ctx context.Context, value string, loc *time.Location) string {
 	if value == "" {
-		return i18n.T(ctx, "devices.never")
+		return l10n.T(ctx, "devices.never")
 	}
 
 	return FormatDate(value, loc, DateLayout(ctx)+" 15:04")

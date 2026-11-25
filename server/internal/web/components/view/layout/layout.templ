@@ -1,0 +1,388 @@
+package layout
+
+import (
+	"fmt"
+	"slices"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/badge"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/prompt"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+	"github.com/henriquepw/prata/server/internal/web/components/view/budget"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
+)
+
+// Balance is what the ticker shows: the account's realized balance, the occurrences still pending up to the end of
+// this month and the projected balance, which is the realized one plus every pending occurrence.
+type Balance struct {
+	Realized, Projected int64
+	Pending             []Occurrence
+}
+
+// Occurrence is a pending occurrence of a recurrence, Overdue when its date is before today.
+type Occurrence struct {
+	Recurrence store.Recurrence
+	Date       string
+	Overdue    bool
+}
+
+// Overdue counts the pending occurrences that are overdue.
+func (b Balance) Overdue() int {
+	count := 0
+	for _, pending := range b.Pending {
+		if pending.Overdue {
+			count++
+		}
+	}
+
+	return count
+}
+
+// Props is what the console chrome shows on every authenticated page: the screen title, the current path, the
+// user's email, the clock's first tick and the ticker's balance. Flash is the id of the row a sheet just saved,
+// which the page marks with data-flash.
+type Props struct {
+	Title   string
+	Path    string
+	Email   string
+	Now     time.Time
+	Balance Balance
+	Flash   string
+	// Connections turns the Connections screen on, with Open Finance.
+	Connections bool
+}
+
+// nav is the rail, in the order of the number shortcuts. Label is the i18n key of the screen's name, which is also
+// its title; NewURL is the screen's "novo" sheet, when it has one, and NewLabel the key of its launcher command.
+var nav = []navItem{
+	{"/", "nav.month", "/transactions/new", "launcher.new_transaction"},
+	{"/recurrences", "nav.recurrences", "/recurrences/new", "launcher.new_recurrence"},
+	{"/movements", "nav.movements", "", ""},
+	{"/categories", "nav.categories", "/categories/new", "launcher.new_category"},
+	{"/tags", "nav.tags", "/tags/new", "launcher.new_tag"},
+	{"/devices", "nav.devices", "", ""},
+}
+
+type navItem struct{ Href, Label, NewURL, NewLabel string }
+
+// nav is the rail of this page: the screens, with Connections after Movements when the instance has Open Finance on.
+func (s Props) Nav() []navItem {
+	if !s.Connections {
+		return nav
+	}
+
+	i := slices.IndexFunc(nav, func(item navItem) bool { return item.Href == "/movements" }) + 1
+
+	return slices.Insert(slices.Clone(nav), i, navItem{"/connections", "nav.connections", "", ""})
+}
+
+// newURL is the URL of the current screen's "novo" sheet, empty where there is none.
+func (s Props) newURL() string {
+	for _, item := range nav {
+		if item.Href == s.Path {
+			return item.NewURL
+		}
+	}
+
+	return ""
+}
+
+// HeadScript applies the theme cookie (system, light or dark) before the first paint and defines cycleTheme, stores
+// the browser time zone in the tz cookie, opens the #sheet dialog once htmx swaps a form into it, closes it on a click
+// outside its content (the backdrop) and ticks every
+// [data-clock] (status bar and login footer) in the date format its value holds, with the time in 24h. It also
+// runs the shortcuts: ctrl+enter (cmd+enter) submits the open sheet; ctrl+k (cmd+k) toggles the launcher anywhere,
+// which filters its options without accents by every word, moves the selection with ↑↓ and runs it with enter;
+// outside fields and dialogs, the digits, n, [, ] and , click their [data-key], / focuses the Month prompt and enter opens
+// the focused row. In the prompt, tab completes the last word with the first suggestion and esc leaves it.
+templ HeadScript() {
+	<script>
+		(() => {
+		  const theme = () => document.cookie.match(/(?:^|; )theme=(\w+)/)?.[1] ?? 'system'
+		  const applyTheme = () => {
+		    const dark = theme() === 'dark' || (theme() === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+		    document.documentElement.classList.toggle('dark', dark)
+		    document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+		  }
+		  applyTheme()
+		  window.cycleTheme = () => {
+		    document.cookie = 'theme=' + ({ system: 'light', light: 'dark' }[theme()] ?? 'system') + '; path=/; max-age=31536000; samesite=lax'
+		    applyTheme()
+		  }
+		  document.cookie = 'tz=' + encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone) + '; path=/; max-age=31536000; samesite=lax'
+		  const pad = n => String(n).padStart(2, '0')
+		  const tick = () => document.querySelectorAll('[data-clock]').forEach(e => {
+		    const d = new Date(), parts = { DD: pad(d.getDate()), MM: pad(d.getMonth() + 1), YYYY: d.getFullYear() }
+		    e.textContent = e.dataset.clock.replace(/YYYY|MM|DD/g, k => parts[k]) + ' ' + d.toTimeString().slice(0, 8)
+		  })
+		  setInterval(tick, 1000)
+		  addEventListener('DOMContentLoaded', tick)
+		  addEventListener('htmx:after:swap', () => {
+		    tick()
+		    const sheet = document.getElementById('sheet')
+		    if (sheet?.childElementCount && !sheet.open) sheet.showModal()
+		  })
+		  const norm = s => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+		  const options = () => [...document.querySelectorAll('#launcher [role=option]:not([hidden])')]
+		  const select = option => {
+		    document.querySelector('#launcher [aria-selected]')?.removeAttribute('aria-selected')
+		    option?.setAttribute('aria-selected', 'true')
+		    option?.scrollIntoView({ block: 'nearest' })
+		  }
+		  const filter = query => {
+		    const words = norm(query).split(/\s+/).filter(Boolean)
+		    document.querySelectorAll('#launcher [role=option]').forEach(o => o.hidden = !words.every(w => norm(o.textContent).includes(w)))
+		    select(options()[0])
+		  }
+		  addEventListener('input', e => e.target.matches('#launcher input') && filter(e.target.value))
+		  addEventListener('close', e => {
+		    if (e.target.id !== 'launcher') return
+		    e.target.querySelector('input').value = ''
+		    filter('')
+		  }, true)
+		  addEventListener('click', e => (e.target.id === 'launcher' || e.target.closest('#launcher [role=option]')) && document.getElementById('launcher').close())
+		  addEventListener('click', e => e.target.id === 'sheet' && e.clientX < e.target.getBoundingClientRect().left && e.target.close())
+			  addEventListener('keydown', e => (e.ctrlKey || e.metaKey) && e.key === 'Enter' && document.querySelector('#sheet[open] form')?.requestSubmit())
+		  addEventListener('keydown', e => {
+		    const launcher = document.getElementById('launcher')
+		    if (!launcher) return
+		    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+		      e.preventDefault()
+		      return launcher.open ? launcher.close() : launcher.showModal()
+		    }
+		    if (launcher.open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+		      e.preventDefault()
+		      const all = options()
+		      return select(all[(all.indexOf(launcher.querySelector('[aria-selected]')) + (e.key === 'ArrowDown' ? 1 : all.length - 1)) % all.length])
+		    }
+		    if (launcher.open && e.key === 'Enter') {
+		      e.preventDefault()
+		      return launcher.querySelector('[aria-selected]')?.click()
+		    }
+		    if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest('input, textarea, select') || document.querySelector('dialog[open]')) return
+		    if (e.key === 'Enter' && e.target.matches('[tabindex="0"][hx-get]')) e.target.click()
+		    else if (/^[1-9n,[\]]$/.test(e.key)) document.querySelector('[data-key="' + e.key + '"]')?.click()
+		    else if (e.key === '/' && document.getElementById('launch')) {
+		      e.preventDefault()
+		      document.getElementById('launch').focus()
+		    }
+		  })
+		  addEventListener('keydown', e => {
+		    if (e.target.id !== 'launch') return
+		    const first = document.querySelector('.launch-suggestions b')
+		    if (e.key === 'Escape') e.target.blur()
+		    else if (e.key === 'Tab' && first) {
+		      e.preventDefault()
+		      e.target.value = e.target.value.replace(/\S*$/, first.textContent + ' ')
+		      e.target.dispatchEvent(new Event('input', { bubbles: true }))
+		    }
+		  })
+		})()
+	</script>
+}
+
+// tickerCell is one cell of the ticker: its label and value, or the text actions.
+const tickerCell = "flex items-center gap-2 px-3"
+
+// launcherOption is a ctrl+k command, style.Inverted while selected or hovered.
+const launcherOption = "group flex w-full cursor-pointer justify-between gap-4 px-2 py-1 text-left " + style.Inverted + " aria-selected:bg-foreground aria-selected:text-background"
+
+// cycleTheme moves the theme from system to light to dark and back to system, through headScript's cycleTheme.
+const cycleTheme = "cycleTheme()"
+
+templ Document(title string) {
+	<!DOCTYPE html>
+	{{ format, _ := prefs.Find(prefs.NumberFormats, session.From(ctx).NumberFormat) }}
+	<html lang={ l10n.Language(ctx) } data-decimal={ format.Decimal } data-thousands={ format.Thousands }>
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title } · Prata</title>
+			@HeadScript()
+			@panel.DecodeScript()
+			@budget.Script()
+			<link rel="stylesheet" href="/static/app.css"/>
+			<script src="/static/htmx.min.js"></script>
+		</head>
+		<body hx-boost:inherited="transition:true" class="min-h-dvh antialiased">
+			{ children... }
+		</body>
+	</html>
+}
+
+// Layout is the console chrome around an authenticated page: header (title and ticker), rail (or the mobile nav row),
+// main and keybar, which ends with the clock. Only main scrolls. The keybar holds the screen's keys and, shown by CSS while a dialog is open, the
+// dialog's: ctrl enter salvar for the sheet and esc fechar.
+templ Layout(s Props) {
+	@Document(s.Title) {
+		<div class="console-frame relative mx-auto h-dvh w-full max-w-(--breakpoint-3xl) bg-background 3xl:border-x 3xl:border-line">
+			<div class="@container/console flex h-full flex-col text-xs">
+				<header class="sbar relative flex items-center justify-between gap-4 border-b border-line-soft px-4 py-3 whitespace-nowrap">
+					<div class="truncate uppercase tracking-wider"><span class="font-bold before:text-primary before:content-['▌']">Prata</span> <span class="text-muted-foreground">{ "//" }</span> { s.Title }</div>
+					<div class="flex overflow-hidden whitespace-nowrap @max-2xl/console:hidden">
+						@Ticker(s, false)
+						<div class={ tickerCell }>
+							<button type="button" class={ style.TextAction } hx-get="/settings" hx-target="#sheet">{ "["+l10n.T(ctx, "nav.settings")+"]" }</button>
+							<button type="button" class={ style.TextAction } onclick={ templ.JSUnsafeFuncCall(cycleTheme) }>{ l10n.T(ctx, "layout.theme") }</button>
+							<form id="logout" method="post" action="/logout" class="inline"><button type="submit" class={ style.TextAction }>{ l10n.T(ctx, "layout.sign_out") }</button></form>
+						</div>
+					</div>
+				</header>
+				@BalanceLine(s.Balance, false)
+				<nav class="hidden gap-2 overflow-x-auto border-b border-line px-4 text-xs whitespace-nowrap [scrollbar-width:none] @max-2xl/console:flex" aria-label={ l10n.T(ctx, "nav.label") }>
+					for i, item := range s.Nav() {
+						<a
+							href={ templ.SafeURL(item.Href) }
+							if item.Href == s.Path {
+								aria-current="page"
+							}
+							class={ "inline-flex min-h-11 items-center gap-1 px-3 uppercase tracking-wider aria-[current=page]:bg-foreground aria-[current=page]:text-background", style.Inverted }
+						><span class="text-primary">{ strconv.Itoa(i + 1) }</span>{ l10n.T(ctx, item.Label) }</a>
+					}
+				</nav>
+				<div class="flex min-h-0 flex-1">
+					<nav class="flex w-46 flex-none flex-col border-r border-line-soft py-5 @max-2xl/console:hidden" aria-label={ l10n.T(ctx, "nav.label") }>
+						for i, item := range s.Nav() {
+							<a
+								href={ templ.SafeURL(item.Href) }
+								data-key={ strconv.Itoa(i + 1) }
+								if item.Href == s.Path {
+									aria-current="page"
+								}
+								class={ "group flex border-l-3 border-transparent px-4 py-2.5 text-xs uppercase tracking-widest aria-[current=page]:border-primary aria-[current=page]:bg-line-soft", style.Inverted }
+							><span class="w-8 flex-none text-muted-foreground group-hover:text-inherit">{ fmt.Sprintf("%02d", i+1) }</span>{ l10n.T(ctx, item.Label) }</a>
+						}
+					</nav>
+					<main class="min-w-0 flex-1 overflow-auto px-4 pt-8 pb-10 @max-2xl/console:px-3">
+						{ children... }
+					</main>
+				</div>
+				<footer class="flex items-center overflow-hidden border-t border-line-soft px-4 py-2 text-2xs whitespace-nowrap text-muted-foreground uppercase tracking-wider @max-2xl/console:hidden [&_kbd]:text-primary">
+					<div class="keys">
+						<span><kbd>{ fmt.Sprintf("1-%d", len(s.Nav())) }</kbd> { l10n.T(ctx, "keybar.navigate") }</span>
+						if url := s.newURL(); url != "" {
+							<span><button type="button" data-key="n" hx-get={ url } hx-target="#sheet" class="uppercase"><kbd>n</kbd> { l10n.T(ctx, "keybar.new") }</button></span>
+						}
+						if s.Path == "/" {
+							<span><kbd>/</kbd> { l10n.T(ctx, "launch.submit") }</span>
+							<span><kbd>[<strong class="text-muted-foreground mx-px">/</strong>]</kbd> { l10n.T(ctx, "keybar.month") }</span>
+						}
+						<span><button type="button" data-key="," hx-get="/settings" hx-target="#sheet"><kbd>,</kbd> { l10n.T(ctx, "keybar.settings") }</button></span>
+						<span><kbd>ctrl k</kbd> { l10n.T(ctx, "keybar.commands") }</span>
+					</div>
+					<div class="keys-open">
+						<span class="keys-sheet"><kbd>ctrl enter</kbd> { l10n.T(ctx, "keybar.save") }</span>
+						<span><kbd>esc</kbd> { l10n.T(ctx, "keybar.close") }</span>
+					</div>
+					<time class="ml-auto tabular-nums" data-clock={ session.From(ctx).DateFormat }>{ prefs.Clock(ctx, s.Now) }</time>
+				</footer>
+			</div>
+		</div>
+		@launcher(s.Nav())
+		@sheet.Dialog(s.Title)
+	}
+}
+
+// Ticker is the account in the status line: realized, projected, pending, sync and user. With oob it swaps the one on
+// screen, as a write in place does.
+templ Ticker(s Props, oob bool) {
+	<dl
+		id="ticker"
+		if oob {
+			hx-swap-oob="true"
+		}
+		class="contents"
+	>
+		<div class={ tickerCell }><dt class="text-2xs uppercase tracking-widest text-muted-foreground">{ l10n.T(ctx, "layout.user") }</dt><dd class="flex items-center gap-2 tabular-nums">{ s.Email }</dd></div>
+	</dl>
+}
+
+// BalanceLine is the ticker's balance on mobile. With oob it swaps the one on screen, as a write in place does.
+templ BalanceLine(b Balance, oob bool) {
+	<dl
+		id="mbal"
+		if oob {
+			hx-swap-oob="true"
+		}
+		aria-label={ l10n.T(ctx, "layout.balance") }
+		class="hidden justify-between gap-2 border-b border-line-soft px-3 py-2 text-2xs tabular-nums @max-2xl/console:flex [&_dd]:flex [&_dd]:items-center [&_dd]:gap-2 [&_dt]:text-2xs [&_dt]:uppercase [&_dt]:tracking-widest [&_dt]:text-muted-foreground"
+	>
+		<div><dt>{ l10n.T(ctx, "layout.realized") }</dt><dd>{ prefs.Money(ctx, b.Realized) }</dd></div>
+		<div><dt>{ l10n.T(ctx, "layout.projected") }</dt><dd>{ prefs.Money(ctx, b.Projected) }</dd></div>
+		<div>
+			<dt>{ l10n.T(ctx, "layout.pending") }</dt>
+			<dd>
+				{ strconv.Itoa(len(b.Pending)) }
+				if overdue := b.Overdue(); overdue > 0 {
+					@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+						{ fmt.Sprintf("[%d]", overdue) }
+					}
+				}
+			</dd>
+		</div>
+	</dl>
+}
+
+// launcher is the ctrl+k dialog: a prompt over the numbered commands, the first one selected. headScript filters,
+// selects and runs them.
+templ launcher(items []navItem) {
+	{{ n := len(items) }}
+	<dialog id="launcher" aria-label={ l10n.T(ctx, "launcher.title") } class="launcher max-w-none overflow-visible bg-transparent p-0 text-foreground backdrop:bg-(--scrim) backdrop:backdrop-blur-xs">
+		<div class={ panel.Box, "bg-background" }>
+			<div class={ panel.Head }>
+				<h2 class={ panel.Title }>{ l10n.T(ctx, "launcher.title") }</h2>
+				<kbd class="text-2xs uppercase text-muted-foreground">esc</kbd>
+			</div>
+			<label class={ prompt.Line }>
+				<span class="text-primary">&gt;</span>
+				<input class={ prompt.Input } type="text" autocomplete="off" spellcheck="false" placeholder={ l10n.T(ctx, "launcher.placeholder") } aria-label={ l10n.T(ctx, "launcher.input") } aria-controls="launcher-options"/>
+			</label>
+			<div id="launcher-options" role="listbox" class="peer">
+				for i, item := range items {
+					<a
+						href={ templ.SafeURL(item.Href) }
+						role="option"
+						if i == 0 {
+							aria-selected="true"
+						}
+						class={ launcherOption }
+					>
+						@optionLabel(i+1, l10n.T(ctx, "launcher.go_to", strings.ToLower(l10n.T(ctx, item.Label))))
+						<kbd class="text-2xs uppercase text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ strconv.Itoa(i + 1) }</kbd>
+					</a>
+				}
+				for _, item := range items {
+					if item.NewURL != "" {
+						{{ n++ }}
+						<button type="button" role="option" hx-get={ item.NewURL } hx-target="#sheet" class={ launcherOption }>
+							@optionLabel(n, l10n.T(ctx, item.NewLabel))
+						</button>
+					}
+				}
+				<button type="button" role="option" hx-get="/settings" hx-target="#sheet" class={ launcherOption }>
+					@optionLabel(n+1, l10n.T(ctx, "launcher.open_settings"))
+				</button>
+				<button type="button" role="option" onclick={ templ.JSUnsafeFuncCall(cycleTheme) } class={ launcherOption }>
+					@optionLabel(n+2, l10n.T(ctx, "launcher.toggle_theme"))
+				</button>
+				<button type="submit" role="option" form="logout" class={ launcherOption }>
+					@optionLabel(n+3, l10n.T(ctx, "launcher.sign_out"))
+				</button>
+			</div>
+			@empty.Empty(l10n.T(ctx, "launcher.empty"), "hidden px-2 py-1 peer-[:not(:has([role=option]:not([hidden])))]:block")
+		</div>
+	</dialog>
+}
+
+// optionLabel is a launcher option's numbered name, as in "01 go to month".
+templ optionLabel(n int, text string) {
+	<span><span class="text-muted-foreground group-hover:text-inherit group-aria-selected:text-inherit">{ fmt.Sprintf("%02d", n) }</span> { text }</span>
+}

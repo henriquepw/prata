@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -16,11 +17,11 @@ import (
 func signedIn(t *testing.T) (http.Handler, *http.Cookie) {
 	t.Helper()
 
-	return signedInWith(t, OpenFinance{})
+	return signedInWith(t, openfinance.Config{})
 }
 
 // signedInWith is signedIn with the given Open Finance configuration.
-func signedInWith(t *testing.T, openFinance OpenFinance) (http.Handler, *http.Cookie) {
+func signedInWith(t *testing.T, openFinance openfinance.Config) (http.Handler, *http.Cookie) {
 	t.Helper()
 
 	db, err := store.Open(context.Background(), filepath.Join(t.TempDir(), "prata.db"))

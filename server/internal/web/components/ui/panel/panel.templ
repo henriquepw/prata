@@ -1,0 +1,67 @@
+package panel
+
+// DecodeScript scrambles every [data-decode] (panel titles and KPI values) into the text it was rendered with within
+// 300ms; digits stay digits and letters stay letters. KPI values decode on load and after any htmx swap, panel titles
+// ([data-decode=title]) only on load and when a boosted navigation swaps the whole screen. Reduced motion leaves the
+// value as rendered.
+templ DecodeScript() {
+	<script>
+		(() => {
+		  const scramble = c => /\d/.test(c) ? Math.random() * 10 | 0 : /\p{L}/u.test(c) ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.random() * 26 | 0] : c
+		  const decode = (screen = true) => document.querySelectorAll('[data-decode]').forEach(e => {
+		    const value = e.textContent, start = performance.now()
+		    const still = matchMedia('(prefers-reduced-motion: reduce)').matches || (e.dataset.decode === 'title' && !screen)
+		    e.removeAttribute('data-decode')
+		    if (still) return
+		    const step = now => {
+		      const n = Math.floor(Math.min(1, (now - start) / 300) * value.length)
+		      e.textContent = value.slice(0, n) + [...value.slice(n)].map(scramble).join('')
+		      if (n < value.length) requestAnimationFrame(step)
+		    }
+		    requestAnimationFrame(step)
+		  })
+		  addEventListener('DOMContentLoaded', () => decode())
+		  addEventListener('htmx:after:swap', e => decode(e.detail.ctx?.target === document.body))
+		})()
+	</script>
+}
+
+// Box is a panel's frame: .panel draws the corners and the entry, the rest is its border and padding.
+const Box = "panel border border-line-faint px-4 py-5"
+
+// Head is a panel's header row: the title on the left and the action slot on the right.
+const Head = "mb-5 flex items-center justify-between gap-4"
+
+// Title is a panel's title: caps with a 3px primary bar on its left.
+const Title = "border-l-3 border-primary pl-2 text-xs leading-tight tracking-widest uppercase"
+
+// Panel is the unit of every screen: the decoded title, the action on the right of it when not nil, and the content
+// as children. class adds to the panel.
+templ Panel(title, class string, action templ.Component) {
+	<section class={ Box, class }>
+		<header class={ Head }>
+			<h2 class={ Title }>
+				@decoded(title, "title")
+			</h2>
+			if action != nil {
+				@action
+			}
+		</header>
+		{ children... }
+	</section>
+}
+
+// Kpi is a loose KPI box: the decoded value over its label.
+templ Kpi(label, value string) {
+	<div class="kpi min-w-38 flex-1 border border-line-soft px-2 pt-5 pb-4 text-center">
+		<div class="text-2xl font-semibold text-nowrap tabular-nums">
+			@decoded(value, "value")
+		</div>
+		<div class="mt-1.5 text-2xs tracking-widest text-muted-foreground uppercase">{ label }</div>
+	</div>
+}
+
+// decoded is text that decodes on screen: screen readers read it from the sr-only copy and skip the scramble.
+templ decoded(text, kind string) {
+	<span class="sr-only">{ text }</span><span aria-hidden="true" data-decode={ kind }>{ text }</span>
+}

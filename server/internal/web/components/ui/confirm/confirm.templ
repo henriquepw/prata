@@ -1,0 +1,24 @@
+package confirm
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+)
+
+// Toggle swaps the children of the closest [data-confirm] between the actions and the inline confirmation,
+// focusing the [data-focus] left visible: "no" while asking, the button that asked after it.
+const Toggle = "const c = this.closest('[data-confirm]'); for (const e of c.children) e.hidden = !e.hidden; [...c.querySelectorAll('[data-focus]')].find(e => e.checkVisibility()).focus()"
+
+// Inline is the hidden "! <question> [yes, …] [no]" that Toggle swaps in for the actions of the closest
+// [data-confirm], without a round-trip: yes carries the request in attrs, "no" swaps back.
+templ Inline(question, yes string, attrs templ.Attributes) {
+	<div class="inline-flex flex-wrap items-center gap-2" hidden>
+		<span class="text-xs text-destructive">! { question }</span>
+		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: attrs}) {
+			{ yes }
+		}
+		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(Toggle), "data-focus": true}}) {
+			{ l10n.T(ctx, "confirm.no") }
+		}
+	</div>
+}

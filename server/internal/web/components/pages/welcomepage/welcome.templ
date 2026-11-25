@@ -1,0 +1,47 @@
+package welcomepage
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/choice"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/view/budget"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entrance"
+	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// welcomePage is the welcome screen after a signup, without the app navigation: a panel explaining the monthly income,
+// the division and the daily limit, then the division form filled with the suggested division and the daily limit mode
+// with mode checked, as sibling panels, and "set up later" going home.
+templ welcomePage(form budget.Form, mode string) {
+	@layout.Document(l10n.T(ctx, "welcome.title")) {
+		@entrance.Frame(entrance.Figlet, "Prata", "max-w-2xl") {
+			<div class="flex w-full flex-col gap-5 [&_.panel]:bg-background">
+				<section class={ panel.Box }>
+					<header class={ panel.Head }>
+						<h1 class={ panel.Title }>{ l10n.T(ctx, "welcome.title") }</h1>
+					</header>
+					<div class="flex flex-col gap-2 text-xs text-muted-foreground">
+						<p>{ l10n.T(ctx, "welcome.income") }</p>
+						<p>{ l10n.T(ctx, "welcome.division") }</p>
+						<p>{ l10n.T(ctx, "welcome.daily_limit") }</p>
+					</div>
+				</section>
+				@budget.Screen(form, "") {
+					@panel.Panel(l10n.T(ctx, "settings.daily_limit_mode"), "", nil) {
+						@choice.Field("daily_limit_mode", l10n.T(ctx, "settings.daily_limit_mode"), l10n.T(ctx, "welcome.modes"), form.Errors["daily_limit_mode"]) {
+							for _, m := range prefs.DailyLimitModes {
+								@choice.Option("daily_limit_mode", m.Value, m.Value == mode) {
+									{ l10n.T(ctx, "daily_limit_mode."+m.Value) }
+								}
+							}
+						}
+					}
+				}
+				<p class="self-start bg-background px-2 py-1 text-xs text-muted-foreground">
+					<a href="/" class="text-foreground underline underline-offset-4">{ l10n.T(ctx, "welcome.later") }</a>
+				</p>
+			</div>
+		}
+	}
+}

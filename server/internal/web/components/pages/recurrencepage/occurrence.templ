@@ -1,0 +1,32 @@
+package recurrencepage
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/view/category"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
+	"github.com/henriquepw/prata/server/internal/web/form"
+)
+
+// occurrenceSheet is "confirm occurrence": the recurrence on a muted line over the transaction's fields filled from
+// it, and "> confirmar".
+templ occurrenceSheet(fm occurrenceForm) {
+	@sheet.Form(sheet.Props{
+		Title:  l10n.T(ctx, "occurrence.title"),
+		Action: "/recurrences/" + fm.Recurrence.ID + "/occurrences/" + fm.Date,
+		Submit: l10n.T(ctx, "month.confirm"),
+		Busy:   l10n.T(ctx, "form.confirming"),
+		Error:  fm.Errors["form"],
+	}) {
+		<p class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+			@entry.Description(fm.Recurrence.Description)
+			· { l10n.T(ctx, "recurrences.every_month", ruleDay(fm.Recurrence.Rule)) }
+			for _, c := range fm.Categories {
+				if c.ID == form.OrEmpty(fm.Recurrence.CategoryID) {
+					· @category.Name(c.Name, c.Color)
+				}
+			}
+		</p>
+		@entry.Fields(fm.Form, l10n.T(ctx, "occurrence.hint"), false)
+	}
+}

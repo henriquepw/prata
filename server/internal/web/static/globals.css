@@ -5,7 +5,9 @@
 @import "./shadcn-tailwind.css";
 
 @source "../**/*.templ";
-@source "../components/console/category.go";
+@source "../components/view/category/color.go";
+@source "../components/ui/style/style.go";
+@source "../components/ui/prompt/prompt.go";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -472,8 +474,12 @@ main {
 }
 
 /* The sheet slides in from the right and back out: display and overlay are discrete, so the closing dialog stays on
-   screen (and on the top layer) until the slide ends. */
+   screen (and on the top layer) until the slide ends. Firefox can't transition overlay, so the closing dialog leaves
+   the top layer at once and loses the :modal position; fixed and z-index keep it in place while it slides out. */
 dialog.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   transition:
     transform var(--swap) var(--ease),
     display var(--swap) allow-discrete,

@@ -1,0 +1,73 @@
+package devicepage
+
+import (
+	"time"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/confirm"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/table"
+	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// devicesPage lays the Dispositivos panel beside the activity log, or over it on mobile.
+templ devicesPage(s layout.Props, devices []store.Device, activity []store.Activity) {
+	{{ loc := s.Now.Location() }}
+	@layout.Layout(s) {
+		<div class="flex flex-wrap gap-x-4 gap-y-5">
+			@devicesPanel(devices, loc)
+			@activityLog(activity, loc)
+		</div>
+	}
+}
+
+// devicesPanel lists the keyed devices, each with its revoke button.
+templ devicesPanel(devices []store.Device, loc *time.Location) {
+	@panel.Panel(l10n.T(ctx, "nav.devices"), "min-w-0 grow-3 basis-101", nil) {
+		if len(devices) == 0 {
+			@empty.Empty(l10n.T(ctx, "devices.empty"))
+		} else {
+			@table.Table() {
+				@table.Header() {
+					@table.Row() {
+						@table.Head(table.HeadProps{Class: "w-full"}) {
+							{ l10n.T(ctx, "field.name") }
+						}
+						@table.Head() {
+							{ l10n.T(ctx, "devices.last_seen") }
+						}
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
+							{ l10n.T(ctx, "devices.created_at") }
+						}
+						@table.Head()
+					}
+				}
+				@table.Body() {
+					for _, device := range devices {
+						@table.Row() {
+							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+								{ device.Name }
+							}
+							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+								{ prefs.LocalTime(ctx, device.LastSeenAt, loc) }
+							}
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden tabular-nums text-muted-foreground"}) {
+								{ prefs.LocalTime(ctx, device.CreatedAt, loc) }
+							}
+							@table.Cell(table.CellProps{Class: "text-right", Attributes: templ.Attributes{"data-confirm": true}}) {
+								@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(confirm.Toggle), "data-focus": true}}) {
+									{ l10n.T(ctx, "devices.revoke") }
+								}
+								@confirm.Inline(l10n.T(ctx, "devices.confirm_revoke", device.Name), l10n.T(ctx, "devices.revoke_yes"), templ.Attributes{"hx-delete": "/devices/" + device.ID})
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

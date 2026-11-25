@@ -1,0 +1,100 @@
+package homepage
+
+import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/prompt"
+	"github.com/henriquepw/prata/server/internal/web/components/view/category"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+)
+
+// launchPanel is the Month prompt: "> " and a line that previews, as typed, the transaction enter creates in the month
+// on screen, which the answer morphs, so only what changed moves and the new row flashes, then clears the line; a 422
+// swaps only the preview. headScript focuses it on "/", completes "@" and "#" on tab and blurs it on esc.
+templ launchPanel(page month) {
+	@panel.Panel(l10n.T(ctx, "launch.title"), "", launchKeys()) {
+		<form
+			hx-post="/launch"
+			hx-target="#month"
+			hx-swap="outerMorph"
+			hx-status:422="target:#launch-preview swap:innerHTML"
+			hx-on:htmx:after:request="event.target === this && event.detail.ctx.response.status === 200 && this.reset()"
+		>
+			<input type="hidden" name="month" value={ page.yearMonth() }/>
+			<input type="hidden" name="category" value={ page.Filter.ID }/>
+			<label class={ style.CN(prompt.Line, "mb-0 text-base") }>
+				<span class="text-primary" aria-hidden="true">&gt;</span>
+				<input
+					class={ prompt.Input }
+					id="launch"
+					name="line"
+					autofocus?={ page.Focus }
+					type="text"
+					autocomplete="off"
+					spellcheck="false"
+					placeholder={ l10n.T(ctx, "launch.placeholder") }
+					aria-label={ l10n.T(ctx, "launch.input") }
+					aria-describedby="launch-preview"
+					hx-get="/launch"
+					hx-trigger="input changed delay:150ms"
+					hx-include="closest form"
+					hx-target="#launch-preview"
+					hx-swap="innerHTML"
+				/>
+			</label>
+			<div id="launch-preview" class="mt-3 min-h-5 text-xs" aria-live="polite">
+				@launchPreview("", launchLine{})
+			</div>
+		</form>
+	}
+}
+
+// launchKeys is the prompt panel's "/ focus · enter add".
+templ launchKeys() {
+	<span class={ monthKeys }><kbd>/</kbd> { l10n.T(ctx, "launch.focus") } · <kbd>enter</kbd> { l10n.T(ctx, "launch.submit") }</span>
+}
+
+// launchPreview is what line saves, as "[despesa] −R$ 45,90 "padaria" ■ Mercado #casa 19/11/2026", with each problem
+// as "! missing the amount" or "!  doesn't exist", over the "tab" completions; the syntax while line is empty.
+templ launchPreview(line string, l launchLine) {
+	if strings.TrimSpace(line) == "" {
+		<p class="text-muted-foreground">{ l10n.T(ctx, "launch.hint") }</p>
+	} else {
+		<p class="flex flex-wrap items-center gap-x-3 gap-y-1">
+			<span class="bg-foreground px-1 text-2xs tracking-wider text-background uppercase">[{ strings.ToLower(l10n.T(ctx, "kind."+l.Kind)) }]</span>
+			if l.Amount == 0 {
+				<span class="text-destructive">! { l10n.T(ctx, "launch.no_amount") }</span>
+			} else {
+				<span class={ style.CN("tabular-nums", entry.KindClass(l.Kind)) }>{ prefs.Money(ctx, form.Signed(l.Kind, l.Amount)) }</span>
+			}
+			if l.Description == "" {
+				@entry.Description(nil)
+			} else {
+				<span>"{ l.Description }"</span>
+			}
+			if l.Category.ID != "" {
+				@category.Name(l.Category.Name, l.Category.Color)
+			}
+			if l.Tag.ID != "" {
+				<span class="text-muted-foreground">#{ l.Tag.Name }</span>
+			}
+			<span class="tabular-nums text-muted-foreground">{ dayOf(l.Date).Format(prefs.DateLayout(ctx)) }</span>
+			for _, word := range l.Unknown {
+				<span class="text-destructive">! { l10n.T(ctx, "launch.unknown", word) }</span>
+			}
+		</p>
+	}
+	if len(l.Suggestions) > 0 {
+		<p class="launch-suggestions mt-2 flex flex-wrap gap-2 text-muted-foreground [&_kbd]:text-primary">
+			<kbd>tab</kbd>
+			for _, suggestion := range l.Suggestions {
+				<b class="bg-line-soft px-1 font-normal text-foreground">{ suggestion }</b>
+			}
+		</p>
+	}
+}

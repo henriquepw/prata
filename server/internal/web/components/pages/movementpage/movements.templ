@@ -1,0 +1,208 @@
+package movementpage
+
+import (
+	"cmp"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/table"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
+	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// movementsPage is the review screen: the "Importar arquivo" form over the list of pending movements.
+templ movementsPage(s layout.Props, view movementsView) {
+	@layout.Layout(s) {
+		<div class="flex flex-col gap-5">
+			@importPanel(view)
+			@movementsPanel(view)
+		</div>
+	}
+}
+
+// importPanel is the form that sends one file to the session's account: a drop zone to click or drop the file on,
+// and the submit button, at the right, once there is a file. The summary or the error of the last import goes under
+// it. A response, a 422 included, swaps the screen's main.
+templ importPanel(view movementsView) {
+	@panel.Panel(l10n.T(ctx, "movements.import"), "", nil) {
+		<form id="import-form" hx-post="/movements/import" hx-encoding="multipart" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="group/import flex flex-col gap-5">
+			<input type="hidden" name="confirm_currency"/>
+			<label class="group/drop relative flex cursor-pointer flex-col items-center gap-2.5 border border-dashed border-line px-4 py-10 text-center transition-colors focus-within:border-primary hover:border-primary aria-[invalid]:border-destructive" aria-invalid?={ view.Error != "" }>
+				<input type="file" name="file" class="absolute inset-0 cursor-pointer opacity-0" required aria-label={ l10n.T(ctx, "movements.file") } onchange={ templ.JSUnsafeFuncCall(showFileName) }/>
+				<span class="text-xs group-has-invalid/drop:tracking-wider group-has-invalid/drop:uppercase">{ l10n.T(ctx, "movements.drop") }</span>
+				@formfield.Note(l10n.T(ctx, "movements.file_hint"), view.Error)
+			</label>
+			<div class="flex justify-end group-has-invalid/import:hidden">
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "movements.importing")}}) {
+					<span>&gt; { l10n.T(ctx, "movements.import_submit") }</span>
+				}
+			</div>
+		</form>
+		if view.Summary != "" {
+			<p role="status" class="text-xs text-muted-foreground">{ view.Summary }</p>
+		}
+	}
+}
+
+const showFileName = "this.nextElementSibling.textContent = this.files[0]?.name ?? ''"
+
+// currencyDialog asks, in #sheet, to import a file whose currency is not the Conta's: confirming resubmits the import
+// form, whose file input still holds the file, with confirm_currency set.
+templ currencyDialog(v currencyView) {
+	<div id="currency-dialog" class={ sheet.Panel }>
+		<header class={ style.CN(panel.Head, "mb-0") }>
+			<h2 class={ panel.Title }>{ l10n.T(ctx, "movements.currency.title") }</h2>
+			<button type="button" class={ style.TextAction } aria-label={ l10n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(sheet.Close) }>[esc ✕]</button>
+		</header>
+		<p class="text-xs">{ l10n.T(ctx, "movements.currency.body", v.FileCurrency, v.AccountCurrency) }</p>
+		<footer class="mt-auto flex flex-wrap justify-end gap-2">
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(sheet.Close)}}) {
+				{ l10n.T(ctx, "sheet.cancel") }
+			}
+			@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"data-focus": true, "onclick": templ.JSUnsafeFuncCall(confirmCurrency)}}) {
+				<span>&gt; { l10n.T(ctx, "movements.currency.confirm") }</span>
+			}
+		</footer>
+	</div>
+}
+
+const confirmCurrency = "const f = document.getElementById('import-form'); f.elements.confirm_currency.value = '1'; this.closest('dialog').close(); f.requestSubmit()"
+
+// movementsPanel lists the pending movements.
+templ movementsPanel(view movementsView) {
+	@panel.Panel(l10n.T(ctx, "nav.movements"), "", nil) {
+		if len(view.Movements) == 0 {
+			@empty.Empty(l10n.T(ctx, "movements.empty"))
+		} else {
+			@batchForm(view.Categories)
+			@table.Table() {
+				@table.Header() {
+					@table.Row() {
+						@table.Head() {
+							<input type="checkbox" aria-label={ l10n.T(ctx, "movements.select_all") } onclick={ templ.JSUnsafeFuncCall(selectAll) }/>
+						}
+						@table.Head() {
+							{ l10n.T(ctx, "field.date") }
+						}
+						@table.Head(table.HeadProps{Class: "w-full"}) {
+							{ l10n.T(ctx, "field.description") }
+						}
+						@table.Head(table.HeadProps{Class: "text-right"}) {
+							{ l10n.T(ctx, "field.amount") }
+						}
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
+							{ l10n.T(ctx, "kind.label") }
+						}
+						@table.Head(table.HeadProps{Class: "@max-2xl/console:hidden"}) {
+							{ l10n.T(ctx, "movements.bank_account") }
+						}
+						@table.Head() {
+							{ l10n.T(ctx, "movements.review") }
+						}
+					}
+				}
+				@table.Body() {
+					for _, m := range view.Movements {
+						@table.Row() {
+							@table.Cell() {
+								<input type="checkbox" form="batch" name="id" value={ m.ID } aria-label={ m.Description }/>
+							}
+							@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+								{ movementDate(ctx, m.OccurredAt) }
+							}
+							@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+								@entry.Description(&m.Description)
+							}
+							@table.Cell(table.CellProps{Class: "text-right tabular-nums " + entry.KindClass(m.Kind)}) {
+								{ prefs.Money(ctx, form.Signed(m.Kind, m.Amount)) }
+							}
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden"}) {
+								{ l10n.T(ctx, "kind."+m.Kind) }
+							}
+							@table.Cell(table.CellProps{Class: "@max-2xl/console:hidden text-muted-foreground"}) {
+								{ l10n.T(ctx, "movements.kind."+m.BankAccountKind) } { m.Institution } { m.BankAccount }
+							}
+							@table.Cell() {
+								@reviewForm(m, view.Categories)
+								@occurrenceConfirm(m, occurrencesFor(m, view.Occurrences))
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// reviewForm confirms a movement as a transaction, editing only its description and, for an expense, its category
+// (the default one is preselected), or ignores it. A response swaps the screen's main.
+templ reviewForm(m store.Movement, categories []store.Category) {
+	<form hx-post={ "/movements/" + m.ID + "/confirm" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="flex flex-wrap items-center gap-2">
+		@input.Input(input.Props{Name: "description", Value: m.Description, Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "field.description")}})
+		if m.Kind == "OUTCOME" {
+			@categorySelect(categories)
+		}
+		@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "form.confirming")}}) {
+			<span>{ l10n.T(ctx, "movements.confirm") }</span>
+		}
+		@button.Button(button.Props{Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/" + m.ID + "/ignore", "hx-target": "main", "hx-select": "main", "hx-swap": "outerHTML"}}) {
+			<span>{ l10n.T(ctx, "movements.ignore") }</span>
+		}
+	</form>
+}
+
+// categorySelect picks the category of an expense, the default one preselected.
+templ categorySelect(categories []store.Category) {
+	@nativeselect.NativeSelect(nativeselect.Props{Name: "category_id", Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "field.category")}}) {
+		for _, category := range categories {
+			@nativeselect.Option(nativeselect.OptionProps{Value: category.ID, Selected: category.IsDefault}) {
+				{ category.Name }
+			}
+		}
+	}
+}
+
+const selectAll = "for (const c of document.querySelectorAll('input[form=batch][name=id]')) c.checked = this.checked"
+
+// batchForm confirms or ignores the checked movements, which carry form="batch" from their rows. The category
+// (the default one is preselected) goes to the expenses; incomes keep none. A response swaps the screen's main.
+templ batchForm(categories []store.Category) {
+	<form id="batch" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mb-2 flex flex-wrap items-center gap-2">
+		@categorySelect(categories)
+		@button.Button(button.Props{Type: button.TypeButton, Attributes: templ.Attributes{"hx-post": "/movements/confirm", "data-busy": l10n.T(ctx, "form.confirming")}}) {
+			<span>&gt; { l10n.T(ctx, "movements.confirm_selected") }</span>
+		}
+		@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantGhost, Attributes: templ.Attributes{"hx-post": "/movements/ignore"}}) {
+			<span>{ l10n.T(ctx, "movements.ignore_selected") }</span>
+		}
+	</form>
+}
+
+// occurrenceConfirm confirms a movement as one of the pending occurrences of its kind, equal amounts and closest dates
+// first. A response swaps the screen's main.
+templ occurrenceConfirm(m store.Movement, occurrences []layout.Occurrence) {
+	if len(occurrences) > 0 {
+		<form hx-post={ "/movements/" + m.ID + "/occurrence" } hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find button" class="mt-1 flex flex-wrap items-center gap-2">
+			@nativeselect.NativeSelect(nativeselect.Props{Name: "occurrence", Attributes: templ.Attributes{"aria-label": l10n.T(ctx, "movements.occurrence")}}) {
+				for _, o := range occurrences {
+					@nativeselect.Option(nativeselect.OptionProps{Value: o.Recurrence.ID + ":" + o.Date}) {
+						{ movementDate(ctx, o.Date) } { cmp.Or(form.OrEmpty(o.Recurrence.Description), l10n.T(ctx, "field.no_description")) } { prefs.Money(ctx, form.Signed(o.Recurrence.Kind, o.Recurrence.Amount)) }
+					}
+				}
+			}
+			@button.Button(button.Props{Type: button.TypeSubmit, Variant: button.VariantOutline, Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "form.confirming")}}) {
+				<span>{ l10n.T(ctx, "movements.confirm_occurrence") }</span>
+			}
+		</form>
+	}
+}

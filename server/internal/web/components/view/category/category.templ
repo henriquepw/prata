@@ -1,0 +1,29 @@
+package category
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+)
+
+// Name is a category's name after its "■" in the category color.
+templ Name(name, color string) {
+	<span class="flex items-center gap-2"><span class={ ColorClass(color) } aria-hidden="true">■</span>{ name }</span>
+}
+
+// Field is the category of an entry, picked from categories with selected picked; the sheet hides it while
+// [receita] is checked, since an income has none.
+templ Field(categories []store.Category, selected, message string) {
+	<div class="group-has-[[name=kind][value=INCOME]:checked]/sheet:hidden">
+		@formfield.Field("category_id", l10n.T(ctx, "field.category"), message) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "category_id", Name: "category_id", Class: "w-full", Attributes: formfield.AriaInvalid(message)}) {
+				for _, c := range categories {
+					@nativeselect.Option(nativeselect.OptionProps{Value: c.ID, Selected: c.ID == selected || (selected == "" && c.IsDefault)}) {
+						{ c.Name }
+					}
+				}
+			}
+		}
+	</div>
+}

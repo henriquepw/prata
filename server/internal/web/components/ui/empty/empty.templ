@@ -1,0 +1,11 @@
+package empty
+
+import "github.com/henriquepw/prata/server/internal/web/components/ui/style"
+
+// Empty is a list's one-line empty state.
+templ Empty(text string, classes ...string) {
+	<p class={ style.CN("text-muted-foreground", classes) }>
+		<span aria-hidden="true">{ RandomASCIIEmoticon() }</span>
+		{ text }
+	</p>
+}

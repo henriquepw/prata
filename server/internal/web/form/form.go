@@ -6,7 +6,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/l10n"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/prefs"
 	"github.com/henriquepw/prata/server/internal/web/session"
@@ -22,11 +22,11 @@ var Kinds = []string{"OUTCOME", "INCOME"}
 func ParseEntry(ctx context.Context, errs map[string]string, typed, kind string) int64 {
 	cents, ok := prefs.ParseAmount(ctx, typed)
 	if !ok || cents <= 0 {
-		errs["amount"] = i18n.T(ctx, "form.error.amount")
+		errs["amount"] = l10n.T(ctx, "form.error.amount")
 	}
 
 	if !slices.Contains(Kinds, kind) {
-		errs["kind"] = i18n.T(ctx, "form.error.kind")
+		errs["kind"] = l10n.T(ctx, "form.error.kind")
 	}
 
 	return cents

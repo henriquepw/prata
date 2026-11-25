@@ -1,0 +1,55 @@
+package settingpage
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/confirm"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/view/settingform"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// settingsSheet is the Settings sheet: the fields in one list and "> save", the Pluggy credentials last when
+// Open Finance is on. A 422 swaps the whole sheet.
+templ settingsSheet(form settingform.Form) {
+	@sheet.Form(sheet.Props{Title: l10n.T(ctx, "nav.settings"), Action: "/settings"}) {
+		@settingform.LanguageField(form)
+		@settingform.DateFormatField(form)
+		@settingform.NumberFormatField(form)
+		@formfield.Field("daily_limit_mode", l10n.T(ctx, "settings.daily_limit_mode"), form.Errors["daily_limit_mode"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "daily_limit_mode", Name: "daily_limit_mode", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["daily_limit_mode"])}) {
+				for _, m := range prefs.DailyLimitModes {
+					@nativeselect.Option(nativeselect.OptionProps{Value: m.Value, Selected: m.Value == form.DailyLimitMode}) {
+						{ l10n.T(ctx, "daily_limit_mode."+m.Value) }
+					}
+				}
+			}
+		}
+		@settingform.CurrencyField(form)
+		if form.OpenFinance {
+			@pluggyFields(form)
+		}
+	}
+}
+
+// pluggyFields are the user's Pluggy client id and secret, with "apagar credenciais" and its inline confirmation
+// when they are saved.
+templ pluggyFields(form settingform.Form) {
+	@formfield.Hint("pluggy_client_id", l10n.T(ctx, "settings.pluggy_client_id"), l10n.T(ctx, "settings.pluggy_hint"), form.Errors["pluggy_client_id"]) {
+		@input.Input(input.Props{ID: "pluggy_client_id", Name: "pluggy_client_id", Value: form.PluggyClientID, Attributes: formfield.AriaInvalid(form.Errors["pluggy_client_id"], templ.Attributes{"autocomplete": "off"})})
+	}
+	@formfield.Hint("pluggy_client_secret", l10n.T(ctx, "settings.pluggy_client_secret"), secretHint(ctx, form.HasPluggy), form.Errors["pluggy_client_secret"]) {
+		@input.Input(input.Props{ID: "pluggy_client_secret", Name: "pluggy_client_secret", Type: "password", Attributes: formfield.AriaInvalid(form.Errors["pluggy_client_secret"], templ.Attributes{"autocomplete": "off"})})
+	}
+	if form.HasPluggy {
+		<div class="flex flex-wrap gap-2" data-confirm>
+			@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Size: button.SizeSm, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(confirm.Toggle), "data-focus": true}}) {
+				{ l10n.T(ctx, "settings.pluggy_delete") }
+			}
+			@confirm.Inline(l10n.T(ctx, "settings.pluggy_confirm"), l10n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": "/settings/pluggy", "hx-target": "#sheet"})
+		</div>
+	}
+}

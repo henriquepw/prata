@@ -1,0 +1,66 @@
+package entry
+
+import (
+	"strings"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/choice"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// KindChoice is the [despesa] [receita] choice of a transaction or recurrence.
+templ KindChoice(value, message string) {
+	@choice.Field("kind", l10n.T(ctx, "kind.label"), "", message) {
+		for _, kind := range form.Kinds {
+			@choice.Option("kind", kind, kind == value) {
+				{ strings.ToLower(l10n.T(ctx, "kind."+kind)) }
+			}
+		}
+	}
+}
+
+// KindClass is the color of an amount of kind: cat-green for INCOME, destructive for OUTCOME.
+func KindClass(kind string) string {
+	if kind == "INCOME" {
+		return "text-cat-green"
+	}
+
+	return "text-destructive"
+}
+
+// AmountField is the required amount of an entry, after the currency symbol, focused when the sheet opens, with the
+// hint under it when not empty.
+templ AmountField(value, hint, message string) {
+	@formfield.Hint("amount", l10n.T(ctx, "field.amount"), hint, message) {
+		<div class="flex items-center gap-2">
+			<span class="text-xs text-muted-foreground">{ prefs.CurrencySymbol(ctx) }</span>
+			@input.Input(input.Props{ID: "amount", Name: "amount", Value: value, Placeholder: prefs.Amount(ctx, 0), Required: true, Mask: input.MaskMoney, Class: "tabular-nums", Attributes: formfield.AriaInvalid(message, templ.Attributes{"inputmode": "numeric", "autocomplete": "off", "autofocus": true})})
+		</div>
+	}
+}
+
+// NameField is the required name of a category or tag, focused when the sheet opens.
+templ NameField(value, message string) {
+	@formfield.Field("name", l10n.T(ctx, "field.name"), message) {
+		@input.Input(input.Props{ID: "name", Name: "name", Value: value, Required: true, Attributes: formfield.AriaInvalid(message, templ.Attributes{"autofocus": true})})
+	}
+}
+
+// EndField is the optional end date of a tag or recurrence, "empty = no end".
+templ EndField(value, message string) {
+	@formfield.Hint("end_at", l10n.T(ctx, "field.end"), l10n.T(ctx, "field.end_hint"), message) {
+		@input.Input(input.Props{ID: "end_at", Name: "end_at", Type: "date", Value: value, Attributes: formfield.AriaInvalid(message)})
+	}
+}
+
+// Description is an entry's description, or "no description" in muted italics when it has none.
+templ Description(text *string) {
+	if form.OrEmpty(text) == "" {
+		<span class="italic text-muted-foreground">{ l10n.T(ctx, "field.no_description") }</span>
+	} else {
+		{ *text }
+	}
+}

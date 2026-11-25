@@ -1,0 +1,232 @@
+package budget
+
+import (
+	"fmt"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/choice"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/field"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+	"github.com/henriquepw/prata/server/internal/web/components/view/category"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/session"
+)
+
+// budgetInput is a bare input of the division, with the block caret.
+const budgetInput = "min-w-0 bg-transparent tabular-nums caret-primary [caret-shape:block] outline-none"
+
+// budgetField is a category's limit field: an underline that turns primary on focus and destructive on error.
+const budgetField = "border-b border-line text-right transition-colors focus:border-primary aria-invalid:border-destructive"
+
+// budgetName is a category's name opening its sheet, style.Inverted on hover and focus.
+const budgetName = "cursor-pointer justify-self-start px-0.5 text-left " + style.Inverted + " focus-visible:bg-foreground focus-visible:text-background"
+
+// budgetSlice is a slice of the 100% bar, its width set by the server and the script.
+const budgetSlice = "block bg-current transition-all duration-(--move)"
+
+// Screen is the Categories screen: the monthly income panel, with its prompt, the 100% bar and the line that
+// says what is missing or exceeds, and the Categories panel, with a row per category (its name opening its sheet, a
+// slider, the field in the typed mode and the value in the other) and "> save split". Without a monthly income it
+// asks for it first: no bar, slider nor limit field, and the stored division goes along hidden, in percent, until a
+// typed one above zero comes back in a 422. flash is the category a sheet just saved.
+templ Screen(form Form, flash string) {
+	{{ hasIncome := form.Welcome || form.income > 0 || session.From(ctx).MonthlyIncome > 0 }}
+	{{ format, _ := prefs.Find(prefs.NumberFormats, session.From(ctx).NumberFormat) }}
+	@input.MoneyScript()
+	<form
+		id="budget"
+		{ style.IfElse(form.Welcome, templ.Attributes{"method": "post", "action": "/welcome"}, templ.Attributes{"hx-post": "/budget", "hx-target": "this", "hx-swap": "outerHTML", "hx-disable": "find [type=submit]"})... }
+		class={ "flex flex-col gap-5", templ.KV("over", hasIncome && !form.closed() && form.gapSign() < 0), templ.KV("closed", form.closed()) }
+		data-budget
+		data-mode={ form.Mode }
+		data-decimal={ format.Decimal }
+		data-thousands={ format.Thousands }
+		data-symbol={ prefs.CurrencySymbol(ctx) }
+		data-missing={ l10n.T(ctx, "budget.missing") }
+		data-over={ l10n.T(ctx, "budget.over") }
+		data-closed={ l10n.T(ctx, "budget.closed") }
+		data-hint-percent={ l10n.T(ctx, "budget.hint_percent") }
+		data-hint-value={ l10n.T(ctx, "budget.hint_value") }
+	>
+		@panel.Panel(l10n.T(ctx, "budget.title"), "", nil) {
+			<label class="flex items-center gap-2 border-b border-line pb-1 text-base transition-colors focus-within:border-primary">
+				<span class="text-primary" aria-hidden="true">&gt;</span>
+				<span class="text-xs text-muted-foreground">{ prefs.CurrencySymbol(ctx) }</span>
+				<input
+					id="income"
+					class={ budgetInput, "flex-1" }
+					name="income"
+					value={ form.Income }
+					placeholder={ prefs.Amount(ctx, 0) }
+					aria-label={ l10n.T(ctx, "budget.title") }
+					inputmode="numeric"
+					data-mask="money"
+					autocomplete="off"
+					autofocus?={ !hasIncome }
+					{ formfield.AriaInvalid(form.Errors["income"])... }
+				/>
+			</label>
+			@formfield.Note(style.IfElse(hasIncome, "", l10n.T(ctx, "budget.income_first")), form.Errors["income"])
+			if hasIncome {
+				<p class="mt-1 text-2xs text-muted-foreground" data-hint>{ l10n.T(ctx, style.IfElse(form.percent(), "budget.hint_percent", "budget.hint_value")) }</p>
+				<div class="mt-5 flex h-6 gap-0.5 bg-line-faint" aria-hidden="true">
+					for _, c := range form.Categories {
+						<i class={ budgetSlice, category.ColorClass(c.Color) } data-slice={ c.ID } title={ c.Name } style={ width(form.Points[c.ID]) }></i>
+					}
+					{{ _, free := form.gap() }}
+					<i class={ budgetSlice, "budget-free" } data-slice="free" title={ l10n.T(ctx, "budget.free") } style={ width(free) }></i>
+				</div>
+				<div class="mt-1 flex justify-between gap-4 text-xs tabular-nums">
+					@budgetStatus(form)
+					<span class="text-muted-foreground">100%</span>
+				</div>
+			} else {
+				<p class="sr-only" data-hint></p>
+			}
+		}
+		{ children... }
+		@panel.Panel(l10n.T(ctx, "nav.categories"), "", budgetActions(form, hasIncome)) {
+			if len(form.Categories) == 0 {
+				@empty.Empty(l10n.T(ctx, "categories.empty"))
+			}
+			<div class="grid grid-cols-[auto_1fr_auto_--spacing(30)] items-center gap-x-4 gap-y-3 text-sm @max-2xl/console:grid-flow-row-dense @max-2xl/console:grid-cols-[1fr_auto_auto] @max-2xl/console:gap-x-2 @max-2xl/console:gap-y-1.5">
+				for _, c := range form.Categories {
+					if hasIncome {
+						@budgetRow(form, c.ID, c.Name, c.Color, c.ID == flash)
+					} else {
+						<button type="button" class={ budgetName } hx-get={ "/categories/" + c.ID } hx-target="#sheet" data-flash?={ c.ID == flash }>
+							@category.Name(c.Name, c.Color)
+						</button>
+						<input type="hidden" name={ "limit_" + c.ID } value={ form.Percents[c.ID] }/>
+					}
+				}
+			</div>
+			if form.Errors["form"] != "" {
+				@field.Error() {
+					{ form.Errors["form"] }
+				}
+			}
+			<footer class="mt-5 flex justify-end">
+				@button.Button(button.Props{Type: button.TypeSubmit, Disabled: !form.closed(), Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "form.saving")}}) {
+					<span>&gt; { l10n.T(ctx, "budget.save") }</span>
+				}
+			</footer>
+		}
+	</form>
+}
+
+// budgetRow is a category's row in the division: its name, the slider, the field in each mode (the inactive one
+// hidden and disabled, so only the typed mode is sent) and the value in the other mode.
+templ budgetRow(form Form, id, name, color string, flash bool) {
+	<div class="contents" data-row={ id }>
+		if form.Welcome {
+			<span class="px-0.5">
+				@category.Name(name, color)
+			</span>
+		} else {
+			<button type="button" class={ budgetName } hx-get={ "/categories/" + id } hx-target="#sheet" data-flash?={ flash }>
+				@category.Name(name, color)
+			</button>
+		}
+		<input
+			type="range"
+			min="0"
+			max="100"
+			step="0.5"
+			value={ fmt.Sprintf("%.2f", float64(form.Points[id])/100) }
+			aria-label={ l10n.T(ctx, "budget.in_percent", name) }
+			class={ "budget-range h-6 w-full min-w-34 cursor-ew-resize appearance-none bg-transparent focus-visible:outline focus-visible:outline-offset-3 focus-visible:outline-primary in-[.over]:text-destructive @max-2xl/console:col-span-full", category.ColorClass(color) }
+			style={ templ.SafeCSS(fmt.Sprintf("--p: %.2f%%", min(100, max(0, float64(form.Points[id])/100)))) }
+		/>
+		<span class="flex justify-end">
+			<span class="in-data-[mode=value]:hidden">
+				<input
+					name={ "limit_" + id }
+					value={ form.Percents[id] }
+					placeholder={ prefs.Amount(ctx, 0) }
+					aria-label={ l10n.T(ctx, "budget.in_percent", name) }
+					inputmode="decimal"
+					autocomplete="off"
+					disabled?={ !form.percent() }
+					class={ budgetInput, budgetField, "w-15" }
+					data-percent
+					{ formfield.AriaInvalid(style.IfElse(form.percent(), form.Errors["limit_"+id], ""))... }
+				/>
+				<span aria-hidden="true">%</span>
+			</span>
+			<span class="in-data-[mode=percent]:hidden">
+				<input
+					name={ "limit_" + id }
+					value={ form.Values[id] }
+					placeholder={ prefs.Amount(ctx, 0) }
+					aria-label={ l10n.T(ctx, "budget.in_value", name) }
+					inputmode="numeric"
+					data-mask="money"
+					autocomplete="off"
+					disabled?={ form.percent() }
+					class={ budgetInput, budgetField, "w-25" }
+					data-value
+					{ formfield.AriaInvalid(style.IfElse(form.percent(), "", form.Errors["limit_"+id]))... }
+				/>
+			</span>
+		</span>
+		<span class="text-right text-muted-foreground tabular-nums" data-derived>
+			if form.percent() {
+				{ prefs.Money(ctx, form.Cents[id]) }
+			} else {
+				{ prefs.Amount(ctx, form.Points[id]) }%
+			}
+		</span>
+		if message := form.Errors["limit_"+id]; message != "" {
+			<div class="col-span-full">
+				@formfield.Note("", message)
+			</div>
+		}
+	</div>
+}
+
+// budgetActions is the Categories panel's "edit in [amount] [%]", only while there is a monthly income to divide,
+// and its "+ nova [n]".
+templ budgetActions(form Form, hasIncome bool) {
+	<span class="flex flex-wrap items-center justify-end gap-4">
+		if hasIncome {
+			<span class="flex items-center gap-2">
+				<span id="mode-label" class="text-2xs uppercase tracking-widest text-muted-foreground">{ l10n.T(ctx, "budget.mode") }</span>
+				<span role="radiogroup" aria-labelledby="mode-label" class={ choice.Group }>
+					@choice.Option("mode", InValue, !form.percent()) {
+						{ l10n.T(ctx, "budget.mode_value") }
+					}
+					@choice.Option("mode", InPercent, form.percent()) {
+						%
+					}
+				</span>
+			</span>
+		} else {
+			<input type="hidden" name="mode" value={ InPercent }/>
+		}
+		if !form.Welcome {
+			@sheet.NewAction("/categories/new")
+		}
+	</span>
+}
+
+// budgetStatus is the line under the bar: what is missing to close the monthly income, what exceeds it, in
+// destructive, or "fechado em 100%".
+templ budgetStatus(form Form) {
+	{{ cents, points := form.gap() }}
+	<span class="text-muted-foreground in-[.closed]:text-cat-green in-[.over]:text-destructive" role="status" data-status>
+		switch  {
+			case form.closed():
+				{ l10n.T(ctx, "budget.closed") }
+			case form.income <= 0:
+			default:
+				{ l10n.T(ctx, style.IfElse(form.gapSign() > 0, "budget.missing", "budget.over")) } { prefs.Money(ctx, abs(cents)) } · { prefs.Amount(ctx, abs(points)) }%
+		}
+	</span>
+}

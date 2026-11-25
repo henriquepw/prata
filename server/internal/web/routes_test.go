@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/store"
 )
 
@@ -24,7 +25,7 @@ func emptyRoutes(t *testing.T) http.Handler {
 	}
 	t.Cleanup(func() { db.Close() })
 
-	return New(db, true, OpenFinance{})
+	return New(db, true, openfinance.Config{})
 }
 
 // anonymous is a request without a session cookie.
@@ -111,7 +112,7 @@ func TestLoginRejectsBadCredentials(t *testing.T) {
 }
 
 func TestPages(t *testing.T) {
-	routes, cookie := signedInWith(t, OpenFinance{Key: "key"})
+	routes, cookie := signedInWith(t, openfinance.Config{Key: "key"})
 
 	for _, target := range []string{"/", "/welcome", "/categories", "/tags", "/recurrences", "/movements", "/connections", "/devices"} {
 		t.Run(target, func(t *testing.T) {

@@ -1,0 +1,102 @@
+package recurrencepage
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/sheet"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/table"
+	"github.com/henriquepw/prata/server/internal/web/components/view/category"
+	"github.com/henriquepw/prata/server/internal/web/components/view/entry"
+	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/internal/web/form"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+)
+
+// recurrenceForm is the recurrence sheet: what the user typed, the categories to pick from and an error
+// message per field name, "form" holding a rejected commit.
+type recurrenceForm struct {
+	ID          string
+	Description string
+	Kind        string
+	Amount      string
+	CategoryID  string
+	Day         string
+	StartAt     string
+	EndAt       string
+	Categories  []store.Category
+	Errors      map[string]string
+}
+
+templ recurrencesPage(s layout.Props, recurrences []store.Recurrence) {
+	@layout.Layout(s) {
+		@panel.Panel(l10n.T(ctx, "nav.recurrences"), "", sheet.NewAction("/recurrences/new")) {
+			if len(recurrences) == 0 {
+				@empty.Empty(l10n.T(ctx, "recurrences.empty"))
+			} else {
+				@table.Table() {
+					@table.Header() {
+						@table.Row() {
+							@table.Head(table.HeadProps{Class: "w-full"}) {
+								{ l10n.T(ctx, "field.description") }
+							}
+							@table.Head() {
+								{ l10n.T(ctx, "recurrences.day") }
+							}
+							@table.Head(table.HeadProps{Class: "text-right"}) {
+								{ l10n.T(ctx, "field.amount") }
+							}
+						}
+					}
+					@table.Body() {
+						for _, recurrence := range recurrences {
+							@table.Row(sheet.Row("/recurrences/"+recurrence.ID, recurrence.ID == s.Flash)) {
+								@table.Cell(table.CellProps{Class: "whitespace-normal"}) {
+									@entry.Description(recurrence.Description)
+								}
+								@table.Cell(table.CellProps{Class: "tabular-nums text-muted-foreground"}) {
+									{ l10n.T(ctx, "recurrences.every_month", ruleDay(recurrence.Rule)) }
+								}
+								@table.Cell(table.CellProps{Class: style.CN("text-right tabular-nums", entry.KindClass(recurrence.Kind))}) {
+									{ prefs.Money(ctx, form.Signed(recurrence.Kind, recurrence.Amount)) }
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ recurrenceSheet(form recurrenceForm) {
+	@sheet.Form(sheet.Props{
+		Title:     l10n.T(ctx, style.IfElse(form.ID == "", "recurrences.new", "recurrences.edit")),
+		Action:    style.IfElse(form.ID == "", "/recurrences", "/recurrences/"+form.ID),
+		DeleteURL: style.IfElse(form.ID == "", "", "/recurrences/"+form.ID),
+		Confirm:   l10n.T(ctx, "recurrences.confirm_delete"),
+		Error:     form.Errors["form"],
+	}) {
+		@entry.KindChoice(form.Kind, form.Errors["kind"])
+		@entry.AmountField(form.Amount, "", form.Errors["amount"])
+		@formfield.Field("description", l10n.T(ctx, "field.description"), form.Errors["description"]) {
+			@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
+		}
+		<div class="grid grid-cols-2 gap-4">
+			@formfield.Hint("day", l10n.T(ctx, "recurrences.day"), l10n.T(ctx, "recurrences.day_hint"), form.Errors["day"]) {
+				@input.Input(input.Props{ID: "day", Name: "day", Type: "number", Value: form.Day, Required: true, Attributes: formfield.AriaInvalid(form.Errors["day"], templ.Attributes{"min": 1, "max": 31})})
+			}
+			@category.Field(form.Categories, form.CategoryID, form.Errors["category_id"])
+		</div>
+		<div class="grid grid-cols-2 gap-4">
+			@formfield.Field("start_at", l10n.T(ctx, "field.start"), form.Errors["start_at"]) {
+				@input.Input(input.Props{ID: "start_at", Name: "start_at", Type: "date", Value: form.StartAt, Required: true, Attributes: formfield.AriaInvalid(form.Errors["start_at"])})
+			}
+			@entry.EndField(form.EndAt, form.Errors["end_at"])
+		</div>
+	}
+}

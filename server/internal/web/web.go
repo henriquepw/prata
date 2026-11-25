@@ -11,22 +11,22 @@ import (
 	_ "time/tzdata"
 
 	"github.com/a-h/templ"
-	"github.com/henriquepw/prata/server/internal/i18n"
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/openfinance"
 	"github.com/henriquepw/prata/server/internal/store"
-	"github.com/henriquepw/prata/server/internal/web/components/settingform"
-	"github.com/henriquepw/prata/server/internal/web/components/shell"
-	"github.com/henriquepw/prata/server/internal/web/instance"
-	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/categorypage"
-	"github.com/henriquepw/prata/server/internal/web/pages/connectionpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/devicepage"
-	"github.com/henriquepw/prata/server/internal/web/pages/homepage"
-	"github.com/henriquepw/prata/server/internal/web/pages/movementpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/recurrencepage"
-	"github.com/henriquepw/prata/server/internal/web/pages/settingpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/tagpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/transactionpage"
-	"github.com/henriquepw/prata/server/internal/web/pages/welcomepage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/authpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/categorypage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/connectionpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/devicepage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/homepage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/movementpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/recurrencepage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/settingpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/tagpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/transactionpage"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/welcomepage"
+	"github.com/henriquepw/prata/server/internal/web/components/view/layout"
+	"github.com/henriquepw/prata/server/internal/web/components/view/settingform"
 	"github.com/henriquepw/prata/server/internal/web/session"
 	"github.com/oklog/ulid/v2"
 )
@@ -42,7 +42,7 @@ const sessionCookie = "session"
 type handler struct {
 	db              *store.Store
 	isSignupAllowed bool
-	openFinance     OpenFinance
+	openFinance     openfinance.Config
 	home            homepage.Page
 	categories      categorypage.Page
 	tags            tagpage.Page
@@ -55,13 +55,9 @@ type handler struct {
 	settings        settingpage.Page
 }
 
-// OpenFinance is the instance's Open Finance setup: Key encrypts the users' Pluggy credentials, and an empty Key
-// turns the feature off.
-type OpenFinance = instance.OpenFinance
-
 // New returns the web routes behind cross-origin protection. Every route that needs a logged-in user must be
 // wrapped in requireSession, and every page without a session in visitor.
-func New(db *store.Store, isSignupAllowed bool, openFinance OpenFinance) http.Handler {
+func New(db *store.Store, isSignupAllowed bool, openFinance openfinance.Config) http.Handler {
 	h := handler{db: db, isSignupAllowed: isSignupAllowed, openFinance: openFinance}
 	h.home = homepage.New(db, h.shell)
 	h.categories = categorypage.New(db, h.shell)
@@ -202,7 +198,7 @@ func (h handler) login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, authpage.Form{Email: email, PasswordError: i18n.T(r.Context(), "auth.error.credentials")}, authpage.LoginPage)
+		h.renderEntrance(w, r, http.StatusUnprocessableEntity, empty, authpage.Form{Email: email, PasswordError: l10n.T(r.Context(), "auth.error.credentials")}, authpage.LoginPage)
 		return
 	}
 
@@ -220,21 +216,21 @@ func (h handler) signup(w http.ResponseWriter, r *http.Request) {
 	password := r.PostFormValue("password")
 	fm := authpage.Form{Email: email, Choices: choices.Fields()}
 	if !strings.Contains(email, "@") {
-		fm.EmailError = i18n.T(r.Context(), "auth.error.email")
+		fm.EmailError = l10n.T(r.Context(), "auth.error.email")
 	}
 
 	if password == "" {
-		fm.PasswordError = i18n.T(r.Context(), "auth.error.password")
+		fm.PasswordError = l10n.T(r.Context(), "auth.error.password")
 	}
 
 	if fm.EmailError == "" && fm.PasswordError == "" {
-		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: i18n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
+		signup := store.Signup{Email: email, Password: password, AccountID: ulid.Make().String(), OwnerID: ulid.Make().String(), Language: l10n.Language(r.Context()), DateFormat: choices.DateFormat, NumberFormat: choices.NumberFormat, Currency: choices.Currency}
 		_, err := h.db.CreateAccount(r.Context(), signup, h.isSignupAllowed)
 		switch {
 		case errors.Is(err, store.ErrSignupClosed):
-			fm.Error = i18n.T(r.Context(), "auth.error.closed")
+			fm.Error = l10n.T(r.Context(), "auth.error.closed")
 		case errors.Is(err, store.ErrDuplicateID):
-			fm.EmailError = i18n.T(r.Context(), "auth.error.taken")
+			fm.EmailError = l10n.T(r.Context(), "auth.error.taken")
 		case err != nil:
 			session.InternalError(w, "creating account", err)
 			return
@@ -300,7 +296,7 @@ func (h handler) requireSession(next http.HandlerFunc) http.Handler {
 
 		setSessionCookie(w, r, cookie.Value, sess.ExpiresAt)
 		ctx := session.With(r.Context(), sess)
-		ctx = i18n.WithLanguage(ctx, sess.Language)
+		ctx = l10n.WithLanguage(ctx, sess.Language)
 		next(w, r.WithContext(ctx))
 	})
 }
@@ -324,12 +320,12 @@ func (h handler) redirectToEntrance(w http.ResponseWriter, r *http.Request) {
 // pt-BR otherwise.
 func visitor(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		language := i18n.PortugueseBR
-		if strings.HasPrefix(strings.ToLower(preferredLanguage(r.Header.Get("Accept-Language"))), i18n.English) {
-			language = i18n.English
+		language := l10n.PortugueseBR
+		if strings.HasPrefix(strings.ToLower(preferredLanguage(r.Header.Get("Accept-Language"))), l10n.English) {
+			language = l10n.English
 		}
 
-		next(w, r.WithContext(i18n.WithLanguage(r.Context(), language)))
+		next(w, r.WithContext(l10n.WithLanguage(r.Context(), language)))
 	}
 }
 
@@ -372,15 +368,15 @@ func setSessionCookie(w http.ResponseWriter, r *http.Request, token string, expi
 // shell reads what the console chrome shows on every authenticated page: the ticker's balance and the user, at
 // now in the user's time zone, and takes the row to flash out of its cookie. title is the i18n key of the screen's
 // name, as "nav.devices".
-func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (shell.Shell, bool) {
+func (h handler) shell(w http.ResponseWriter, r *http.Request, title string) (layout.Props, bool) {
 	sess, now := session.From(r.Context()), time.Now().In(session.Location(r))
-	balance, err := shell.ReadBalance(r.Context(), h.db, sess.AccountID, now)
+	balance, err := layout.ReadBalance(r.Context(), h.db, sess.AccountID, now)
 	if err != nil {
 		session.InternalError(w, "reading balance", err)
-		return shell.Shell{}, false
+		return layout.Props{}, false
 	}
 
-	s := shell.Shell{Title: i18n.T(r.Context(), title), Path: r.URL.Path, Email: sess.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
+	s := layout.Props{Title: l10n.T(r.Context(), title), Path: r.URL.Path, Email: sess.Email, Now: now, Balance: balance, Connections: h.openFinance.Enabled()}
 	if cookie, err := r.Cookie(session.FlashCookie); err == nil {
 		s.Flash = cookie.Value
 		http.SetCookie(w, &http.Cookie{Name: session.FlashCookie, Path: r.URL.Path, MaxAge: -1})

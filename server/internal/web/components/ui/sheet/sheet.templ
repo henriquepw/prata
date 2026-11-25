@@ -1,0 +1,89 @@
+package sheet
+
+import (
+	"cmp"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/button"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/confirm"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/field"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/table"
+)
+
+// Dialog is the empty #sheet dialog that htmx swaps a Form into. On close, it empties once its exit animation ends.
+templ Dialog(label string) {
+	<dialog id="sheet" aria-label={ label } onclose="Promise.allSettled(this.getAnimations().map(a => a.finished)).then(() => this.open || this.replaceChildren())" class="sheet m-0 ml-auto h-dvh max-h-none w-full max-w-110 border-0 bg-background p-0 text-xs text-foreground backdrop:bg-(--scrim)"></dialog>
+}
+
+// Close closes the dialog around the element it runs on.
+const Close = "this.closest('dialog').close()"
+
+// Panel is the panel inside #sheet: borderless but for a --line-soft left border, its fields a line apart, and
+// its corners inside the dialog, which would scroll on any overflow. group/sheet lets a field react to the choices.
+const Panel = "panel group/sheet flex min-h-full flex-col gap-5 border-l border-line-soft px-4 py-5 after:inset-0"
+
+// Props configures the Form. DeleteURL, when set, adds "Excluir", which asks Confirm inline first, as in "delete
+// this tag? <consequence>"; Error is a form-level message, such as a rejected commit. Submit and Busy name the
+// submit and its spinner, "salvar" and "salvando" when empty.
+type Props struct {
+	Title     string
+	Action    string
+	DeleteURL string
+	Confirm   string
+	Error     string
+	Submit    string
+	Busy      string
+}
+
+// Form is the console sheet swapped into the #sheet dialog: a borderless panel with the title and [esc ✕], the
+// fields as children, then "excluir" on the left and "cancelar" and "> save" on the right; while saving, the
+// submit reads "⠋ salvando", and "excluir" swaps the footer for its confirm.Inline. Every response, a 422 included,
+// swaps into #sheet.
+templ Form(p Props) {
+	<form hx-post={ p.Action } hx-target="#sheet" hx-disable="find [type=submit]" class={ Panel }>
+		<header class={ style.CN(panel.Head, "mb-0") }>
+			<h2 class={ panel.Title }>{ p.Title }</h2>
+			<button type="button" class={ style.TextAction } aria-label={ l10n.T(ctx, "sheet.close") } onclick={ templ.JSUnsafeFuncCall(Close) }>[esc ✕]</button>
+		</header>
+		{ children... }
+		if p.Error != "" {
+			@field.Error() {
+				{ p.Error }
+			}
+		}
+		<footer class="mt-auto flex flex-wrap justify-between gap-2" data-confirm>
+			<div>
+				if p.DeleteURL != "" {
+					@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantDestructive, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(confirm.Toggle), "data-focus": true}}) {
+						{ l10n.T(ctx, "sheet.delete") }
+					}
+				}
+			</div>
+			<div class="flex gap-2">
+				@button.Button(button.Props{Type: button.TypeButton, Variant: button.VariantOutline, Attributes: templ.Attributes{"onclick": templ.JSUnsafeFuncCall(Close)}}) {
+					{ l10n.T(ctx, "sheet.cancel") }
+				}
+				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": cmp.Or(p.Busy, l10n.T(ctx, "form.saving"))}}) {
+					<span>&gt; { cmp.Or(p.Submit, l10n.T(ctx, "form.save")) }</span>
+				}
+			</div>
+			if p.DeleteURL != "" {
+				@confirm.Inline(p.Confirm, l10n.T(ctx, "sheet.confirm_delete"), templ.Attributes{"hx-delete": p.DeleteURL, "hx-target": "#sheet"})
+			}
+		</footer>
+	</form>
+}
+
+// Row is a list row that opens its sheet at url on click or enter, flashing when it was just saved.
+func Row(url string, flash bool) table.RowProps {
+	return table.RowProps{Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet", "tabindex": "0", "data-flash": flash}}
+}
+
+// NewAction is a list panel's "+ nova [n]": it opens the "novo" sheet at url.
+templ NewAction(url string) {
+	@button.Button(button.Props{Variant: button.VariantOutline, Size: button.SizeSm, Attributes: templ.Attributes{"hx-get": url, "hx-target": "#sheet"}}) {
+		{ l10n.T(ctx, "list.new") }
+	}
+}

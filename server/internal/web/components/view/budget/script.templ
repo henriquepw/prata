@@ -1,0 +1,46 @@
+package budget
+
+// Script recalculates the division on the Categories screen at each input, as the server would: the active
+// mode's fields are the division, the other mode, the sliders, the bar, the status line and "> save split" follow
+// from them. Changing the mode copies the division into the other fields; changing the monthly income keeps the
+// percentages in percent and the values in value. The server checks everything again on POST /budget.
+templ Script() {
+	<script>
+		(() => {
+		  const cents = (d, s) => { const n = Number(s.trim().split(d.thousands).join('').replace(d.decimal, '.')); return isNaN(n) || n < 0 ? 0 : Math.round(n * 100) }
+		  const amount = (d, n) => { const w = String(Math.trunc(n / 100)).replace(/\B(?=(\d{3})+$)/g, d.thousands); return w + d.decimal + String(n % 100).padStart(2, '0') }
+		  const money = (d, n) => (n < 0 ? '−' : '') + d.symbol + ' ' + amount(d, Math.abs(n))
+		  const points = (n, total) => total ? Math.floor((n * 20000 + total) / (2 * total)) : 0
+		  addEventListener('input', e => {
+		    const f = e.target.closest('form[data-budget]')
+		    if (!f) return
+		    const d = f.dataset, percent = !f.querySelector('[name=mode][value=value]')?.checked, income = cents(d, f.elements.income.value)
+		    const rows = [...f.querySelectorAll('[data-row]')]
+		    let gapCents = income, gapPoints = 10000
+		    f.dataset.mode = percent ? 'percent' : 'value'
+		    f.querySelector('[data-hint]').textContent = percent ? d.hintPercent : d.hintValue
+		    for (const row of rows) {
+		      const p = row.querySelector('[data-percent]'), v = row.querySelector('[data-value]'), range = row.querySelector('[type=range]')
+		      if (e.target === range) (percent ? p : v).value = amount(d, percent ? Math.round(range.value * 100) : Math.round(income * range.value / 100))
+		      const typed = e.target.name === 'mode' ? !percent : percent
+		      const c = typed ? Math.trunc(income * cents(d, p.value) / 10000) : cents(d, v.value), pt = typed ? cents(d, p.value) : points(c, income)
+		      if (e.target.name === 'mode') (percent ? p : v).value = amount(d, percent ? pt : c)
+		      p.disabled = !percent; v.disabled = percent
+		      if (e.target !== range) range.value = pt / 100
+		      range.style.setProperty('--p', Math.min(100, Math.max(0, pt / 100)) + '%')
+		      row.querySelector('[data-derived]').textContent = percent ? money(d, c) : amount(d, pt) + '%'
+		      f.querySelector('[data-slice="' + row.dataset.row + '"]').style.width = Math.max(0, pt / 100) + '%'
+		      gapCents -= c; gapPoints -= pt
+		    }
+		    if (percent) gapCents = Math.trunc(income * gapPoints / 10000)
+		    else gapPoints = Math.sign(gapCents) * points(Math.abs(gapCents), income)
+		    const gap = percent ? gapPoints : gapCents, closed = income > 0 && (!rows.length || gap === 0), status = f.querySelector('[data-status]')
+		    f.querySelector('[data-slice=free]')?.style.setProperty('width', Math.max(0, gapPoints / 100) + '%')
+		    f.classList.toggle('over', rows.length > 0 && gap < 0)
+		    f.classList.toggle('closed', rows.length > 0 && closed)
+		    if (status) status.textContent = !income || !rows.length ? '' : closed ? d.closed : (gap > 0 ? d.missing : d.over) + ' ' + money(d, Math.abs(gapCents)) + ' · ' + amount(d, Math.abs(gapPoints)) + '%'
+		    f.querySelector('[type=submit]').disabled = !closed
+		  })
+		})()
+	</script>
+}

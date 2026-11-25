@@ -1,0 +1,73 @@
+package settingform
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/store"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/field"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/prefs"
+)
+
+// Form is the Settings sheet: the Preferences and the account's currency shown or typed and an error message
+// per field name. With OpenFinance on, it also has the Pluggy client id, never the secret, and whether credentials
+// are saved.
+type Form struct {
+	store.Preferences
+	Currency       string
+	OpenFinance    bool
+	PluggyClientID string
+	HasPluggy      bool
+	Errors         map[string]string
+}
+
+templ LanguageField(form Form) {
+	@formfield.Field("language", l10n.T(ctx, "settings.language"), form.Errors["language"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "language", Name: "language", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["language"])}) {
+			for _, l := range prefs.Languages {
+				@nativeselect.Option(nativeselect.OptionProps{Value: l.Value, Selected: l.Value == form.Language}) {
+					{ l.Label }
+				}
+			}
+		}
+	}
+}
+
+templ DateFormatField(form Form) {
+	@formfield.Field("date_format", l10n.T(ctx, "settings.date_format"), form.Errors["date_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "date_format", Name: "date_format", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["date_format"])}) {
+			for _, f := range prefs.DateFormats {
+				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.DateFormat}) {
+					{ l10n.T(ctx, "date_format."+f.Value) }
+				}
+			}
+		}
+	}
+}
+
+templ NumberFormatField(form Form) {
+	@formfield.Field("number_format", l10n.T(ctx, "settings.number_format"), form.Errors["number_format"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "number_format", Name: "number_format", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["number_format"])}) {
+			for _, f := range prefs.NumberFormats {
+				@nativeselect.Option(nativeselect.OptionProps{Value: f.Value, Selected: f.Value == form.NumberFormat}) {
+					{ f.Value }
+				}
+			}
+		}
+	}
+}
+
+templ CurrencyField(form Form) {
+	@formfield.Field("currency", l10n.T(ctx, "settings.currency"), form.Errors["currency"]) {
+		@nativeselect.NativeSelect(nativeselect.Props{ID: "currency", Name: "currency", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["currency"])}) {
+			for _, c := range prefs.Currencies {
+				@nativeselect.Option(nativeselect.OptionProps{Value: c.Value, Selected: c.Value == form.Currency}) {
+					{ c.Value + " (" + c.Symbol + ")" }
+				}
+			}
+		}
+		@field.Description() {
+			{ l10n.T(ctx, "settings.currency_note") }
+		}
+	}
+}

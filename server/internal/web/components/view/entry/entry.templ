@@ -1,0 +1,37 @@
+package entry
+
+import (
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
+	"github.com/henriquepw/prata/server/internal/web/components/view/category"
+)
+
+// Fields are the transaction's fields in the sheet's order: kind, amount, description, date, category and, when
+// withTag, tag. amountHint is the hint under the amount.
+templ Fields(form Form, amountHint string, withTag bool) {
+	@KindChoice(form.Kind, form.Errors["kind"])
+	@AmountField(form.Amount, amountHint, form.Errors["amount"])
+	@formfield.Field("description", l10n.T(ctx, "field.description"), form.Errors["description"]) {
+		@input.Input(input.Props{ID: "description", Name: "description", Value: form.Description})
+	}
+	<div class="grid grid-cols-2 gap-4">
+		@formfield.Date("occurred_at", l10n.T(ctx, "field.date"), form.OccurredAt, form.Errors["occurred_at"])
+		@category.Field(form.Categories, form.CategoryID, form.Errors["category_id"])
+	</div>
+	if withTag {
+		@formfield.Field("tag_id", l10n.T(ctx, "field.tag"), form.Errors["tag_id"]) {
+			@nativeselect.NativeSelect(nativeselect.Props{ID: "tag_id", Name: "tag_id", Class: "w-full", Attributes: formfield.AriaInvalid(form.Errors["tag_id"])}) {
+				@nativeselect.Option(nativeselect.OptionProps{Value: "", Selected: form.TagID == ""}) {
+					{ l10n.T(ctx, "field.no_tag") }
+				}
+				for _, tag := range form.Tags {
+					@nativeselect.Option(nativeselect.OptionProps{Value: tag.ID, Selected: tag.ID == form.TagID}) {
+						{ tag.Name }
+					}
+				}
+			}
+		}
+	}
+}

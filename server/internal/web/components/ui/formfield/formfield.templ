@@ -1,0 +1,77 @@
+package formfield
+
+import (
+	"fmt"
+	"maps"
+
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/field"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
+	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
+)
+
+// Field is one sheet field: label, the control as children and its error message.
+templ Field(id, label, message string) {
+	@Hint(id, label, "", message) {
+		{ children... }
+	}
+}
+
+// Hint is one sheet field: label, the control as children, then the hint as a muted line under it or, in its place,
+// the error message.
+templ Hint(id, label, hint, message string) {
+	@field.Field() {
+		@field.Label(field.LabelProps{For: id}) {
+			{ label }
+		}
+		{ children... }
+		@Note(hint, message)
+	}
+}
+
+// Note is the line under a field: the error message when there is one, else the hint.
+templ Note(hint, message string) {
+	if message != "" {
+		@field.Error() {
+			{ message }
+		}
+	} else if hint != "" {
+		<p class="text-2xs text-muted-foreground">{ hint }</p>
+	}
+}
+
+// fillDate sets the date input id to today minus days, in the browser's time zone.
+func fillDate(id string, days int) string {
+	return fmt.Sprintf("const d = new Date(); d.setDate(d.getDate() - %d); document.getElementById('%s').value = d.toLocaleDateString('sv')", days, id)
+}
+
+// Date is a required date, with [hoje] [ontem] beside its label filling it without opening the date picker.
+templ Date(id, label, value, message string) {
+	@field.Field() {
+		<div class="flex items-center justify-between gap-2">
+			@field.Label(field.LabelProps{For: id}) {
+				{ label }
+			}
+			<span class="flex gap-1">
+				<button type="button" class={ style.TextAction } onclick={ templ.JSUnsafeFuncCall(fillDate(id, 0)) }>[{ l10n.T(ctx, "date.today") }]</button>
+				<button type="button" class={ style.TextAction } onclick={ templ.JSUnsafeFuncCall(fillDate(id, 1)) }>[{ l10n.T(ctx, "date.yesterday") }]</button>
+			</span>
+		</div>
+		@input.Input(input.Props{ID: id, Name: id, Type: "date", Value: value, Required: true, Attributes: AriaInvalid(message)})
+		@Note("", message)
+	}
+}
+
+// AriaInvalid is a control's attributes, if any, marked invalid when its field has an error message.
+func AriaInvalid(message string, attributes ...templ.Attributes) templ.Attributes {
+	all := templ.Attributes{}
+	for _, a := range attributes {
+		maps.Copy(all, a)
+	}
+
+	if message != "" {
+		all["aria-invalid"] = "true"
+	}
+
+	return all
+}

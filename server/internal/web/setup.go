@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/henriquepw/prata/server/internal/i18n"
-	"github.com/henriquepw/prata/server/internal/web/components/settingform"
-	"github.com/henriquepw/prata/server/internal/web/pages/authpage"
+	"github.com/henriquepw/prata/server/internal/l10n"
+	"github.com/henriquepw/prata/server/internal/web/components/pages/authpage"
+	"github.com/henriquepw/prata/server/internal/web/components/view/settingform"
 	"github.com/henriquepw/prata/server/internal/web/session"
 )
 
@@ -18,7 +18,7 @@ func (h handler) setupForm(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form := settingform.Form{
-		Language:     i18n.Language(r.Context()),
+		Language:     l10n.Language(r.Context()),
 		DateFormat:   session.Visitor.DateFormat,
 		NumberFormat: session.Visitor.NumberFormat,
 		Currency:     session.Visitor.Currency,
