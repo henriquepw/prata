@@ -9,7 +9,7 @@ services:
       - prata-data:/data
     # environment:
     #   PRATA_ALLOW_SIGNUP: "true"
-    #   PRATA_ENCRYPTION_KEY: "troque-por-um-segredo-longo"
+    #   PRATA_ENCRYPTION_KEY: "change-me-to-a-long-secret"
 
 volumes:
   prata-data:

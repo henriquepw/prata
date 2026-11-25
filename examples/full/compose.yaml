@@ -1,0 +1,60 @@
+# Full example: HTTPS via Caddy, signup, Open Finance, bind mount and limits.
+# Before starting: `cp .env.example .env` and fill in PRATA_ENCRYPTION_KEY and PRATA_DOMAIN.
+services:
+  prata:
+    image: ghcr.io/henriquepw/prata:latest # in production, pin a tag (e.g. v1.2.3)
+    container_name: prata
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PRATA_ADDR: ":8080"
+      PRATA_DB_PATH: /data/prata.db
+      PRATA_ALLOW_SIGNUP: "false" # enable only to create accounts, then disable
+      PRATA_PLUGGY_URL: https://api.pluggy.ai
+    volumes:
+      # the container runs as UID 65532: sudo chown -R 65532:65532 ./data
+      - ./data:/data
+    # the image already ships this HEALTHCHECK (`prata healthcheck`); tweak if needed
+    healthcheck:
+      test: ["CMD", "/prata", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    mem_limit: 256m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+    expose:
+      - "8080"
+
+  # Terminates HTTPS and forwards X-Forwarded-Proto (without it the session cookie lacks `Secure`).
+  caddy:
+    image: caddy:2
+    container_name: prata-caddy
+    restart: unless-stopped
+    depends_on:
+      prata:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PRATA_DOMAIN: ${PRATA_DOMAIN:?set PRATA_DOMAIN in .env}
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    volumes:
+      - caddy-data:/data
+
+configs:
+  caddyfile:
+    content: |
+      {$$PRATA_DOMAIN} {
+        reverse_proxy prata:8080
+      }
+
+volumes:
+  caddy-data:

@@ -21,13 +21,14 @@ Isso roda `go tool templ generate -path ../..` (a partir de `server`, para mante
 
 ## Docker
 
-A imagem `ghcr.io/henriquepw/prata` (amd64/arm64) é publicada a cada tag `v*`. Para subir, use o [`compose.yaml`](compose.yaml) de exemplo:
+A imagem `ghcr.io/henriquepw/prata` (amd64/arm64) é publicada a cada tag `v*`. Para subir, use um dos [exemplos](examples/README.md) (`examples/simple` é o mínimo, `examples/full` traz HTTPS e demais ajustes):
 
 ```sh
+cd examples/simple
 docker compose up -d
 ```
 
-Nenhuma variável é obrigatória: o banco fica em `/data/prata.db` e o servidor escuta em `:8080`. Para permitir cadastro, descomente `PRATA_ALLOW_SIGNUP` no compose. Para atualizar:
+Nenhuma variável é obrigatória: o banco fica em `/data/prata.db` e o servidor escuta em `:8080`. Para permitir cadastro, descomente `PRATA_ALLOW_SIGNUP` no compose do exemplo. Para atualizar:
 
 ```sh
 docker compose pull && docker compose up -d
