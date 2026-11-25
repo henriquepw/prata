@@ -25,10 +25,16 @@ func WithLanguage(ctx context.Context, language string) context.Context {
 }
 
 // Language is the language in ctx, or PortugueseBR when it has none.
-func Language(ctx context.Context) string { return catalog.Language(ctx) }
+func Language(ctx context.Context) string {
+	return catalog.Language(ctx)
+}
 
 // T is the text of key in the language of ctx, falling back to pt-BR and then to the key itself.
-func T(ctx context.Context, key string, args ...any) string { return catalog.T(ctx, key, args...) }
+func T(ctx context.Context, key string, args ...any) string {
+	return catalog.T(ctx, key, args...)
+}
 
 // Plural is T of "key.one" when n is 1 and of "key.other" otherwise, with n as its arg.
-func Plural(ctx context.Context, key string, n int) string { return catalog.Plural(ctx, key, n) }
+func Plural(ctx context.Context, key string, n int) string {
+	return catalog.Plural(ctx, key, n)
+}

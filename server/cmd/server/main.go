@@ -27,17 +27,15 @@ import (
 const (
 	defaultDBPath = "/data/prata.db"
 	defaultAddr   = ":8080"
-	// fetchInterval is how often the server fetches the movements of every Connection.
-	fetchInterval = 6 * time.Hour
+	fetchInterval = 6 * time.Hour // fetchInterval is how often the server fetches the movements of every Connection.
 )
 
 type config struct {
 	dbPath          string
 	addr            string
 	isSignupAllowed bool
-	// encryptionKey encrypts the users' Pluggy credentials; empty turns Open Finance off.
-	encryptionKey string
-	pluggyURL     string
+	encryptionKey   string // encryptionKey encrypts the users' Pluggy credentials; empty turns Open Finance off.
+	pluggyURL       string
 }
 
 // openFinance is the instance's Open Finance setup, shared by the web routes and the fetch job.
