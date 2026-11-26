@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/henriquepw/prata/server/internal/l10n"
-	"github.com/henriquepw/prata/server/pkg/importfile"
 	"github.com/henriquepw/prata/server/pkg/pluggy"
 	"github.com/henriquepw/prata/server/internal/store"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/badge"
@@ -13,7 +12,6 @@ import (
 	"github.com/henriquepw/prata/server/internal/web/components/ui/empty"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/formfield"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/input"
-	"github.com/henriquepw/prata/server/internal/web/components/ui/nativeselect"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/panel"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/style"
 	"github.com/henriquepw/prata/server/internal/web/components/ui/table"
@@ -41,22 +39,9 @@ templ connectionFormPanel(view connectionsView) {
 				<button type="button" class={ style.TextAction } hx-get="/settings" hx-target="#sheet">{ "[" + l10n.T(ctx, "nav.settings") + "]" }</button>
 			</p>
 		} else {
-			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-4">
+			<form hx-post="/connections" hx-target="main" hx-select="main" hx-swap="outerHTML" hx-disable="find [type=submit]" class="flex flex-wrap items-end gap-4 justify-end">
 				@formfield.Hint("item_id", l10n.T(ctx, "connections.item_id"), l10n.T(ctx, "connections.item_id_hint"), view.Errors["item_id"]) {
 					@input.Input(input.Props{ID: "item_id", Name: "item_id", Value: view.ItemID, Required: true, Attributes: formfield.AriaInvalid(view.Errors["item_id"], templ.Attributes{"autocomplete": "off", "spellcheck": "false"})})
-				}
-				@formfield.Field("account_id", l10n.T(ctx, "movements.account"), view.Errors["account_id"]) {
-					@nativeselect.NativeSelect(nativeselect.Props{ID: "account_id", Name: "account_id"}) {
-						for _, account := range view.Accounts {
-							@nativeselect.Option(nativeselect.OptionProps{Value: account.ID.String(), Disabled: account.Currency != importfile.CurrencyBRL, Selected: account.ID == view.AccountID}) {
-								if account.Currency != importfile.CurrencyBRL {
-									{ account.Name } ({ account.Currency }): { l10n.T(ctx, "connections.only_brl") }
-								} else {
-									{ account.Name }
-								}
-							}
-						}
-					}
 				}
 				@button.Button(button.Props{Type: button.TypeSubmit, Attributes: templ.Attributes{"data-busy": l10n.T(ctx, "connections.adding")}}) {
 					<span>&gt; { l10n.T(ctx, "connections.add_submit") }</span>

@@ -91,7 +91,12 @@ func (p Page) Save(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sess := session.From(r.Context())
-	view := connectionsView{ItemID: strings.TrimSpace(r.PostFormValue("item_id")), AccountID: id.ID(r.PostFormValue("account_id")), Errors: map[string]string{}}
+
+	view := connectionsView{
+		ItemID:    strings.TrimSpace(r.PostFormValue("item_id")),
+		AccountID: sess.AccountID,
+		Errors:    map[string]string{},
+	}
 
 	item, err := p.fetchItem(r, sess.UserID, view.ItemID)
 	switch {
